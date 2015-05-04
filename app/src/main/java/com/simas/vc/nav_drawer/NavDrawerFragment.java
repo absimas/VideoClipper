@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.os.Environment;
-import android.support.v7.app.ActionBarActivity;
 import android.app.Activity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -28,7 +27,6 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-
 import com.simas.vc.MainActivity;
 import com.simas.vc.VCException;
 import com.simas.vc.file_chooser.FileChooser;
