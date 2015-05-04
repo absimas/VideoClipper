@@ -9,12 +9,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import com.simas.vc.attributes.Attributes;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
-import com.simas.wvc.R;
-
+import com.simas.vc.R;
 import java.util.HashMap;
 import java.util.Map;
 

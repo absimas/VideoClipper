@@ -10,11 +10,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-
 import com.simas.vc.VC;
-import com.simas.wvc.R;
+import com.simas.vc.R;
 import com.simas.vc.Utils;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

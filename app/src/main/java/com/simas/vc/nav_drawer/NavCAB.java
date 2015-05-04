@@ -8,9 +8,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.ListView;
-
-import com.simas.wvc.R;
-
+import com.simas.vc.R;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

@@ -19,11 +19,10 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import com.simas.vc.R;
 import com.simas.vc.VC;
 import com.simas.vc.nav_drawer.NavItem;
-import com.simas.wvc.R;
 import com.simas.vc.Utils;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

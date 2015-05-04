@@ -9,8 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.NumberPicker;
 import android.widget.TextView;
-
-import com.simas.wvc.R;
+import com.simas.vc.R;
 
 /**
  * Created by Simas Abramovas on 2015 Mar 07.

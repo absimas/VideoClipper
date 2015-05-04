@@ -3,20 +3,17 @@ package com.simas.vc.background_tasks;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
-
 import com.simas.vc.VC;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.ArgumentBuilder;
 import com.simas.vc.attributes.Attributes;
 import com.simas.vc.attributes.AudioAttributes;
-import com.simas.wvc.R;
+import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.attributes.VideoAttributes;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

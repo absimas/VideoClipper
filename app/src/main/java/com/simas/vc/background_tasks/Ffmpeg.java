@@ -4,13 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
-
 import com.simas.vc.ArgumentBuilder;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.VCException;
-import com.simas.wvc.R;
-
+import com.simas.vc.R;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;

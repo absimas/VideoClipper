@@ -11,9 +11,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import com.simas.wvc.R;
+import com.simas.vc.R;
 import com.simas.vc.Utils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -16,9 +15,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-
 import com.simas.vc.VC;
-import com.simas.wvc.R;
+import com.simas.vc.R;
 import com.simas.vc.ResumableHandler;
 
 /**
@@ -26,6 +24,7 @@ import com.simas.vc.ResumableHandler;
  */
 
 // ToDo double tap not working when pressing the container
+// ToDo dragging on videoView = controls.show() keeps getting called
 
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 

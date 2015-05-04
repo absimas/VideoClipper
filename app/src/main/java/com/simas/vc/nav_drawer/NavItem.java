@@ -5,16 +5,14 @@ import android.graphics.BitmapFactory;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
-
 import com.simas.vc.background_tasks.VarRunnable;
-import com.simas.wvc.R;
+import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.attributes.Attributes;
 import com.simas.vc.background_tasks.Ffmpeg;
 import com.simas.vc.background_tasks.Ffprobe;
 import com.simas.vc.editor.EditorFragment;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

@@ -11,8 +11,7 @@ import android.os.Build;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.widget.LinearLayout;
-
-import com.simas.wvc.R;
+import com.simas.vc.R;
 
 /**
  * Created by Simas Abramovas on 2015 Mar 12.
