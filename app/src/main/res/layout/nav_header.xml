@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.simas.vc.nav_drawer.NavItemLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:padding="5dp"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:gravity="center">
+	<ImageView
+		android:id="@+id/preview_image"
+		android:background="#000"
+		android:scaleType="centerInside"
+		android:layout_width="150dp"
+		android:layout_height="150dp"
+		android:contentDescription="@string/preview_image_description"/>
+</com.simas.vc.nav_drawer.NavItemLayout>

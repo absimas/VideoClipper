@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!--Color Sets-->
+	<!--Set 1-->
+	<color name="indigo">#3F51B5</color>
+	<color name="light_green">#8BC34A</color>
+	<color name="orange">#FF9800</color>
+
+	<!--Set 2-->
+	<color name="blue_grey">#607D8B</color>
+	<color name="blue">#2196F3</color>
+	<color name="deep_purple">#673AB7</color>
+	<!--Set 3-->
+	<color name="teal">#009688</color>
+	<color name="lime">#CDDC39</color>
+	<color name="amber">#FFC107</color>
+
+
+	<!--Color Sets w/ transparency-->
+	<color name="indigo_transparent">#EE3F51B5</color>
+	<color name="light_green_transparent">#EE8BC34A</color>
+	<color name="orange_transparent">#EEFF9800</color>
+	<color name="blue_grey_transparent">#EE607D8B</color>
+	<color name="blue_transparent">#EE2196F3</color>
+	<color name="deep_purple_transparent">#EE673AB7</color>
+	<color name="teal_transparent">#EE009688</color>
+	<color name="lime_transparent">#EECDDC39</color>
+	<color name="amber_transparent">#EEFFC107</color>
+	
+	<!--Darker Color Sets w/ transparency -->
+	<color name="indigo_transparent_darker">#EE283593</color>
+	<color name="light_green_transparent_darker">#EE558B2F</color>
+	<color name="orange_transparent_darker">#EEEF6C00</color>
+	<color name="blue_grey_transparent_darker">#EE37474F</color>
+	<color name="blue_transparent_darker">#EE1565C0</color>
+	<color name="deep_purple_transparent_darker">#EE4527A0</color>
+	<color name="teal_transparent_darker">#EE00695C</color>
+	<color name="lime_transparent_darker">#EE9E9D24</color>
+	<color name="amber_transparent_darker">#EEFF8F00</color>
+	<color name="player_container_bg">#000000</color>
+</resources>

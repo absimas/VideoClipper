@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!--Format-->
+	<string name="format_name">format_name</string>
+	<string name="format_long_name">format_long_name</string>
+	<string name="format_stream_count">nb_streams</string>
+	<string name="format_size">size</string>
+	<string name="format_filename">filename</string>
+	<string name="format_duration">duration</string>
+
+	<!--Streams-->
+	<string name="stream_name">codec_name</string>
+	<string name="stream_long_name">codec_long_name</string>
+	<string name="stream_channels">channels</string>
+	<string name="stream_width">width</string>
+	<string name="stream_height">height</string>
+	<string name="stream_aspect_ratio">display_aspect_ratio</string>
+	<string name="stream_sample_rate">sample_rate</string>
+	<string name="stream_duration">duration</string>
+	<string name="stream_type">codec_type</string> <!-- Types are defined in StreamAttributes! -->
+</resources>

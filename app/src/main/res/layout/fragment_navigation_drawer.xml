@@ -1,0 +1,13 @@
+<ListView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/list_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@null"
+    android:choiceMode="singleChoice"
+    android:longClickable="true"
+    android:background="@android:color/darker_gray"
+    android:drawSelectorOnTop="true"
+    android:scrollbarStyle="outsideOverlay"
+    tools:context=".NavigationDrawerFragment"/>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<declare-styleable name="LabeledLinearLayout">
+		<attr name="label" format="string"/>
+		<attr name="labelSize" format="dimension"/>
+		<attr name="labelColor" format="color"/>
+		<attr name="labelHorizontalPadding" format="dimension"/>
+		<attr name="containerPadding" format="dimension"/>
+		<attr name="containerStrokeColor" format="color"/>
+	</declare-styleable>
+</resources>

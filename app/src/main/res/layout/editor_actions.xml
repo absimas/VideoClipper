@@ -1,0 +1,77 @@
+<LinearLayout
+	android:id="@+id/editor_actions"
+	android:visibility="gone"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:custom="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical">
+	<com.simas.vc.editor.LabeledLinearLayout
+		custom:label="Info"
+		custom:containerPadding="10dp"
+		custom:containerStrokeColor="@color/indigo"
+		custom:labelColor="@color/blue"
+		custom:labelSize="21sp"
+		custom:labelHorizontalPadding="2dp"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+		<TableLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content">
+			<TableRow
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal">
+				<TextView
+					android:text="@string/filename_action"
+					android:layout_weight="1"
+					android:layout_width="0dp"
+					android:layout_height="match_parent"/>
+
+				<TextView
+					android:id="@+id/filename_value"
+					android:layout_weight="1"
+					android:layout_width="0dp"
+					android:layout_height="match_parent"/>
+			</TableRow>
+			<TableRow
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal">
+				<TextView
+					android:text="@string/length_action"
+					android:layout_weight="1"
+					android:layout_width="0dp"
+					android:layout_height="match_parent"/>
+
+				<TextView
+					android:id="@+id/length_value"
+					android:layout_weight="1"
+					android:layout_width="0dp"
+					android:layout_height="match_parent"/>
+			</TableRow>
+		</TableLayout>
+	</com.simas.vc.editor.LabeledLinearLayout>
+
+	<com.simas.vc.editor.LabeledLinearLayout
+		custom:label="Crop"
+		custom:containerPadding="10dp"
+		custom:containerStrokeColor="@color/indigo"
+		custom:labelColor="@color/blue"
+		custom:labelSize="21sp"
+		custom:labelHorizontalPadding="2dp"
+		android:layout_width="match_parent"
+		android:layout_height="200dp">
+	</com.simas.vc.editor.LabeledLinearLayout>
+
+	<com.simas.vc.editor.LabeledLinearLayout
+		custom:label="Cut"
+		custom:containerPadding="10dp"
+		custom:containerStrokeColor="@color/indigo"
+		custom:labelColor="@color/blue"
+		custom:labelSize="21sp"
+		custom:labelHorizontalPadding="2dp"
+		android:layout_width="match_parent"
+		android:layout_height="200dp">
+	</com.simas.vc.editor.LabeledLinearLayout>
+</LinearLayout>

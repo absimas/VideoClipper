@@ -1,0 +1,25 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context=".MainActivity">
+	<item android:id="@+id/nav_contextual_action_select_all"
+	      android:title="@string/nav_context_menu_action_select_all"
+	      android:icon="@drawable/ic_action_select_all"
+	      app:showAsAction="always|withText"
+	      android:showAsAction="always|withText"
+	      tools:ignore="AlwaysShowAction,AppCompatResource"/>
+
+	<item android:id="@+id/nav_contextual_action_copy"
+	      android:title="@string/nav_context_menu_action_duplicate"
+	      android:icon="@drawable/ic_action_copy"
+	      app:showAsAction="always|withText"
+	      android:showAsAction="always|withText"
+	      tools:ignore="AlwaysShowAction,AppCompatResource"/>
+
+	<item android:id="@+id/nav_contextual_action_remove"
+	      android:title="@string/nav_context_menu_action_remove"
+	      android:icon="@drawable/ic_action_remove"
+	      app:showAsAction="always|withText"
+	      android:showAsAction="always|withText"
+	      tools:ignore="AlwaysShowAction,AppCompatResource"/>
+</menu>

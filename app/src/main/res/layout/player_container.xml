@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.simas.vc.editor.player.PlayerContainer
+    android:id="@+id/player_container"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@color/player_container_bg"
+    android:visibility="invisible"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.simas.vc.editor.player.Player
+        android:id="@+id/player"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"/>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"/>
+
+    <!--<com.simas.wvc.editor.player.Controls-->
+        <!--android:id="@+id/controls"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_centerHorizontal="true"/>-->
+</com.simas.vc.editor.player.PlayerContainer>
