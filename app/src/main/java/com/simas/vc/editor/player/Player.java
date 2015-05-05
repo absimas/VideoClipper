@@ -7,8 +7,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.VideoView;
-
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -29,10 +30,10 @@ public final class Player extends VideoView implements MediaPlayer.OnPreparedLis
 	/**
 	 * Default timeout in seconds
 	 */
-	private PlayerContainer mContainer;
 	private final CopyOnWriteArrayList<MediaPlayer.OnPreparedListener>
 			mPreparedListeners = new CopyOnWriteArrayList<>();
 	private boolean mPrepared;
+	private GestureDetector mGestureDetector;
 
 	public Player(Context context) {
 		super(context);
@@ -56,7 +57,6 @@ public final class Player extends VideoView implements MediaPlayer.OnPreparedLis
 	}
 
 	private void init() {
-		mContainer = (PlayerContainer) getParent();
 		mPrepared = false;
 
 		// Multiple prepared listener implementation
@@ -134,6 +134,19 @@ public final class Player extends VideoView implements MediaPlayer.OnPreparedLis
 		for (MediaPlayer.OnPreparedListener listener : mPreparedListeners) {
 			listener.onPrepared(mp);
 		}
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent ev) {
+		if (mGestureDetector != null) {
+			return mGestureDetector.onTouchEvent(ev);
+		} else {
+			return super.onTouchEvent(ev);
+		}
+	}
+
+	public void setGestureDetector(GestureDetector gestureDetector) {
+		mGestureDetector = gestureDetector;
 	}
 
 }

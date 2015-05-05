@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-
 import com.simas.vc.Utils;
 
 /**

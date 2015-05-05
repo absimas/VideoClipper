@@ -23,8 +23,7 @@ import com.simas.vc.ResumableHandler;
  * Created by Simas Abramovas on 2015 May 03.
  */
 
-// ToDo double tap not working when pressing the container
-// ToDo dragging on videoView = controls.show() keeps getting called
+// ToDo double tap not working when pressing the controls, do interceptTouchEvent
 
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
@@ -37,7 +36,6 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 	private ProgressBar mProgressBar;
 	private Controls mControls;
 	private PlayerContainer mContainer;
-	private GestureDetector mGestureDetector;
 	private ResumableHandler mResumableHandler = new ResumableHandler(new Handler());
 
 	public PlayerFragment() {}
@@ -63,14 +61,8 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 		mPlayer = (Player) mContainer.findViewById(R.id.player);
 		mPlayer.setOnKeyListener(this);
 
-		// Player gesture controller
-		mGestureDetector = new GestureDetector(getActivity(), new GestureListener());
-		mPlayer.setOnTouchListener(new View.OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				return mGestureDetector.onTouchEvent(event);
-			}
-		});
+		// Player gesture detector
+		mPlayer.setGestureDetector(new GestureDetector(getActivity(), new GestureListener()));
 
 		/* Controls */
 		// Create manually, and add to the container

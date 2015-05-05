@@ -3,15 +3,17 @@ package com.simas.vc.editor.player;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.MediaController;
+import java.lang.reflect.Field;
 
 /**
  * Created by Simas Abramovas on 2015 Apr 30.
  */
 
-// ToDo When controls shown back button doesn't work == focus is stolen from activity's window
+// ToDo W/MediaPlayer﹕ Attempt to seek to invalid position: -3197
 // ToDo Create custom Controls
 	// Work with a VideoView (play/pause button is updated, SeekBar is moved, etc.)
 	// Center the play/pause button
@@ -37,9 +39,26 @@ final class Controls extends MediaController {
 		mHandler = new Handler(context.getMainLooper());
 
 		// Remove from current parent
-		ViewGroup vg = (ViewGroup) getParent();
+		final ViewGroup vg = (ViewGroup) getParent();
 		if (vg != null) {
 			vg.removeView(this);
+		}
+
+		// Set the Window's DecorView, which was created by MediaController, to INVISIBLE
+		Window window = null;
+		try {
+			Field field = MediaController.class.getDeclaredField("mWindow");
+			field.setAccessible(true);
+			window = (Window) field.get(this);
+		} catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		if (window != null) {
+			window.getDecorView().setVisibility(INVISIBLE);
+		} else {
+			Log.w(TAG, "Couldn't MediaController window.");
 		}
 	}
 
@@ -101,11 +120,6 @@ final class Controls extends MediaController {
 		if (mVisibilityListener != null) {
 			mVisibilityListener.onVisibilityChanged(false);
 		}
-	}
-
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		return super.onTouchEvent(event);
 	}
 
 	/**
