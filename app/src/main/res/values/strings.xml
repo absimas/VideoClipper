@@ -37,7 +37,8 @@
 	<string name="timeline_line_descriptor">line</string>
 	<string name="ok">OKAY</string>
 	<string name="action_add_video">Add video</string>
-	<string name="preview_image_description">preview_image</string>
+	<string name="preview_image_description">preview image</string>
+	<string name="header_image_description">header image</string>
 	<string name="file_type_image_description">File type image</string>
 	<string name="file_chooser_up">..</string>
 	<string name="nav_context_menu">Something</string>

@@ -3,13 +3,18 @@ package com.simas.vc;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
+import android.widget.ListView;
+
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 
+// ToDo CAB parcelable, so it saves not only checkedItems, but also the previously selectedItem
+// ToDo FFprobe should queue, otherwise with 2 caalls it fails (probly coz of the same report file?)
 // ToDo use dimensions in xml instead of hard-coded values
 // ToDo when selected item is removed from drawer, should clear the editor
 // ToDo Clear the editor according to orientation.
@@ -24,7 +29,7 @@ public class MainActivity extends AppCompatActivity
 	 */
 	private NavDrawerFragment mNavDrawerFragment;
 	private EditorFragment mEditorFragment;
-	private int mSelectedDrawerItem;
+	private int mSelectedItemPosition;
 
 	/**
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
@@ -48,33 +53,42 @@ public class MainActivity extends AppCompatActivity
 		mEditorFragment = (EditorFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.editor_fragment);
 
-		// EditorFragment listens to NavigationDrawer's adapter changes
+		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
 		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
 			@Override
 			public void onChanged() {
 				super.onChanged();
-				// Invalidate if pointers don't match // ToDo this check won't work on shifted items
-				// ToDo kas cia per durnas checkas? xD
-				if (mEditorFragment.currentItem != mNavDrawerFragment
-						.adapter.getItem(mSelectedDrawerItem)) {
-					mEditorFragment.setCurrentItem(null);
+				ListView lv = mNavDrawerFragment.getList();
+				// Make sure we're not in CAB mode (multiple selections)
+				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
+					// Make sure the editor's item is the same as the currently checked one
+					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+					if (mEditorFragment.currentItem != checkedItem) {
+						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
+					}
 				}
+
 			}
 		});
 	}
 
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
-		// Skip header (position 0)
-		if (position < 1) return;
-		mSelectedDrawerItem = position - 1;
-		if (mNavDrawerFragment.adapter != null) {
-			NavItem item = mNavDrawerFragment.adapter.getItem(mSelectedDrawerItem);
-			if (item != null) {
-				setTitle(item.getFile().getName());
-				mEditorFragment.setCurrentItem(item);
-			}
+		ListView lv = mNavDrawerFragment.getList();
+		NavItem item = null;
+		if (position == ListView.INVALID_POSITION) {
+			// Invalidate editor fragment on an invalid position
+		} else if (position < lv.getHeaderViewsCount() ||
+				position >= lv.getCount() - lv.getFooterViewsCount()) {
+			// Skip headers and footers
+			return;
+		} else {
+			// Position is fine, fetch the item
+			item = (NavItem) lv.getItemAtPosition(position);
+			if (item != null) setTitle(item.getFile().getName());
 		}
+		mSelectedItemPosition = position;
+		mEditorFragment.setCurrentItem(item);
 	}
 
 	public void restoreActionBar() {

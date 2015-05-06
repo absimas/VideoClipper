@@ -3,6 +3,7 @@ package com.simas.vc.nav_drawer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
+import android.text.Selection;
 import android.util.AttributeSet;
 import android.widget.Checkable;
 import android.widget.LinearLayout;

@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -84,18 +85,18 @@ public class Ffprobe {
 			if (!cFfprobe(args, mTmpFile.getPath())) {
 				return false;
 			}
-			FileAttributes fa = null;
-			BufferedReader br = null;
+			FileAttributes attributes = null;
+			BufferedReader reader = null;
 			try {
 				// Parse file
-				br = new BufferedReader(new FileReader(mTmpFile));
+				reader = new BufferedReader(new FileReader(mTmpFile));
 				StringBuilder sb = new StringBuilder();
-				String line = br.readLine();
+				String line = reader.readLine();
 
 				while (line != null) {
 					sb.append(line);
 					sb.append('\n');
-					line = br.readLine();
+					line = reader.readLine();
 				}
 				String content = sb.toString();
 
@@ -107,14 +108,15 @@ public class Ffprobe {
 				String json = content.substring(firstOpeningBrace, lastClosingBrace+1);
 
 				// Parse JSON
-				fa = parseJsonAttributes(json);
+				attributes = parseJsonAttributes(json);
+				Log.e(TAG, "Got attrs: " + attributes);
 			} catch (IOException e) {
 				e.printStackTrace();
 				return false;
 			} finally {
-				if (br != null) {
+				if (reader != null) {
 					try {
-						br.close();
+						reader.close();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -123,7 +125,7 @@ public class Ffprobe {
 
 			// Update runnable
 			if (mSuccessRunnable != null) {
-				mSuccessRunnable.setVariable(fa);
+				mSuccessRunnable.setVariable(attributes);
 			}
 			return true;
 		}

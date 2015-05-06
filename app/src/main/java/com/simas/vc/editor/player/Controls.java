@@ -1,6 +1,7 @@
 package com.simas.vc.editor.player;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
@@ -44,21 +45,23 @@ final class Controls extends MediaController {
 			vg.removeView(this);
 		}
 
-		// Set the Window's DecorView, which was created by MediaController, to INVISIBLE
-		Window window = null;
+		// Set the MediaController Window's DecorView, to INVISIBLE
 		try {
 			Field field = MediaController.class.getDeclaredField("mWindow");
 			field.setAccessible(true);
-			window = (Window) field.get(this);
-		} catch (NoSuchFieldException e) {
+			Window window = (Window) field.get(this);
+			Window activityWindow = ((Activity)context).getWindow();
+			if (window == null) {
+				Log.w(TAG, "Couldn't get MediaController window.");
+			} else if (window == activityWindow) {
+				Log.w(TAG, "MediaController uses activity's window.");
+			} else {
+				window.getDecorView().setVisibility(GONE);
+			}
+		} catch (NoSuchFieldException | ClassCastException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
-		}
-		if (window != null) {
-			window.getDecorView().setVisibility(INVISIBLE);
-		} else {
-			Log.w(TAG, "Couldn't MediaController window.");
 		}
 	}
 

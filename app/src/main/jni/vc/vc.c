@@ -116,7 +116,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
 
     switch (childID) {
         case -1:
-            LOGE("fork error");
+            LOGE("Fork error!");
             return (bool) false;
         case 0:
             LOGI("Child process started...");
@@ -134,7 +134,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
                 LOGE("File not found!");
                 exit(EXIT_FAILURE);
             }
-            // Redirect stdout to the file
+            // Redirect stdout to a file
             dup2(fileno(file), fileno(stdout));
             // File descriptor duplicated, can now close the file
             fclose(file);
@@ -142,7 +142,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
             (*env)->ReleaseStringUTFChars(env, output, outputPath);
         	// Start FFprobe
             ffprobe(cArray.size, cArray.arr);
-            exit(EXIT_SUCCESS); // Will not be reached, because FFprobe exits the process
+            exit(EXIT_SUCCESS); // Will not be reached, because FFprobe kills the process
         default:
             LOGI("Parent process started...");
             // Check if child has finished every PARENT_WAIT_INTERVAL ms
@@ -152,7 +152,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
 
                 switch (endID) {
                     case -1:
-                        LOGE("waitpid error!");
+                        LOGE("Waitpid error!");
                         return (bool) false;
                     case 0:
                         LOGI("Parent waiting for child...");

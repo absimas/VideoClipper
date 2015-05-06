@@ -1,6 +1,9 @@
 package com.simas.vc;
 
+import android.util.Log;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,7 +33,9 @@ public class ArgumentBuilder {
 	}
 
 	public String[] build() {
-		return mArgs.toArray(new String[mArgs.size()]);
+		String[] args = mArgs.toArray(new String[mArgs.size()]);
+		Log.e("TAG", Arrays.toString(args));
+		return args;
 	}
 
 }

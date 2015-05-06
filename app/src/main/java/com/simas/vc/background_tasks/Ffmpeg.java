@@ -41,7 +41,7 @@ public class Ffmpeg {
 		}
 
 		// Prepare a tmp file with all video file names
-		File tmpFile = File.createTempFile("vc", null);
+		File tmpFile = File.createTempFile("vc-list", null);
 		String sourceList = "";
 		for (String source : sources) {
 			sourceList += String.format("file '%s'\n", source);

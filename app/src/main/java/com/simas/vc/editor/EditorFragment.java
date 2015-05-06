@@ -23,6 +23,7 @@ import java.util.Map;
 // ToDo weird super padding on TableLayout on galaxy S2
 // ToDo When NavItem removed, clear and hide VideoView together with actions.
 	// On NavItem removed, scroll stays
+// ToDo don't show controls when switched to fs, unless ofc they were shown before
 
 public class EditorFragment extends Fragment {
 
@@ -89,7 +90,6 @@ public class EditorFragment extends Fragment {
 					}
 					sPreviewSize = params.height;
 				}
-				Log.e(TAG, "size set to: " + sPreviewSize);
 				playerFragmentContainer.setLayoutParams(params);
 
 				// Can now remove the hiding view
@@ -119,6 +119,7 @@ public class EditorFragment extends Fragment {
 	};
 
 	public void setCurrentItem(final NavItem newItem) {
+		Log.e(TAG, "set to " + newItem);
 		// Change item
 		final NavItem previousItem = currentItem;
 		currentItem = newItem;
@@ -132,6 +133,8 @@ public class EditorFragment extends Fragment {
 			// ToDo hide player too and show some helper window or even another fragment
 			mDataMap.get(Data.ACTIONS).setVisibility(View.GONE);
 			return;
+		} else {
+
 		}
 
 		// Present the new item if it's ready, otherwise

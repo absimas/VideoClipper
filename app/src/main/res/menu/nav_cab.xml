@@ -2,7 +2,7 @@
       xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
       tools:context=".MainActivity">
-	<item android:id="@+id/nav_contextual_action_select_all"
+	<item android:id="@+id/nav_contextual_action_check_all"
 	      android:title="@string/nav_context_menu_action_select_all"
 	      android:icon="@drawable/ic_action_select_all"
 	      app:showAsAction="always|withText"

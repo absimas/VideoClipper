@@ -3,6 +3,7 @@ package com.simas.vc.nav_drawer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -110,7 +111,6 @@ public class NavAdapter extends BaseAdapter {
 	public void addItems(List<NavItem> items) {
 		if (items != null && items.size() > 0) {
 			mItems.addAll(items);
-			notifyDataSetChanged();
 		}
 	}
 
@@ -129,7 +129,6 @@ public class NavAdapter extends BaseAdapter {
 	public void changeItems(List<NavItem> items) {
 		if (items != null && items.size() > 0) {
 			mItems = items;
-			notifyDataSetChanged();
 		}
 	}
 
@@ -139,7 +138,6 @@ public class NavAdapter extends BaseAdapter {
 			mItems = new ArrayList<>();
 		}
 		mItems.add(item);
-		notifyDataSetChanged();
 	}
 
 	public void attachToList(ListView listView) {
@@ -171,7 +169,7 @@ public class NavAdapter extends BaseAdapter {
 	}
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView(final int position, View convertView, ViewGroup parent) {
 		ViewHolder holder;
 		if (convertView == null) {
 			// Inflate
@@ -196,7 +194,8 @@ public class NavAdapter extends BaseAdapter {
 			holder = (ViewHolder) convertView.getTag();
 		}
 
-		if (getListView().isItemChecked(position)) {
+		// When calling via the ListView, item count needs to include the header count
+		if (getListView().isItemChecked(position + getListView().getHeaderViewsCount())) {
 			convertView.setBackgroundColor(Color.DKGRAY);
 		} else {
 			convertView.setBackgroundColor(Color.TRANSPARENT);
