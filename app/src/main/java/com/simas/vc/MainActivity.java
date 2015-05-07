@@ -27,7 +27,10 @@ public class MainActivity extends AppCompatActivity
 	private NavDrawerFragment mNavDrawerFragment;
 	private EditorFragment mEditorFragment;
 	private HelperFragment mHelperFragment;
-	private int mSelectedItemPosition;
+	/**
+	 * Add Action button's location on the window. 0 if still un-set.
+	 */
+	int mAddActionXLocation;
 
 	/**
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
@@ -97,7 +100,6 @@ public class MainActivity extends AppCompatActivity
 			lv.setItemChecked(position, true);
 
 		}
-		mSelectedItemPosition = position;
 
 		// Re-open this item in the editor fragment, only if it's new
 		if (mEditorFragment.getCurrentItem() != item) {
@@ -132,11 +134,6 @@ public class MainActivity extends AppCompatActivity
 		}
 	}
 
-	/**
-	 * Add Video Action button's location on the window. 0 if still un-set.
-	 */
-	int mAddActionXLocation;
-
 	@Override
 	public boolean onCreateOptionsMenu(final Menu menu) {
 		if (!mNavDrawerFragment.isDrawerOpen()) {
@@ -157,7 +154,7 @@ public class MainActivity extends AppCompatActivity
 							int[] coordinates = new int[2];
 							addVideo.getActionView().getLocationInWindow(coordinates);
 							setAddActionLocation(coordinates[0]);
-							Log.i(TAG, "AddVideo button's X position: " + mAddActionXLocation);
+							Log.v(TAG, "AddVideo button's X position: " + mAddActionXLocation);
 						}
 					}
 				});
