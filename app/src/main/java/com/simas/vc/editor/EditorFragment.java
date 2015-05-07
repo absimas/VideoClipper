@@ -4,6 +4,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,18 +22,19 @@ import java.util.Map;
  */
 
 // ToDo weird super padding on TableLayout on galaxy S2
-// ToDo When NavItem removed, clear and hide VideoView together with actions.
-	// On NavItem removed, scroll stays
-// ToDo don't show controls when switched to fs, unless ofc they were shown before
+// ToDo need use some other view's height/width on different orientations. Preview's size should
+	// be known even when EditorFragment hasn't yet been scaled
+	// Or EditorFragment could be hidden with a black view, until it's scaled, then switch to a
+	// fragment hide().
 
 public class EditorFragment extends Fragment {
 
 	private final String TAG = getClass().getName();
 
 	public NavItem currentItem;
-	public static int sPreviewSize;
 	private PlayerFragment mPlayerFragment;
 	private static final int DEFAULT_PLAYER_CONTAINER_SIZE = 300;
+	public static int sPreviewSize = DEFAULT_PLAYER_CONTAINER_SIZE;
 
 	private enum Data {
 		ACTIONS, FILENAME, LENGTH
@@ -54,7 +56,6 @@ public class EditorFragment extends Fragment {
 			mPlayerFragment = new PlayerFragment();
 			getChildFragmentManager().beginTransaction()
 					.add(R.id.player_fragment_container, mPlayerFragment)
-					.addToBackStack("A")
 					.commit();
 		}
 
@@ -62,12 +63,24 @@ public class EditorFragment extends Fragment {
 		final ViewGroup root = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
 		final View black = new View(getActivity());
 		black.setBackgroundColor(Color.BLACK);
-		root.addView(black,ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT);
 
-		// Queue PlayerContainer modifications
-		playerFragmentContainer.post(new Runnable() {
+		// Fragment won't be visible when HelperFragment is shown on top.
+		// No need for a black view then.
+		if (isVisible()) {
+			root.addView(black, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+		}
+
+		// Queue PlayerContainer modifications to when its first measured
+		playerFragmentContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
 			@Override
-			public void run() {
+			public void onLayoutChange(View v, int left, int top, int right, int bottom,
+			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+				playerFragmentContainer.removeOnLayoutChangeListener(this);
+
+				// Show a black view on top, when measuring the container
+				root.addView(black,
+						ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
 				// Set width to be equal to height (or the other way round)
 				ViewGroup.LayoutParams params = playerFragmentContainer.getLayoutParams();
 				int width = playerFragmentContainer.getWidth();
@@ -92,8 +105,13 @@ public class EditorFragment extends Fragment {
 				}
 				playerFragmentContainer.setLayoutParams(params);
 
-				// Can now remove the hiding view
-				root.removeView(black);
+				// Queue the removal of the black view
+				playerFragmentContainer.post(new Runnable() {
+					@Override
+					public void run() {
+						root.removeView(black);
+					}
+				});
 			}
 		});
 
@@ -119,7 +137,6 @@ public class EditorFragment extends Fragment {
 	};
 
 	public void setCurrentItem(final NavItem newItem) {
-		Log.e(TAG, "set to " + newItem);
 		// Change item
 		final NavItem previousItem = currentItem;
 		currentItem = newItem;
@@ -130,11 +147,7 @@ public class EditorFragment extends Fragment {
 		}
 
 		if (newItem == null) {
-			// ToDo hide player too and show some helper window or even another fragment
-			mDataMap.get(Data.ACTIONS).setVisibility(View.GONE);
 			return;
-		} else {
-
 		}
 
 		// Present the new item if it's ready, otherwise
@@ -168,7 +181,7 @@ public class EditorFragment extends Fragment {
 					}
 				});
 				filename.setText(curItem.getFile().getName());
-				length.setText(String.format("%02f", attrs.getDuration()));
+				length.setText(String.format("%.2f", attrs.getDuration()));
 				actions.setVisibility(View.VISIBLE);
 			}
 		});

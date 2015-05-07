@@ -7,15 +7,23 @@
 	android:layout_height="match_parent"
 	tools:context=".MainActivity">
 
-	<FrameLayout
+	<!--Editor and helper are on top of each other-->
+	<RelativeLayout
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"/>
-	<fragment
-		android:id="@+id/editor_fragment"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:name="com.simas.vc.editor.EditorFragment"
-		tools:layout="@layout/fragment_editor"/>
+		android:layout_height="match_parent">
+		<fragment
+			android:id="@+id/editor_fragment"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:name="com.simas.vc.editor.EditorFragment"
+			tools:layout="@layout/fragment_editor"/>
+		<fragment
+			android:id="@+id/helper_fragment"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:name="com.simas.vc.editor.HelperFragment"
+			tools:layout="@layout/fragment_helper"/>
+	</RelativeLayout>
 
 	<!-- android:layout_gravity="start" tells DrawerLayout to treat
          this as a sliding drawer on the left side for left-to-right

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFF">
+    <!--ToDo Make sure views don't intersect-->
+
+    <!--Add video helper-->
+    <LinearLayout
+        android:id="@+id/help_add_item"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:rotation="-90"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_action_forward"
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            android:contentDescription="@string/add_item_helper_arrow_description"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/help_add_item"
+            android:textColor="#777"
+            android:textSize="25sp"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <!--Drawer helper-->
+    <LinearLayout
+        android:id="@+id/help_drawer"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:rotation="-180"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_action_forward"
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            android:contentDescription="@string/drawer_helper_arrow_description"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="Drawer is here dumb ass!"
+            android:textColor="#777"
+            android:textSize="25sp"
+            android:gravity="center"/>
+    </LinearLayout>
+</RelativeLayout>

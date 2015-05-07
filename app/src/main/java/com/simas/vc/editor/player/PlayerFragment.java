@@ -24,6 +24,7 @@ import com.simas.vc.ResumableHandler;
  */
 
 // ToDo double tap not working when pressing the controls, do interceptTouchEvent
+// ToDo don't show controls when switched to fs, unless ofc they were shown before
 
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 

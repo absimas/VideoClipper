@@ -109,7 +109,7 @@ public class Ffprobe {
 
 				// Parse JSON
 				attributes = parseJsonAttributes(json);
-				Log.e(TAG, "Got attrs: " + attributes);
+				Log.i(TAG, "FfprobeTask returned: " + attributes);
 			} catch (IOException e) {
 				e.printStackTrace();
 				return false;

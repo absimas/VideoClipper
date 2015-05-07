@@ -36,15 +36,12 @@ import com.simas.vc.background_tasks.Ffmpeg;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
 // ToDo avoid lag when selectingItem
-// ToDo cab selection -> rotate -> cab action = no effect
 
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
@@ -357,18 +354,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		return true;
 	}
 
-	/**
-	 *
-	 * @param position    ListView position (including the header)
-	 */
 	public void selectItem(int position) {
 		mCurrentSelectedPosition = position;
+		// Notify the activity
 		mCallbacks.onNavigationDrawerItemSelected(position);
-
-		if (position != ListView.INVALID_POSITION) {
-			getDrawerLayout().closeDrawer(mFragmentContainerView);
-			getList().setItemChecked(position, true);
-		}
 	}
 
 	@Override
@@ -480,7 +469,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 							.show();
 				}
 				break;
-			case R.id.action_add_video:
+			case R.id.action_add_item:
 				// Make sure it's a new instance
 				FileChooser fileChooser = (FileChooser) getActivity()
 						.getSupportFragmentManager().findFragmentByTag(FileChooser.TAG);

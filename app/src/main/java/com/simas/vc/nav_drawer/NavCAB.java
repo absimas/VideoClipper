@@ -22,9 +22,6 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 10.
  */
 
-/**
- * Checked items are for CAB. Selections are for default usage.
- */
 public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 
 	public NavDrawerFragment navDrawerFragment;
@@ -63,14 +60,10 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 		}
 	}
 
-
-	// ToDo select 1 -> cab select 0 -> rotate -> delete = selected 1, but then cab select = crash
 	@Override
 	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 		// Save the previously saved item pointer
 		int curSelection = navDrawerFragment.getCurrentlySelectedPosition();
-		Log.e(TAG, "adapter count: " + getAdapter().getCount());
-		Log.e(TAG, "list count: " + getListView().getCount());
 		if (curSelection != ListView.INVALID_POSITION) {
 			getListView().setAdapter(getAdapter());
 			// Wtf ListView what items are you using?? childs - ok, adapter - ok, lv - fucked
@@ -172,7 +165,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 					for (int i=0; i<getListView().getCount(); ++i) {
 						Object item = getListView().getItemAtPosition(i);
 						if (item == mInitiallySelectedItem) {
-							getListView().setItemChecked(i, true);
+							navDrawerFragment.selectItem(i);
 							break;
 						}
 					}

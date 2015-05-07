@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+// ToDo rename to DelayedHandler, and each class that uses this, should specify when the delay ends.
+
 /**
  * Message Handler class that supports buffering up of messages when the activity is paused i.e. in the background.
  */

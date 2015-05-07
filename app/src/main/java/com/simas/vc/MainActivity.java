@@ -7,18 +7,15 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
+import android.view.View;
 import android.widget.ListView;
-
+import com.simas.vc.editor.HelperFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 
-// ToDo CAB parcelable, so it saves not only checkedItems, but also the previously selectedItem
 // ToDo FFprobe should queue, otherwise with 2 caalls it fails (probly coz of the same report file?)
 // ToDo use dimensions in xml instead of hard-coded values
-// ToDo when selected item is removed from drawer, should clear the editor
-// ToDo Clear the editor according to orientation.
-	// Should hide preview, and ScrollView in landscape, while actions on portrait
 
 public class MainActivity extends AppCompatActivity
 		implements NavDrawerFragment.NavigationDrawerCallbacks {
@@ -29,6 +26,7 @@ public class MainActivity extends AppCompatActivity
 	 */
 	private NavDrawerFragment mNavDrawerFragment;
 	private EditorFragment mEditorFragment;
+	private HelperFragment mHelperFragment;
 	private int mSelectedItemPosition;
 
 	/**
@@ -49,9 +47,18 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setUp(R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
+		// Helper
+		mHelperFragment = (HelperFragment) getSupportFragmentManager()
+				.findFragmentById(R.id.helper_fragment);
+
 		// Set up editor
 		mEditorFragment = (EditorFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.editor_fragment);
+
+		// Editor hidden by default
+		getSupportFragmentManager().beginTransaction()
+				.hide(mEditorFragment)
+				.commit();
 
 		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
 		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
@@ -67,7 +74,6 @@ public class MainActivity extends AppCompatActivity
 						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
 					}
 				}
-
 			}
 		});
 	}
@@ -86,9 +92,37 @@ public class MainActivity extends AppCompatActivity
 			// Position is fine, fetch the item
 			item = (NavItem) lv.getItemAtPosition(position);
 			if (item != null) setTitle(item.getFile().getName());
+
+			// Check the item in the drawer
+			lv.setItemChecked(position, true);
+
 		}
 		mSelectedItemPosition = position;
-		mEditorFragment.setCurrentItem(item);
+
+		// Re-open this item in the editor fragment, only if it's new
+		if (mEditorFragment.getCurrentItem() != item) {
+			mNavDrawerFragment.setDrawerOpen(false);
+			mEditorFragment.setCurrentItem(item);
+
+			// Hide/Show the Editor/Helper
+			if (item == null) {
+				// Hide if visible
+				if (mEditorFragment.isVisible()) {
+					getSupportFragmentManager().beginTransaction()
+							.hide(mEditorFragment)
+							.show(mHelperFragment)
+							.commit();
+				}
+			} else {
+				// Show if hidden
+				if (!mEditorFragment.isVisible()) {
+					getSupportFragmentManager().beginTransaction()
+							.hide(mHelperFragment)
+							.show(mEditorFragment)
+							.commit();
+				}
+			}
+		}
 	}
 
 	public void restoreActionBar() {
@@ -98,17 +132,58 @@ public class MainActivity extends AppCompatActivity
 		}
 	}
 
+	/**
+	 * Add Video Action button's location on the window. 0 if still un-set.
+	 */
+	int mAddActionXLocation;
+
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
+	public boolean onCreateOptionsMenu(final Menu menu) {
 		if (!mNavDrawerFragment.isDrawerOpen()) {
 			// Only show items in the action bar relevant to this screen
 			// if the drawer is not showing. Otherwise, let the drawer
 			// decide what to show in the action bar.
 			getMenuInflater().inflate(R.menu.menu_main, menu);
 			restoreActionBar();
+
+			// Save the addVideo button's position:
+			final MenuItem addVideo = menu.findItem(R.id.action_add_item);
+			if (addVideo != null && addVideo.getActionView() != null) {
+				addVideo.getActionView().addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+					@Override
+					public void onLayoutChange(View v, int left, int top, int right, int bottom,
+					                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+						if (addVideo.getActionView() != null) {
+							int[] coordinates = new int[2];
+							addVideo.getActionView().getLocationInWindow(coordinates);
+							setAddActionLocation(coordinates[0]);
+							Log.i(TAG, "AddVideo button's X position: " + mAddActionXLocation);
+						}
+					}
+				});
+			}
 			return true;
 		}
+		// Drawer items
 		return super.onCreateOptionsMenu(menu);
+	}
+
+	/**
+	 * Setter that also announces the change to {@code mHelperFragment}. Announcing is skipped if
+	 * the new value is equal to the old one.
+	 * @param x    x axis position of the Add Video action button
+	 */
+	private void setAddActionLocation(final int x) {
+		// Modify only if changed
+		if (mAddActionXLocation != x) {
+			mAddActionXLocation = x;
+			mHelperFragment.post(new Runnable() {
+				@Override
+				public void run() {
+					mHelperFragment.moveAddItemHelper(x);
+				}
+			});
+		}
 	}
 
 	@Override

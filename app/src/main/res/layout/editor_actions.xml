@@ -12,7 +12,7 @@
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="2dp"
+		custom:labelHorizontalPadding="5dp"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content">
 		<TableLayout
@@ -59,9 +59,9 @@
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="2dp"
+		custom:labelHorizontalPadding="5dp"
 		android:layout_width="match_parent"
-		android:layout_height="200dp">
+		android:layout_height="wrap_content">
 	</com.simas.vc.editor.LabeledLinearLayout>
 
 	<com.simas.vc.editor.LabeledLinearLayout
@@ -70,8 +70,8 @@
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="2dp"
+		custom:labelHorizontalPadding="5dp"
 		android:layout_width="match_parent"
-		android:layout_height="200dp">
+		android:layout_height="wrap_content">
 	</com.simas.vc.editor.LabeledLinearLayout>
 </LinearLayout>

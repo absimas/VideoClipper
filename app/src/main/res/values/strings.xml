@@ -36,7 +36,7 @@
 	<string name="timeline_arrow_descriptor">arrow</string>
 	<string name="timeline_line_descriptor">line</string>
 	<string name="ok">OKAY</string>
-	<string name="action_add_video">Add video</string>
+	<string name="action_add_item">ADD ITEM</string>
 	<string name="preview_image_description">preview image</string>
 	<string name="header_image_description">header image</string>
 	<string name="file_type_image_description">File type image</string>
@@ -54,4 +54,7 @@
 	<string name="item_preview_description">Item Preview</string>
 	<string name="filename_action">Filename:</string>
 	<string name="length_action">Length:</string>
+	<string name="help_add_item">You can add items here!</string>
+	<string name="add_item_helper_arrow_description">Pointing to add item button!</string>
+	<string name="drawer_helper_arrow_description">Pointing to the drawer!</string>
 </resources>

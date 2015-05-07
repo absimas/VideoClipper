@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Button
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    style="?attr/actionButtonStyle"
+    android:layout_gravity="center"
+    android:drawableLeft="@drawable/ic_action_new"
+    android:drawableStart="@drawable/ic_action_new"
+    android:text="@string/action_add_item"
+    android:textStyle="bold"
+    android:textSize="12sp"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"/>
