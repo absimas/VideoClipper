@@ -46,7 +46,7 @@
 	<string name="nav_context_menu_action_duplicate">Duplicate</string>
 	<string name="nav_context_menu_action_select_all">Select all</string>
 	<string name="nav_context_menu_action_select_none">Select none</string>
-	<string name="action_concat">Concatenate</string>
+	<string name="action_concat">CONCATENATE</string>
 	<string name="vc_working">Clipping videos…</string>
 	<string name="clipping">Clipping videos…</string>
 	<string name="vc_finished">Clipping finished!</string>
@@ -54,7 +54,12 @@
 	<string name="item_preview_description">Item Preview</string>
 	<string name="filename_action">Filename:</string>
 	<string name="length_action">Length:</string>
+
+	<!--Helpers-->
 	<string name="help_add_item">You can add items here!</string>
+	<string name="help_concatenate">Once you have more than 2 items, you can clip them!</string>
 	<string name="add_item_helper_arrow_description">Pointing to add item button!</string>
 	<string name="drawer_helper_arrow_description">Pointing to the drawer!</string>
+	<string name="help_drawer">Slide to see the added items!</string>
+	<string name="help_drawer_no_videos">Slide to open the item list!</string>
 </resources>

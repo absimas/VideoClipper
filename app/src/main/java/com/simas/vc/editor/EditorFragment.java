@@ -45,7 +45,7 @@ public class EditorFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedState) {
-		View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
+		final View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
 
 		// Create a nested fragment
 		final View playerFragmentContainer = rootView.findViewById(R.id.player_fragment_container);
@@ -67,7 +67,8 @@ public class EditorFragment extends Fragment {
 		// Fragment won't be visible when HelperFragment is shown on top.
 		// No need for a black view then.
 		if (isVisible()) {
-			root.addView(black, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+			root.addView(black,
+					ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 		}
 
 		// Queue PlayerContainer modifications to when its first measured
@@ -77,41 +78,51 @@ public class EditorFragment extends Fragment {
 			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
 				playerFragmentContainer.removeOnLayoutChangeListener(this);
 
-				// Show a black view on top, when measuring the container
-				root.addView(black,
-						ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
-				// Set width to be equal to height (or the other way round)
-				ViewGroup.LayoutParams params = playerFragmentContainer.getLayoutParams();
-				int width = playerFragmentContainer.getWidth();
-				int height = playerFragmentContainer.getHeight();
-				if (getResources().getConfiguration()
-						.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-					if (height <= 0) {
-						Log.e(TAG, "height is 0 in landscape mode! Using the default...");
-						params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
-					} else {
-						params.width = height;
-					}
-					sPreviewSize = params.width;
-				} else {
-					if (width <= 0) {
-						Log.e(TAG, "width is 0 in portrait mode! Using the default...");
-						params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
-					} else {
-						params.height = width;
-					}
-					sPreviewSize = params.height;
+				// Show the black view only if it wasn't added yet
+				if (root.getParent() == null) {
+					root.addView(black, ViewGroup.LayoutParams.MATCH_PARENT,
+							ViewGroup.LayoutParams.MATCH_PARENT);
 				}
-				playerFragmentContainer.setLayoutParams(params);
 
-				// Queue the removal of the black view
 				playerFragmentContainer.post(new Runnable() {
 					@Override
 					public void run() {
-						root.removeView(black);
+						// Set width to be equal to height (or the other way round)
+						ViewGroup.LayoutParams params = playerFragmentContainer.getLayoutParams();
+						int width = playerFragmentContainer.getWidth();
+						int height = playerFragmentContainer.getHeight();
+						if (getResources().getConfiguration()
+								.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+							if (height <= 0) {
+								Log.e(TAG, "height is 0 in landscape mode! Using the default...");
+								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
+							} else {
+								params.height = height;
+								params.width = height;
+							}
+							sPreviewSize = params.width;
+						} else {
+							if (width <= 0) {
+								Log.e(TAG, "width is 0 in portrait mode! Using the default...");
+								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
+							} else {
+								params.width = width;
+								params.height = width;
+							}
+							sPreviewSize = params.height;
+						}
+						playerFragmentContainer.setLayoutParams(params);
+
+						// Queue the removal of the black view
+						playerFragmentContainer.post(new Runnable() {
+							@Override
+							public void run() {
+								root.removeView(black);
+							}
+						});
 					}
 				});
+
 			}
 		});
 

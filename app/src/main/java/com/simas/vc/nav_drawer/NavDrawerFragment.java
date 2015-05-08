@@ -67,7 +67,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private View mFragmentContainerView;
-	private MenuItem mMenuConcatItem;
+	public View mConcatAction;
+	private MainActivity.OptionMenuCreationListener mOptionsMenuListener;
 
 	// States
 	private int mCurrentSelectedPosition = ListView.INVALID_POSITION;
@@ -249,8 +250,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onChanged() {
 				super.onChanged();
-				if (mMenuConcatItem != null) {
-					mMenuConcatItem.setEnabled(isConcatenatable());
+				if (mConcatAction != null) {
+					mConcatAction.setEnabled(isConcatenatable());
 				}
 			}
 		});
@@ -306,15 +307,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						view.setBackgroundColor(Color.TRANSPARENT);
 					}
 				} else {
-					// Make sure it's a new instance
-					FileChooser fileChooser = (FileChooser) getActivity()
-							.getSupportFragmentManager().findFragmentByTag(FileChooser.TAG);
-
-					if (fileChooser == null) {
-						fileChooser = FileChooser.getInstance();
-						fileChooser.setOnFileChosenListener(NavDrawerFragment.this);
-						fileChooser.show(getActivity().getSupportFragmentManager(), FileChooser.TAG);
-					}
+					((MainActivity)getActivity()).showFileChooser();
 				}
 			}
 		});
@@ -404,10 +397,24 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		// showGlobalContextActionBar, which controls the top-left area of the action bar.
 		if (mDrawerLayout != null && isDrawerOpen()) {
 			inflater.inflate(R.menu.drawer_menu, menu);
-			mMenuConcatItem = menu.findItem(R.id.action_concat);
-			mMenuConcatItem.setEnabled(isConcatenatable());
+			final MenuItem concatItem = menu.findItem(R.id.action_concat);
+			mConcatAction = concatItem.getActionView();
+			// actionLayout click listener imitates default OptionsItemSelected behaviour
+			mConcatAction.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					onOptionsItemSelected(concatItem);
+				}
+			});
+			mConcatAction.setEnabled(isConcatenatable());
 			showGlobalContextActionBar();
 		}
+
+		// Call listener
+		if (mOptionsMenuListener != null) {
+			mOptionsMenuListener.onOptionsMenuCreated(menu);
+		}
+
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 
@@ -499,14 +506,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		return ((AppCompatActivity) getActivity()).getSupportActionBar();
 	}
 
-	private MainActivity getMainActivity() {
-		if (getActivity() == null) {
-			return null;
-		} else {
-			return (MainActivity) getActivity();
-		}
-	}
-
 	@Override
 	public void onChosen(File file) {
 		// ToDo encode filenames with spaces?
@@ -520,7 +519,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					Utils.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							mMenuConcatItem.setEnabled(isConcatenatable());
+							mConcatAction.setEnabled(isConcatenatable());
 						}
 					});
 					// Upon reaching the VALID state, remove this listener
@@ -552,6 +551,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	public int getCurrentlySelectedPosition() {
 		return mCurrentSelectedPosition;
+	}
+
+	public void setOptionsMenuCreationListener(MainActivity.OptionMenuCreationListener listener) {
+		mOptionsMenuListener = listener;
 	}
 
 }

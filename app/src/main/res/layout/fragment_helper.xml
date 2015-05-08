@@ -6,27 +6,32 @@
     android:layout_height="match_parent"
     android:background="#FFF">
     <!--ToDo Make sure views don't intersect-->
+    <!--ToDo Make sure helper container doesn't go out of screen-->
 
     <!--Add video helper-->
     <LinearLayout
-        android:id="@+id/help_add_item"
+        android:id="@+id/help_action"
         android:orientation="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:alpha="0">
         <ImageView
+            android:id="@+id/help_action_arrow"
             android:rotation="-90"
             android:scaleType="fitXY"
             android:src="@drawable/ic_action_forward"
-            android:layout_width="130dp"
-            android:layout_height="130dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:contentDescription="@string/add_item_helper_arrow_description"/>
 
         <TextView
+            android:id="@+id/help_action_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/help_add_item"
             android:textColor="#777"
-            android:textSize="25sp"
+            android:textSize="22sp"
             android:gravity="center"/>
     </LinearLayout>
 
@@ -35,21 +40,25 @@
         android:id="@+id/help_drawer"
         android:orientation="horizontal"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:alpha="0">
         <ImageView
+            android:id="@+id/help_drawer_arrow"
             android:rotation="-180"
             android:scaleType="fitXY"
             android:src="@drawable/ic_action_forward"
-            android:layout_width="130dp"
-            android:layout_height="130dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:contentDescription="@string/drawer_helper_arrow_description"/>
 
         <TextView
+            android:id="@+id/help_drawer_text"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:text="Drawer is here dumb ass!"
+            android:text="@string/help_drawer_no_videos"
             android:textColor="#777"
-            android:textSize="25sp"
+            android:textSize="22sp"
             android:gravity="center"/>
     </LinearLayout>
 </RelativeLayout>
