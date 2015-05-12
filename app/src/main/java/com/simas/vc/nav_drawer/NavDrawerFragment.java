@@ -42,6 +42,7 @@ import java.util.List;
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
 // ToDo avoid lag when selectingItem
+// ToDo on item added, should change the helper's drawer text
 
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
@@ -67,6 +68,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private View mFragmentContainerView;
+	/**
+	 * First initialized when the drawer is opened, so outside of {@code NavDrawerFragment} need
+	 * to check if it's not {@code null}.
+	 */
 	public View mConcatAction;
 	private MainActivity.OptionMenuCreationListener mOptionsMenuListener;
 
@@ -519,7 +524,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					Utils.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							mConcatAction.setEnabled(isConcatenatable());
+							// Make sure the concat action button is initialized (drawer was opened)
+							if (mConcatAction != null) {
+								mConcatAction.setEnabled(isConcatenatable());
+							}
 						}
 					});
 					// Upon reaching the VALID state, remove this listener

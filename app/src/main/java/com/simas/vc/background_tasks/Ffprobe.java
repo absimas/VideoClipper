@@ -61,7 +61,6 @@ public class Ffprobe {
 
 		new FfprobeTask(onComplete, tmpFile).execute(args);
 
-
 		return null;
 	}
 
@@ -150,7 +149,7 @@ public class Ffprobe {
 			for (int i=0; i<streamCount; ++i) {
 				streams.add(streamArr.getJSONObject(i));
 			}
-			// Fetch format
+			// Fetch formatFFMPEG_WAIT_INTERVAL
 			format = obj.getJSONObject("format");
 		} catch (JSONException e) {
 			e.printStackTrace();

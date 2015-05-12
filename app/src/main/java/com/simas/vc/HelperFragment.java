@@ -65,8 +65,8 @@ public class HelperFragment extends Fragment {
 		animateLayoutAlpha(mActionHelper, visible, onComplete);
 	}
 
-	public void setDrawerHelperVisibility(boolean visible) {
-		animateLayoutAlpha(mDrawerHelper, visible, null);
+	public void setDrawerHelperVisibility(boolean visible, @Nullable Runnable onComplete) {
+		animateLayoutAlpha(mDrawerHelper, visible, onComplete);
 	}
 
 	public void moveActionHelper(int x) {
@@ -140,6 +140,9 @@ public class HelperFragment extends Fragment {
 			});
 		}
 		helper.mAnimator.start();
+	}
+	public boolean isDrawerHelperVisible() {
+		return mDrawerHelper.mLayout.getAlpha() == 1;
 	}
 
 	private class Helper {

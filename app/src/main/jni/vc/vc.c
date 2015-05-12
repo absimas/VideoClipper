@@ -42,7 +42,8 @@
 #define LOGE(...) __android_log_print(6, TAG, __VA_ARGS__);
 
 // Time between checks if the child process has been closed
-static const int PARENT_WAIT_INTERVAL = 1000;
+static const int FFMPEG_WAIT_INTERVAL = 1000;
+static const int FFPROBE_WAIT_INTERVAL = 300;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
 static const char* mFfprobeActivityPath = "com/simas/vc/background_tasks/Ffprobe";
 
@@ -80,7 +81,7 @@ jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
             exit(EXIT_SUCCESS); // Will not be reached, because FFmpeg exits the process
         default:
             LOGI("Parent process started...");
-            // Check if child has finished every PARENT_WAIT_INTERVAL ms
+            // Check if child has finished every FFMPEG_WAIT_INTERVAL ms
             int status;
             for(;;) {
                 pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
@@ -91,7 +92,7 @@ jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
                         return (bool) false;
                     case 0:
                         LOGI("Parent waiting for child...");
-                        sleep_ms(PARENT_WAIT_INTERVAL);
+                        sleep_ms(FFMPEG_WAIT_INTERVAL);
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {
@@ -145,7 +146,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
             exit(EXIT_SUCCESS); // Will not be reached, because FFprobe kills the process
         default:
             LOGI("Parent process started...");
-            // Check if child has finished every PARENT_WAIT_INTERVAL ms
+            // Check if child has finished every FFPROBE_WAIT_INTERVAL ms
             int status;
             for(;;) {
                 pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
@@ -156,7 +157,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
                         return (bool) false;
                     case 0:
                         LOGI("Parent waiting for child...");
-                        sleep_ms(PARENT_WAIT_INTERVAL);
+                        sleep_ms(FFPROBE_WAIT_INTERVAL);
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {

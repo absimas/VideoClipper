@@ -57,7 +57,7 @@
 
 	<!--Helpers-->
 	<string name="help_add_item">You can add items here!</string>
-	<string name="help_concatenate">Once you have more than 2 items, you can clip them!</string>
+	<string name="help_concatenate">Once you have 2 or more items, you can clip them!</string>
 	<string name="add_item_helper_arrow_description">Pointing to add item button!</string>
 	<string name="drawer_helper_arrow_description">Pointing to the drawer!</string>
 	<string name="help_drawer">Slide to see the added items!</string>

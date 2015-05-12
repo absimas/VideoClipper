@@ -17,7 +17,7 @@ import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 
-// ToDo FFprobe should queue, otherwise with 2 calls it fails (probly coz of the same report file?)
+// ToDo FFprobe/FFmpeg should queue, otherwise with 2 calls it fails (probly coz of the same report file?)
 // ToDo use dimensions in xml instead of hard-coded values
 
 public class MainActivity extends AppCompatActivity
@@ -90,6 +90,44 @@ public class MainActivity extends AppCompatActivity
 				}
 			}
 		});
+
+		// Change drawer helper text when dataset changes
+		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
+			@Override
+			public void onChanged() {
+				super.onChanged();
+				if (mHelperFragment.isVisible() && mHelperFragment.isDrawerHelperVisible()) {
+					// If fragment and the helper is visible, animate the changes
+					mHelperFragment.setDrawerHelperVisibility(false, new Runnable() {
+						@Override
+						public void run() {
+							if (mNavDrawerFragment.adapter.getCount() < 1) {
+								mHelperFragment.setDrawerHelperText(
+										getText(R.string.help_drawer_no_videos).toString());
+							} else {
+								mHelperFragment.setDrawerHelperText(
+										getText(R.string.help_drawer).toString());
+							}
+							mHelperFragment.setDrawerHelperVisibility(true, null);
+						}
+					});
+				} else {
+					// Change the text immediately // Invoke when helper fragment is ready
+					mHelperFragment.post(new Runnable() {
+						@Override
+						public void run() {
+							if (mNavDrawerFragment.adapter.getCount() < 1) {
+								mHelperFragment.setDrawerHelperText(
+										getText(R.string.help_drawer_no_videos).toString());
+							} else {
+								mHelperFragment.setDrawerHelperText(
+										getText(R.string.help_drawer).toString());
+							}
+						}
+					});
+				}
+			}
+		});
 	}
 
 	@Override
@@ -114,6 +152,8 @@ public class MainActivity extends AppCompatActivity
 		// Re-open this item in the editor fragment, only if it's new
 		if (mEditorFragment.getCurrentItem() != item) {
 			mNavDrawerFragment.setDrawerOpen(false);
+			// ToDo change this quick-fix
+			mHelperFragment.setActionHelperText(getText(R.string.help_add_item).toString());
 			mEditorFragment.setCurrentItem(item);
 
 			// Hide/Show the Editor/Helper
@@ -187,7 +227,7 @@ public class MainActivity extends AppCompatActivity
 	private void modifyHelperForActivity(@NonNull Menu menu) {
 		if (modifiedMenuForActivity != null && modifiedMenuForActivity) return;
 
-		// ToDo check. If helper is currently hidden, switch without animation. EZ
+		// ToDo check. If helper is currently hidden, switch text without animation. EZ
 
 		MenuItem item = menu.findItem(R.id.action_add_item);
 		final View actionView = item.getActionView();
@@ -223,16 +263,7 @@ public class MainActivity extends AppCompatActivity
 
 						// Make sure the drawer helper is shown too
 						mHelperFragment.moveDrawerHelper(0);
-
-						Adapter adapter = mNavDrawerFragment.adapter;
-						if (adapter == null || adapter.getCount() == 0) {
-							mHelperFragment.setDrawerHelperText(
-									getText(R.string.help_drawer_no_videos).toString());
-						} else {
-							mHelperFragment.setDrawerHelperText(
-									getText(R.string.help_drawer).toString());
-						}
-						mHelperFragment.setDrawerHelperVisibility(true);
+						mHelperFragment.setDrawerHelperVisibility(true, null);
 					}
 				});
 			}
@@ -286,7 +317,7 @@ public class MainActivity extends AppCompatActivity
 								});
 							}
 						});
-						mHelperFragment.setDrawerHelperVisibility(false);
+						mHelperFragment.setDrawerHelperVisibility(false, null);
 						// ToDo move drawer helper and show item specific helper data
 						// ToDo different drawer messages
 							// Based on item count

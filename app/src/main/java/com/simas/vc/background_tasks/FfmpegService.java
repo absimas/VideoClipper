@@ -10,6 +10,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
+
 import com.simas.vc.VC;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
@@ -254,6 +256,10 @@ public class FfmpegService extends IntentService {
 
 			// Show finished notification with a corresponding negative id
 			NOTIFICATION_MANAGER.notify(-mTaskNum, mBuilder.build());
+
+			// Show a toast too
+			Toast.makeText(VC.getAppContext(),
+					"Clipping successful! See the notification.", Toast.LENGTH_LONG).show();
 
 			// Cancel progress notification if the queue is empty
 			if (--sIntentQueueSize <= 0) {
