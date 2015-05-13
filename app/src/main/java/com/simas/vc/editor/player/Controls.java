@@ -101,6 +101,7 @@ final class Controls extends MediaController {
 	@Override
 	public void show() {
 		super.show();
+
 		// Call the listeners (if any)
 		if (mVisibilityListener != null) {
 			mVisibilityListener.onVisibilityChanged(true);

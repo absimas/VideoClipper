@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setOptionsMenuCreationListener(new OptionMenuCreationListener() {
 			@Override
 			public void onOptionsMenuCreated(Menu menu) {
+				Log.e(TAG, "modify for drawer");
 				modifyHelperForDrawer(menu);
 			}
 		});
@@ -155,8 +156,7 @@ public class MainActivity extends AppCompatActivity
 			if (item != null) {
 				mNavDrawerFragment.setDrawerOpen(false);
 			}
-			// ToDo change this quick-fix
-			mHelperFragment.setActionHelperText(getText(R.string.help_add_item).toString());
+
 			mEditorFragment.setCurrentItem(item);
 
 			// Hide/Show the Editor/Helper
@@ -229,8 +229,6 @@ public class MainActivity extends AppCompatActivity
 
 	private void modifyHelperForActivity(@NonNull Menu menu) {
 		if (modifiedMenuForActivity != null && modifiedMenuForActivity) return;
-
-		// ToDo check. If helper is currently hidden, switch text without animation. EZ
 
 		MenuItem item = menu.findItem(R.id.action_add_item);
 		final View actionView = item.getActionView();

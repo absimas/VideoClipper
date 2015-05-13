@@ -44,7 +44,7 @@ public class Ffprobe {
 
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-i")
-				.add("\"%s\"", inputFile.getPath())          // Quoted input file path
+				.addSpaced("%s", inputFile.getPath())          // Quoted input file path
 				.add("-v quiet -print_format json")         // Output quietly in JSON
 				// Format entries to show
 				.add("-show_format -show_entries format=%s,%s,%s,%s,%s,%s",

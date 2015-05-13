@@ -43,7 +43,7 @@ public class DelayedHandler {
 	}
 
 	/**
-	 * Adds the Runnable to the queue. It will be run immediatelly if the handler is resumed.
+	 * Adds the Runnable to the queue. It will be run immediately if the handler is resumed.
 	 */
 	public void add(Runnable runnable) {
 		if (mResumed) {

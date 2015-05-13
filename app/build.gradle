@@ -22,8 +22,8 @@ android {
 	applicationVariants.all { variant ->
 		variant.getVariantData().ndkCompileTask.enabled = false
 	}
-//	// Custom tasks that compile libraries with ndk-build using the customized makefile
-//	//noinspection GroovyAssignabilityCheck
+	// Custom tasks that compile libraries with ndk-build using the customized makefile
+	//noinspection GroovyAssignabilityCheck
 //	task ndkBuildDebug(type: Exec) {
 //		// Fetch NDK directory from local.properties
 //		Properties properties = new Properties()

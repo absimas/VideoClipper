@@ -17,7 +17,6 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
-// ToDo test if quoted argumentBuilder works now
 // ToDo rename concat to merge (including the action)
 
 public class Ffmpeg {
@@ -55,14 +54,15 @@ public class Ffmpeg {
 
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
-				.add("-y")                                  // Force overwrite output
+				.add("-y")                                  // Force output overwriting
 				.add("-progress")
-				.add("\"%s\"", progressFile.getPath())      // Output progress to tmp file
+				.addSpaced("%s", progressFile.getPath())    // Output progress to tmp file
 				.add("-f")                                  // Output to file
 				.add("concat -i")
-				.add("\"%s\"", tmpFile.getPath())           // Files to be merged, listed in tmpFile
+				.addSpaced("%s", tmpFile.getPath())         // Files to be merged, listed in
+				// tmpFile
 				.add("-c copy")                             // Copy source codecs
-				.add("\"%s\"", outputFile.getPath())        // Output file
+				.addSpaced("%s", outputFile.getPath())      // Output file
 				.build();
 
 		// Call service

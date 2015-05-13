@@ -94,7 +94,6 @@ public final class PlayerContainer extends RelativeLayout {
 
 			// Remove from current parent
 			mDefaultParent = (ViewGroup) getParent();
-			setSaveEnabled(true);
 			mDefaultParent.removeView(this);
 
 			// Add to the root view

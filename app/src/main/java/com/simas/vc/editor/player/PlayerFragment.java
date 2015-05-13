@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -27,7 +28,6 @@ import com.simas.vc.nav_drawer.NavDrawerFragment;
 
 // ToDo double tap not working when pressing the controls, do interceptTouchEvent
 	// Perhaps should just scale controls for lower density devices
-// ToDo test don't show controls when switched to fs, unless ofc they were shown before
 
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
@@ -124,18 +124,24 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 				});
 			}
 
+			// Player state
 			if (savedState.getBundle(PLAYER_STATE) != null) {
 				mDelayedHandler.add(new Runnable() {
 					@Override
 					public void run() {
-						// Restore player state Player
 						mPlayer.restoreToState(savedState.getBundle(PLAYER_STATE));
 					}
 				});
 			}
 
+			// Controls visibility
 			if (savedState.getBoolean(PLAYER_CONTROLS_VISIBILITY, false)) {
-				mControls.show();
+				mControls.post(new Runnable() {
+					@Override
+					public void run() {
+						mControls.show();
+					}
+				});
 			}
 		}
 
@@ -170,14 +176,13 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 		}
 
 		@Override
-		public boolean onSingleTapUp(MotionEvent e) {
-			// Show controls with each tap
+		public boolean onSingleTapConfirmed(MotionEvent e) {
+			// Toggle control visibility with a single tap
 			if (mControls.isShown()) {
 				mControls.hide();
 			} else {
 				mControls.show();
 			}
-
 			return true;
 		}
 
@@ -216,8 +221,13 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 	}
 
 	public void toggleFullscreen() {
+		// Save states
 		Bundle state = mPlayer.getSavedState();
+
+		// Switch to/from fullscreen
 		mContainer.toggleFullscreen();
+
+		// Restore player state
 		mPlayer.restoreToState(state);
 	}
 
@@ -255,9 +265,8 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 			}
 		});
 
-		// ToDo test delay the setVideoPath until the drawer is opened.
-		final NavDrawerFragment drawerFragment = (NavDrawerFragment) getFragmentManager()
-				.findFragmentById(R.id.navigation_drawer);
+		final NavDrawerFragment drawerFragment = (NavDrawerFragment) getActivity()
+				.getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 		// If drawer is open or is closing, wait for it to be closed, then change the player's
 		// video path
 		if (drawerFragment.isDrawerOpen() || drawerFragment.isDrawerClosing()) {

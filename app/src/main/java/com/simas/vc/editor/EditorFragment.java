@@ -23,8 +23,7 @@ import java.util.Map;
  */
 
 // ToDo weird super padding on TableLayout on galaxy S2
-// ToDo invalid items should be removed from the drawer immediately. Just show an AlertDialog.
-
+// ToDo test invalid items should be removed from the drawer immediately. Just show an AlertDialog.
 
 public class EditorFragment extends Fragment {
 
@@ -164,7 +163,6 @@ public class EditorFragment extends Fragment {
 		}
 
 		// Present the new item if it's ready, otherwise
-		// ToDo probly need to parse INVALID state here too
 		switch (newItem.getState()) {
 			case VALID:
 				updateEditorToCurrentItem();

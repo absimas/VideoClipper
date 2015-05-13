@@ -41,8 +41,6 @@ import java.util.List;
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
-// ToDo google about passing escaped quotes via JNI to C. Print out the args received in vc.c
-	// Test using "file name with spaces.mp4" but that will also need to edit
 
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
@@ -434,11 +432,11 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			});
 			mConcatAction.setEnabled(isConcatenatable());
 			showGlobalContextActionBar();
-		}
 
-		// Call listener
-		if (mOptionsMenuListener != null) {
-			mOptionsMenuListener.onOptionsMenuCreated(menu);
+			// Call listener
+			if (mOptionsMenuListener != null) {
+				mOptionsMenuListener.onOptionsMenuCreated(menu);
+			}
 		}
 
 		super.onCreateOptionsMenu(menu, inflater);
@@ -534,7 +532,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	@Override
 	public void onChosen(File file) {
-		// ToDo encode filenames with spaces?
 		final NavItem item = new NavItem(adapter, file);
 		// Enable concat action when state validates
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
@@ -551,12 +548,12 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					}
 				});
 
-				if (attribute == NavItem.ItemAttribute.STATE && newValue == NavItem.State.VALID) {
+				if (newValue == NavItem.State.VALID) {
 					// Upon reaching the VALID state, remove this listener
 					item.unregisterUpdateListener(this);
-				} else {
+				} else if (newValue == NavItem.State.INVALID) {
 					// If an invalid state was reached, remove this item from the drawer
-					adapter.removeItem(item); // ToDo test
+					adapter.removeItem(item);
 				}
 			}
 		});
