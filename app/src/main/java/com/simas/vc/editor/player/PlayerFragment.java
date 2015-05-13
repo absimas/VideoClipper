@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.DrawerLayout;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -17,19 +18,22 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import com.simas.vc.VC;
 import com.simas.vc.R;
-import com.simas.vc.ResumableHandler;
+import com.simas.vc.DelayedHandler;
+import com.simas.vc.nav_drawer.NavDrawerFragment;
 
 /**
  * Created by Simas Abramovas on 2015 May 03.
  */
 
 // ToDo double tap not working when pressing the controls, do interceptTouchEvent
-// ToDo don't show controls when switched to fs, unless ofc they were shown before
+	// Perhaps should just scale controls for lower density devices
+// ToDo test don't show controls when switched to fs, unless ofc they were shown before
 
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 	private static final String PLAYER_STATE = "player_state";
 	private static final String PLAYER_FULLSCREEN_STATE = "player_container_fs";
+	private static final String PLAYER_CONTROLS_VISIBILITY = "player_controls_visibility";
 	private final String TAG = getClass().getName();
 
 	// Views
@@ -37,7 +41,13 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 	private ProgressBar mProgressBar;
 	private Controls mControls;
 	private PlayerContainer mContainer;
-	private ResumableHandler mResumableHandler = new ResumableHandler(new Handler());
+	private boolean mIsRestoring = false;
+
+	/**
+	 * Handler runs all the messages posted to it only when the fragment is ready, i.e. at the end
+	 * of {@code onActivityCreate}. Messages can be added by calling fragment's {@code post} method.
+	 */
+	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
 
 	public PlayerFragment() {}
 
@@ -101,11 +111,12 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 		// Restore Player and PlayerContainer states
 		if (savedState != null) {
+			mIsRestoring = true;
 			final boolean fs = savedState.getBoolean(PLAYER_FULLSCREEN_STATE, false);
 			if (fs) {
 				// Restore to fullscreen when the layout is first measured,
 				// and only then restore player's state
-				mResumableHandler.add(new Runnable() {
+				mDelayedHandler.add(new Runnable() {
 					@Override
 					public void run() {
 						toggleFullscreen();
@@ -114,13 +125,17 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 			}
 
 			if (savedState.getBundle(PLAYER_STATE) != null) {
-				mResumableHandler.add(new Runnable() {
+				mDelayedHandler.add(new Runnable() {
 					@Override
 					public void run() {
 						// Restore player state Player
 						mPlayer.restoreToState(savedState.getBundle(PLAYER_STATE));
 					}
 				});
+			}
+
+			if (savedState.getBoolean(PLAYER_CONTROLS_VISIBILITY, false)) {
+				mControls.show();
 			}
 		}
 
@@ -133,7 +148,7 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 	public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 		// Resume the handler once the layout is created
-		mResumableHandler.resume();
+		mDelayedHandler.resume();
 	}
 
 	@Override
@@ -144,6 +159,7 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 		outState.putBundle(PLAYER_STATE, mPlayer.getSavedState());
 		outState.putBoolean(PLAYER_FULLSCREEN_STATE, mContainer.isFullscreen());
+		outState.putBoolean(PLAYER_CONTROLS_VISIBILITY, mControls.isShowing());
 		mControls.removeOnVisibilityChangedListener();
 	}
 
@@ -201,11 +217,11 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 	public void toggleFullscreen() {
 		Bundle state = mPlayer.getSavedState();
-		mContainer.toggleFullscreen(); // ToDo toggle bugovas
+		mContainer.toggleFullscreen();
 		mPlayer.restoreToState(state);
 	}
 
-	public void setVideoPath(String path) {
+	public void setVideoPath(final String path) {
 		// Cover up and show a ProgressBar
 		mControls.hide();
 		mPlayer.setBackgroundColor(VC.getAppResources().getColor(R.color.player_container_bg));
@@ -228,21 +244,50 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 						// Remove the ProgressBar and cover
 						setProgressVisible(false);
 						mPlayer.setBackgroundColor(0);
-						mControls.show();
+						// Make sure we're not restoring player's state, e.g. rotating the device
+						if (!mIsRestoring) {
+							mControls.show();
+						} else {
+							mIsRestoring = false;
+						}
 					}
 				}, 200);
 			}
 		});
 
-		mPlayer.setVideoPath(path);
+		// ToDo test delay the setVideoPath until the drawer is opened.
+		final NavDrawerFragment drawerFragment = (NavDrawerFragment) getFragmentManager()
+				.findFragmentById(R.id.navigation_drawer);
+		// If drawer is open or is closing, wait for it to be closed, then change the player's
+		// video path
+		if (drawerFragment.isDrawerOpen() || drawerFragment.isDrawerClosing()) {
+			drawerFragment.addDrawerStateListener(new DrawerLayout.DrawerListener() {
+				@Override
+				public void onDrawerClosed(View drawerView) {
+					drawerFragment.removeDrawerStateListener(this);
+					mPlayer.setVideoPath(path);
+				}
+
+				@Override
+				public void onDrawerSlide(View drawerView, float slideOffset) {}
+
+				@Override
+				public void onDrawerOpened(View drawerView) {}
+
+				@Override
+				public void onDrawerStateChanged(int newState) {}
+			});
+		} else {
+			mPlayer.setVideoPath(path);
+		}
 	}
 
 	/**
-	 * Will run the given runnable once the fragment has created the view.
-	 * @param runnable    {@code Runnable} to be run
+	 * Queues the given runnable to be run after the fragment is ready.
+	 * @param runnable    message to be queued
 	 */
 	public void post(Runnable runnable) {
-		mResumableHandler.add(runnable);
+		mDelayedHandler.add(runnable);
 	}
 
 }

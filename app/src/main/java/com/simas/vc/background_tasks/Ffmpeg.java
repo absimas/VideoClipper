@@ -17,6 +17,9 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
+// ToDo test if quoted argumentBuilder works now
+// ToDo rename concat to merge (including the action)
+
 public class Ffmpeg {
 
 	private static final String TAG = "ffmpeg";
@@ -41,23 +44,25 @@ public class Ffmpeg {
 		}
 
 		// Prepare a tmp file with all video file names
-		File tmpFile = File.createTempFile("vc-list", null);
+		File tmpFile = File.createTempFile("vc-ls", null);
 		String sourceList = "";
 		for (String source : sources) {
 			sourceList += String.format("file '%s'\n", source);
 		}
 		Utils.copyBytes(sourceList.getBytes(), tmpFile);
 		// Prepare a tmp file for progress output
-		File progressFile = File.createTempFile("progress", null);
+		File progressFile = File.createTempFile("vc-pg", null);
 
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
-				.add("-y")                                   // Force overwrite output
-				.add("-progress %s", progressFile.getPath()) // Output progress to tmp file
-				.add("-f")                                   // Output to file
-				.add("concat -i %s", tmpFile.getPath())      // Concat files listed in tmpFile
-				.add("-c copy")                              // Copy source codecs
-				.add("%s", outputFile.getPath())             // Output file
+				.add("-y")                                  // Force overwrite output
+				.add("-progress")
+				.add("\"%s\"", progressFile.getPath())      // Output progress to tmp file
+				.add("-f")                                  // Output to file
+				.add("concat -i")
+				.add("\"%s\"", tmpFile.getPath())           // Files to be merged, listed in tmpFile
+				.add("-c copy")                             // Copy source codecs
+				.add("\"%s\"", outputFile.getPath())        // Output file
 				.build();
 
 		// Call service

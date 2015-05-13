@@ -10,12 +10,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-// ToDo rename to DelayedHandler, and each class that uses this, should specify when the delay ends.
+// ToDo each class that uses this, should specify when the delay ends.
 
 /**
- * Message Handler class that supports buffering up of messages when the activity is paused i.e. in the background.
+ * Message Handler class that queues messages until {@code resume} is called.
  */
-public class ResumableHandler {
+public class DelayedHandler {
 
 	private final List<Runnable> mRunnableQueue = Collections
 			.synchronizedList(new ArrayList<Runnable>());
@@ -26,7 +26,7 @@ public class ResumableHandler {
 	 * Create a resumable handler. Default state: Paused.
 	 * @param handler    {@code Handler} to run the messages
 	 */
-	public ResumableHandler(Handler handler) {
+	public DelayedHandler(Handler handler) {
 		mHandler = handler;
 	}
 

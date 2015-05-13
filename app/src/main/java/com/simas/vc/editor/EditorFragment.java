@@ -4,6 +4,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,10 +23,8 @@ import java.util.Map;
  */
 
 // ToDo weird super padding on TableLayout on galaxy S2
-// ToDo need use some other view's height/width on different orientations. Preview's size should
-	// be known even when EditorFragment hasn't yet been scaled
-	// Or EditorFragment could be hidden with a black view, until it's scaled, then switch to a
-	// fragment hide().
+// ToDo invalid items should be removed from the drawer immediately. Just show an AlertDialog.
+
 
 public class EditorFragment extends Fragment {
 
@@ -141,6 +140,9 @@ public class EditorFragment extends Fragment {
 					// Full update if changed to valid from in-progress
 					if (newValue == NavItem.State.VALID && oldValue == NavItem.State.INPROGRESS) {
 						updateEditorToCurrentItem();
+					} else if (newValue == NavItem.State.INVALID) {
+						// ToDo remove item from the drawer
+
 					}
 					break;
 			}
@@ -162,6 +164,7 @@ public class EditorFragment extends Fragment {
 		}
 
 		// Present the new item if it's ready, otherwise
+		// ToDo probly need to parse INVALID state here too
 		switch (newItem.getState()) {
 			case VALID:
 				updateEditorToCurrentItem();
@@ -177,10 +180,10 @@ public class EditorFragment extends Fragment {
 
 	private void updateEditorToCurrentItem() {
 		final NavItem curItem = currentItem;
-		final Attributes attrs = curItem.getAttributes();
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView length = (TextView) mDataMap.get(Data.LENGTH);
 		final View actions = mDataMap.get(Data.ACTIONS);
+
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
@@ -192,7 +195,7 @@ public class EditorFragment extends Fragment {
 					}
 				});
 				filename.setText(curItem.getFile().getName());
-				length.setText(String.format("%.2f", attrs.getDuration()));
+				length.setText(String.format("%.2f", curItem.getAttributes().getDuration()));
 				actions.setVisibility(View.VISIBLE);
 			}
 		});

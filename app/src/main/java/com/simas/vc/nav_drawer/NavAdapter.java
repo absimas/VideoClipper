@@ -21,7 +21,9 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 06.
  */
 
-// ToDo kazkaip pratestint parcel creator. Ar neimanoma, nes bundle pats readina fieldus?
+// ToDo choosing a failed item is permitted and the editor doesn't get updated.
+	// should display an error message when selected but previous selection shouldn't be changed
+// ToDo test out new bitmap parcelling
 
 public class NavAdapter extends BaseAdapter {
 
@@ -32,42 +34,42 @@ public class NavAdapter extends BaseAdapter {
 	private List<NavItem> mItems = new ArrayList<>();
 
 	private static class ViewHolder {
-		ImageView imageView;
-		ProgressBar progressBar;
+		private ImageView mImageView;
+		private ProgressBar mProgressBar;
+		private NavItem mConnectedItem;
+
 		private final NavItem.OnUpdatedListener previewListener = new NavItem.OnUpdatedListener() {
 			@Override
 			public void onUpdated(NavItem.ItemAttribute attribute,
 			                      Object oldValue, final Object newValue) {
 				if (attribute == NavItem.ItemAttribute.PREVIEW) {
-					final ImageView iv = imageView;
-					final ProgressBar pb = progressBar;
-					final NavItem ni = mConnectedItem;
+					final ImageView preview = mImageView;
+					final ProgressBar progress = mProgressBar;
+					final NavItem item = mConnectedItem;
 
 					Utils.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							if (ni.getState() == NavItem.State.INPROGRESS) {
+							if (item.getState() == NavItem.State.INPROGRESS) {
 								// Still loading
-								iv.setVisibility(View.GONE);
-								pb.setVisibility(View.VISIBLE);
+								preview.setVisibility(View.GONE);
+								progress.setVisibility(View.VISIBLE);
 							} else {
-								iv.setImageBitmap((Bitmap) newValue);
-								iv.setVisibility(View.VISIBLE);
-								pb.setVisibility(View.GONE);
+								preview.setImageBitmap((Bitmap) newValue);
+								preview.setVisibility(View.VISIBLE);
+								progress.setVisibility(View.GONE);
 							}
 
-							if (ni.getState() == NavItem.State.INVALID) {
-								iv.setBackgroundResource(R.drawable.nav_item_failed);
+							if (item.getState() == NavItem.State.INVALID) {
+								preview.setBackgroundResource(R.drawable.nav_item_failed);
 							} else {
-								iv.setBackgroundResource(R.drawable.nav_item_default);
+								preview.setBackgroundResource(R.drawable.nav_item_default);
 							}
 						}
 					});
 				}
 			}
 		};
-		NavAdapter a;
-		private NavItem mConnectedItem;
 
 		public void listenTo(NavItem item) {
 			// Remove existing connection (if present)
@@ -113,6 +115,10 @@ public class NavAdapter extends BaseAdapter {
 		}
 	}
 
+	public void removeItem(NavItem item) {
+		mItems.remove(item);
+	}
+
 	/**
 	 * Change the old items with the new ones. If new items actually provided, notify the ListView.
 	 * @param items    items to be initialized with (can be {@code null})
@@ -128,6 +134,8 @@ public class NavAdapter extends BaseAdapter {
 	public void changeItems(List<NavItem> items) {
 		if (items != null && items.size() > 0) {
 			mItems = items;
+		} else {
+			mItems.clear();
 		}
 	}
 
@@ -186,8 +194,8 @@ public class NavAdapter extends BaseAdapter {
 			});
 			// Save the ViewHolder for re-use
 			holder = new ViewHolder();
-			holder.imageView = (ImageView) convertView.findViewById(R.id.preview_image);
-			holder.progressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
+			holder.mImageView = (ImageView) convertView.findViewById(R.id.preview_image);
+			holder.mProgressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
 			convertView.setTag(holder);
 		} else {
 			holder = (ViewHolder) convertView.getTag();
@@ -204,20 +212,20 @@ public class NavAdapter extends BaseAdapter {
 
 		if (item.getState() == NavItem.State.INPROGRESS) {
 			// Still loading
-			holder.imageView.setVisibility(View.GONE);
-			holder.progressBar.setVisibility(View.VISIBLE);
+			holder.mImageView.setVisibility(View.GONE);
+			holder.mProgressBar.setVisibility(View.VISIBLE);
 		} else {
-			holder.imageView.setImageBitmap(item.getPreview());
-			holder.imageView.setVisibility(View.VISIBLE);
-			holder.progressBar.setVisibility(View.GONE);
+			holder.mImageView.setImageBitmap(item.getPreview());
+			holder.mImageView.setVisibility(View.VISIBLE);
+			holder.mProgressBar.setVisibility(View.GONE);
 		}
 
 		if (item.getState() == NavItem.State.INVALID) {
 			// Fetching preview/attributes failed => item unusable
 			// Fail image already set above, now just add a red border
-			holder.imageView.setBackgroundResource(R.drawable.nav_item_failed);
+			holder.mImageView.setBackgroundResource(R.drawable.nav_item_failed);
 		} else {
-			holder.imageView.setBackgroundResource(R.drawable.nav_item_default);
+			holder.mImageView.setBackgroundResource(R.drawable.nav_item_default);
 		}
 
 		// Listen to preview changes on this item

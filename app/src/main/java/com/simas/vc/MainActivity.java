@@ -151,7 +151,10 @@ public class MainActivity extends AppCompatActivity
 
 		// Re-open this item in the editor fragment, only if it's new
 		if (mEditorFragment.getCurrentItem() != item) {
-			mNavDrawerFragment.setDrawerOpen(false);
+			// Removing currently selected item, doesn't closet
+			if (item != null) {
+				mNavDrawerFragment.setDrawerOpen(false);
+			}
 			// ToDo change this quick-fix
 			mHelperFragment.setActionHelperText(getText(R.string.help_add_item).toString());
 			mEditorFragment.setCurrentItem(item);

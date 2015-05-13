@@ -11,8 +11,12 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 14.
  */
 
-// ToDo will fail for file names with spaces!!!
+// ToDo will fail for file names with spaces!!
 
+/**
+ * Custom argument builder. Strings passed to {@code add} will be split by string and parsed as
+ * separate arguments. Quoted strings passed to {@code add} will be parsed as a single argument.
+ */
 public class ArgumentBuilder {
 
 	List<String> mArgs = new ArrayList<>();
@@ -22,7 +26,14 @@ public class ArgumentBuilder {
 	}
 
 	public ArgumentBuilder add(String args) {
-		String[] splitArgs = args.split("\\s+");
+		String[] splitArgs;
+		// Quoted argument shouldn't be split by spaces
+		if (args.startsWith("\"") && args.endsWith("\"")) {
+			splitArgs = new String[] { args };
+		} else {
+			splitArgs = args.split("\\s+");
+		}
+
 		Collections.addAll(mArgs, splitArgs);
 		return this;
 	}

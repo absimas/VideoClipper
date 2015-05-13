@@ -3,6 +3,11 @@ package com.simas.vc.background_tasks;
 /**
  * Created by Simas Abramovas on 2015 Apr 16.
  */
+
+/**
+ * Runnable that includes a changeable variable, which can later be used in the runnable's run
+ * method.
+ */
 public abstract class VarRunnable implements Runnable {
 
 	protected Object mVariable;

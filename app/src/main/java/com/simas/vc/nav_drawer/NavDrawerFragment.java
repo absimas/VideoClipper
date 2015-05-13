@@ -41,8 +41,8 @@ import java.util.List;
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
-// ToDo avoid lag when selectingItem
-// ToDo on item added, should change the helper's drawer text
+// ToDo google about passing escaped quotes via JNI to C. Print out the args received in vc.c
+	// Test using "file name with spaces.mp4" but that will also need to edit
 
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
@@ -52,7 +52,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	/**
 	 * Per the design guidelines, you should show the drawer on launch until the user manually
-	 * expands it. This shared preference tracks this.
+	 * collapses it. This shared preference tracks this.
 	 */
 	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
 	private static final String TAG = "NavDrawerFragment";
@@ -68,6 +68,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private View mFragmentContainerView;
+	/**
+	 * Specific group of listeners that are notified about the open and close states of the drawer.
+	 */
+	private List<DrawerLayout.DrawerListener> mDrawerStateListeners = new ArrayList<>();
 	/**
 	 * First initialized when the drawer is opened, so outside of {@code NavDrawerFragment} need
 	 * to check if it's not {@code null}.
@@ -154,6 +158,16 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	}
 
 	/**
+	 * Convenience function that checks if the drawer is currently closing
+	 * @return returns true if the drawer is not null, is visible but not in an open state,
+	 * otherwise false
+	 */
+	public boolean isDrawerClosing() {
+		return mDrawerLayout != null && !mDrawerLayout.isDrawerOpen(mFragmentContainerView) &&
+				mDrawerLayout.isDrawerVisible(mFragmentContainerView);
+	}
+
+	/**
 	 * Opens or closes the drawer. Will do nothing if it's not yet initialized or is already in
 	 * required state.
 	 * @param open    true if the drawer should be opened, false if closed
@@ -196,6 +210,9 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onDrawerClosed(View drawerView) {
 				super.onDrawerClosed(drawerView);
+				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
+					listener.onDrawerClosed(drawerView);
+				}
 				mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 				// Set the choice mode ONLY IF IT'S NOT SINGLE
 				// Otherwise, will cause the AbsListView to reset its mCheckState array!!!
@@ -212,6 +229,9 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onDrawerOpened(View drawerView) {
 				super.onDrawerOpened(drawerView);
+				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
+					listener.onDrawerOpened(drawerView);
+				}
 				if (!isAdded()) {
 					return;
 				}
@@ -227,6 +247,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 				getActivity().supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
 			}
+
 		};
 
 		// If the user hasn't 'learned' about the drawer, open it to introduce them to the drawer,
@@ -520,18 +541,22 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onUpdated(NavItem.ItemAttribute attribute,
 			                      Object oldValue, Object newValue) {
-				if (attribute == NavItem.ItemAttribute.STATE && newValue == NavItem.State.VALID) {
-					Utils.runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							// Make sure the concat action button is initialized (drawer was opened)
-							if (mConcatAction != null) {
-								mConcatAction.setEnabled(isConcatenatable());
-							}
+				Utils.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						// Make sure the concat action button is initialized (drawer was opened)
+						if (mConcatAction != null) {
+							mConcatAction.setEnabled(isConcatenatable());
 						}
-					});
+					}
+				});
+
+				if (attribute == NavItem.ItemAttribute.STATE && newValue == NavItem.State.VALID) {
 					// Upon reaching the VALID state, remove this listener
 					item.unregisterUpdateListener(this);
+				} else {
+					// If an invalid state was reached, remove this item from the drawer
+					adapter.removeItem(item); // ToDo test
 				}
 			}
 		});
@@ -563,6 +588,14 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	public void setOptionsMenuCreationListener(MainActivity.OptionMenuCreationListener listener) {
 		mOptionsMenuListener = listener;
+	}
+
+	public void addDrawerStateListener(DrawerLayout.DrawerListener listener) {
+		mDrawerStateListeners.add(listener);
+	}
+
+	public void removeDrawerStateListener(DrawerLayout.DrawerListener listener) {
+		mDrawerStateListeners.remove(listener);
 	}
 
 }

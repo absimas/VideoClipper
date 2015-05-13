@@ -31,6 +31,7 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 09.
  */
 
+// ToDo replace with native file chooser?
 // ToDo save scroll position when going deeper
 // ToDo on-click-outside doesn't dismiss on Galaxy S2
 

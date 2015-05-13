@@ -269,11 +269,11 @@ public class NavItem implements Parcelable, Cloneable {
 	/* Parcelable */
 	public void writeToParcel(Parcel out, int flags) {
 		Log.e(TAG, "Write to parcel: " + toString());
-		out.writeParcelable(mPreview, flags);
 		out.writeString(mFile.getAbsolutePath());
 		out.writeSerializable(mType);
 		out.writeParcelable(mAttributes, flags);
 		out.writeSerializable(mState);
+//		out.writeParcelable(mPreview, flags);
 	}
 
 	public static final Parcelable.Creator<NavItem> CREATOR = new Parcelable.Creator<NavItem>() {
@@ -287,11 +287,14 @@ public class NavItem implements Parcelable, Cloneable {
 	};
 
 	private NavItem(Parcel in) {
-		mPreview = in.readParcelable(Bitmap.class.getClassLoader());
 		mFile = new File(in.readString());
 		mType = (Type) in.readSerializable();
 		mAttributes = in.readParcelable(Attributes.class.getClassLoader());
 		mState = (State) in.readSerializable();
+
+		// Re-fecth the image from file
+//		mPreview = in.readParcelable(Bitmap.class.getClassLoader());
+		mPreview = parsePreview();
 	}
 
 	public int describeContents() {

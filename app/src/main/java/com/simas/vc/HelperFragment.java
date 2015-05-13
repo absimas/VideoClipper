@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +25,11 @@ public class HelperFragment extends Fragment {
 
 	private static final int DEFAULT_FADE_DURATION = 300;
 	private final String TAG = getClass().getName();
-	private ResumableHandler mResumableHandler = new ResumableHandler(new Handler());
+	/**
+	 * Handler runs all the messages posted to it only when the fragment is ready, i.e. at the end
+	 * of {@code onCreateView}. Messages can be added by calling fragment's {@code post} method.
+	 */
+	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
 	private Helper mDrawerHelper, mActionHelper;
 
 	public HelperFragment() {}
@@ -49,7 +52,7 @@ public class HelperFragment extends Fragment {
 		mDrawerHelper.mArrow.setAnimation(blink);
 
 		// Resume the handler since all the views are ready now
-		mResumableHandler.resume();
+		mDelayedHandler.resume();
 
 		// Start blinking both of the arrows
 		blink.start();
@@ -57,8 +60,12 @@ public class HelperFragment extends Fragment {
 		return rootView;
 	}
 
+	/**
+	 * Queues the given runnable to be run after the fragment is ready.
+	 * @param runnable    message to be queued
+	 */
 	public void post(Runnable runnable) {
-		mResumableHandler.add(runnable);
+		mDelayedHandler.add(runnable);
 	}
 
 	public void setActionHelperVisibility(boolean visible, @Nullable Runnable onComplete) {
