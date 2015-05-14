@@ -26,10 +26,10 @@ import java.io.IOException;
 
 public class FfmpegService extends IntentService {
 
+	// ToDo detect ffmpeg return codes, i.e. if it failed or not, then don't display the
+		// notification or show an error notifier
 	// ToDo kill process if progress file is empty or malformed
 	// ToDo checkout fancy calls:
-//	ffmpeg -i concat:1\ 2.mp4\|2.mp4 3.mp4
-	// concats to some different encoding, check out later
 
 //	ffmpeg -i "/home/toto/.ekd_tmp/ekd_toto/video_extension_resol/file_001.mp4"
 //			-i "/home/toto/.ekd_tmp/ekd_toto/video_extension_resol/file_002.mp4"
@@ -49,7 +49,7 @@ public class FfmpegService extends IntentService {
 	public static final String ARG_INPUT_FILE = "input_file";
 	public static final String ARG_OUTPUT_FILE = "output_file";
 	public static final String ARG_PROGRESS_FILE = "progress_file";
-	public static final String ARG_OUTPUT_LENGTH = "output_length";
+	public static final String ARG_OUTPUT_DURATION = "output_length";
 
 	public FfmpegService() {
 		super(TAG);
@@ -61,7 +61,7 @@ public class FfmpegService extends IntentService {
 		String[] args = intent.getStringArrayExtra(ARG_EXEC_ARGS);
 		File output = (File) intent.getSerializableExtra(ARG_OUTPUT_FILE);
 		File progress = (File) intent.getSerializableExtra(ARG_PROGRESS_FILE);
-		int length = intent.getIntExtra(ARG_OUTPUT_LENGTH, 0);
+		int length = intent.getIntExtra(ARG_OUTPUT_DURATION, 0);
 
 		// Launch progress notifier
 		ProgressNotifier notifier = new ProgressNotifier(length, output, progress);
@@ -96,17 +96,17 @@ public class FfmpegService extends IntentService {
 		private static final String CONTINUE_VALUE = "continue";
 
 		private final int mTaskNum = ++sTaskCount;
-		private final int mOutputLength;
-		private final String mOutputLengthStr;
+		private final int mOutputDuration;
+		private final String mOutputDurationString;
 		private boolean mFfmpegSucceeded;
 		private File mProgressLog;
 		private File mOutput;
 		private BufferedReader mReader;
 		private NotificationCompat.Builder mBuilder;
 
-		public ProgressNotifier(int outputLength, File outputFile, File progressFile) {
-			mOutputLength = outputLength;
-			mOutputLengthStr = secondsToTime(outputLength);
+		public ProgressNotifier(int outputDuration, File outputFile, File progressFile) {
+			mOutputDuration = outputDuration;
+			mOutputDurationString = secondsToTime(mOutputDuration);
 			mOutput = outputFile;
 			mProgressLog = progressFile;
 		}
@@ -120,8 +120,8 @@ public class FfmpegService extends IntentService {
 					.setSmallIcon(R.drawable.ic_action_merge);
 
 			// If length is not set, show an indeterminate progress notification
-			if (mOutputLength < 1) {
-				mBuilder.setProgress(mOutputLength, 0, true);
+			if (mOutputDuration < 1) {
+				mBuilder.setProgress(mOutputDuration, 0, true);
 			}
 			// Create an un-removable notification to display progress
 			startForeground(INITIAL_ID, mBuilder.build());
@@ -152,7 +152,7 @@ public class FfmpegService extends IntentService {
 						// Check if progress ended
 						if (lastLine.replaceAll(PROGRESS_KEY, "").equals(END_VALUE)) {
 							return true;
-						} else if (mOutputLength > 0) {
+						} else if (mOutputDuration > 0) {
 							int index = sb.lastIndexOf(OUT_TIME_KEY);
 							if (index != -1) {
 								int outTimeEndIndex = sb.indexOf("\n", index);
@@ -163,12 +163,14 @@ public class FfmpegService extends IntentService {
 									int secs = outTimeToSeconds(outTime);
 									if (secs == -1) {
 										Log.e(TAG, "Failed to parse progress time: " + outTime);
-										// On fail use an indeterminate progress
-										mBuilder.setProgress(mOutputLength, 0, true);
+										// Yse an indeterminate progress instead
+										mBuilder.setProgress(mOutputDuration, 0, true);
 									} else {
-										mBuilder.setProgress(mOutputLength, secs, false);
-										mBuilder.setContentText(String.format("%s out of %s",
-												secondsToTime(secs), mOutputLengthStr));
+										mBuilder.setProgress(mOutputDuration, secs, false);
+										mBuilder.setContentText(String.format("%s %s %s",
+												// max(currentDur, outputDur)
+												(secs >= mOutputDuration) ? mOutputDurationString : secondsToTime(secs),
+												getString(R.string.out_of), mOutputDurationString));
 									}
 									NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
 								}
@@ -292,7 +294,7 @@ public class FfmpegService extends IntentService {
 		}
 
 		private String secondsToTime(int totalSeconds) {
-			if (totalSeconds < 1) return null;
+			if (totalSeconds < 1) return "00:00:00";
 			int hours = totalSeconds / 3600;
 			int minutes = (totalSeconds % 3600) / 60;
 			int seconds = totalSeconds % 60;

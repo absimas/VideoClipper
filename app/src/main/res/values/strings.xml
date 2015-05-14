@@ -51,6 +51,7 @@
 	<string name="clipping">Clipping videos…</string>
 	<string name="vc_finished">Clipping finished!</string>
 	<string name="format_click_to_open_video">Click to open %s!</string>
+	<string name="out_of">out of</string><!--00:00:05 out of 00:02:32-->
 	<string name="item_preview_description">Item Preview</string>
 	<string name="filename_action">Filename:</string>
 	<string name="length_action">Length:</string>

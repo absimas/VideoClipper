@@ -29,9 +29,10 @@ import android.widget.ListView;
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.VCException;
+import com.simas.vc.attributes.FileAttributes;
+import com.simas.vc.attributes.Stream;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.Utils;
-import com.simas.vc.attributes.Attributes;
 import com.simas.vc.background_tasks.Ffmpeg;
 import java.io.File;
 import java.io.IOException;
@@ -452,15 +453,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 		switch (menuItem.getItemId()) {
 			case R.id.action_concat:
-				// Extract sources
-				List<String> sources = new ArrayList<>();
-				for (NavItem navItem : adapter.getItems()) {
-					// Only add videos
-					if (navItem.getType() == NavItem.Type.VIDEO) {
-						sources.add(navItem.getFile().getPath());
-					}
-				}
-
 				// ToDo ask user for a destination
 				String destination = Environment
 						.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getPath();
@@ -469,21 +461,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					output.delete();
 				}
 				try {
-					// Calculate total video length
-					// ToDo incorrect total duration with nature videos
-					int duration = -1;
-					for (NavItem item : adapter.getItems()) {
-						Attributes attrs = item.getAttributes();
-						if (attrs != null && item.getState() == NavItem.State.VALID) {
-							duration += attrs.getDuration();
-						} else {
-							Log.w(TAG, "Encountered an invalid item when fetching duration! "+item);
-							duration = -1;
-							break;
-						}
-					}
 					// Concat videos
-					Ffmpeg.concat(output, sources, duration);
+					Ffmpeg.concat(output, adapter.getItems());
 				} catch (IOException e) {
 					Log.e(TAG, "Error!", e);
 					new AlertDialog.Builder(getActivity())

@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setOptionsMenuCreationListener(new OptionMenuCreationListener() {
 			@Override
 			public void onOptionsMenuCreated(Menu menu) {
-				Log.e(TAG, "modify for drawer");
 				modifyHelperForDrawer(menu);
 			}
 		});

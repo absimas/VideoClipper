@@ -4,12 +4,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.util.Log;
+
+import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.background_tasks.VarRunnable;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
-import com.simas.vc.attributes.Attributes;
+import com.simas.vc.attributes.Stream;
 import com.simas.vc.background_tasks.Ffmpeg;
 import com.simas.vc.background_tasks.Ffprobe;
 import com.simas.vc.editor.EditorFragment;
@@ -41,7 +44,7 @@ public class NavItem implements Parcelable, Cloneable {
 	/**
 	 * Attributes fetched with FFprobe
 	 */
-	private Attributes mAttributes;
+	private FileAttributes mAttributes;
 	/**
 	 * Item's parent, i.e. the NavAdapter that contains it
 	 */
@@ -124,13 +127,13 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	private void parseAttributes() throws IOException, InterruptedException {
-		Ffprobe.getFileAttributes(getFile(), new VarRunnable() {
+		Ffprobe.parseAttributes(getFile(), new VarRunnable() {
 			@Override
 			public void run() {
 				if (getVariable() == null) {
 					setState(State.INVALID);
 				} else {
-					setAttributes((Attributes) getVariable());
+					setAttributes((FileAttributes) getVariable());
 
 					// Now fetch the preview in a separate thread and validate the item
 					new Thread(new Runnable() {
@@ -219,8 +222,8 @@ public class NavItem implements Parcelable, Cloneable {
 		}
 	}
 
-	private void setAttributes(Attributes newAttributes) {
-		final Attributes oldAttributes = mAttributes;
+	private void setAttributes(@NonNull FileAttributes newAttributes) {
+		final FileAttributes oldAttributes = mAttributes;
 		mAttributes = newAttributes;
 
 		// Announce to listeners
@@ -258,7 +261,7 @@ public class NavItem implements Parcelable, Cloneable {
 		return mPreview;
 	}
 
-	public Attributes getAttributes() {
+	public FileAttributes getAttributes() {
 		return mAttributes;
 	}
 
@@ -289,7 +292,7 @@ public class NavItem implements Parcelable, Cloneable {
 	private NavItem(Parcel in) {
 		mFile = new File(in.readString());
 		mType = (Type) in.readSerializable();
-		mAttributes = in.readParcelable(Attributes.class.getClassLoader());
+		mAttributes = in.readParcelable(Stream.class.getClassLoader());
 		mState = (State) in.readSerializable();
 
 		// Re-fecth the image from file

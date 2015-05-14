@@ -9,15 +9,14 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 11.
  */
 
-public class FileAttributes extends Attributes {
+public class FileAttributes implements Parcelable {
 
 	private String mFileName, mLongName, mName;
 	private Long mSize = 0l;
-	private List<Attributes> mStreams = new ArrayList<>();
+	private List<Stream> mStreams = new ArrayList<>();
+	private Double mDuration;
 
-	public FileAttributes() {
-		setType(Type.FILE);
-	}
+	public FileAttributes() {}
 
 	public String getFileName() {
 		return mFileName;
@@ -35,40 +34,53 @@ public class FileAttributes extends Attributes {
 		return mSize;
 	}
 
-	public List<Attributes> getStreams() {
+	public Double getDuration() {
+		return mDuration;
+	}
+
+	public List<Stream> getStreams() {
 		return mStreams;
 	}
 
-	public void setName(String name) {
+
+	public FileAttributes setName(String name) {
 		this.mName = name;
+		return this;
 	}
 
-	public void setLongName(String longName) {
+	public FileAttributes setLongName(String longName) {
 		this.mLongName = longName;
+		return this;
 	}
 
-	public void setFileName(String fileName) {
+	public FileAttributes setFileName(String fileName) {
 		this.mFileName = fileName;
+		return this;
 	}
 
-	public void setSize(Long size) {
+	public FileAttributes setSize(Long size) {
 		this.mSize = size;
+		return this;
 	}
 
-	public void addStream(Attributes attributes) {
-		mStreams.add(attributes);
+	public FileAttributes addStream(Stream stream) {
+		mStreams.add(stream);
+		return this;
+	}
+
+	public FileAttributes setDuration(Double duration) {
+		mDuration = duration;
+		return this;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s\nFileAttributes FileName: %s, LongName: %s, Name: %s",
-				super.toString(), getFileName(), getLongName(), getName());
+		return String.format("FileAttributes FileName: %s, LongName: %s, Name: %s, Size: %d",
+				getFileName(), getLongName(), getName(), getSize());
 	}
 
 	/* Parcelable */
-
 	public void writeToParcel(Parcel out, int flags) {
-		super.writeToParcel(out, flags);
 		out.writeValue(mFileName);
 		out.writeValue(mLongName);
 		out.writeValue(mName);
@@ -88,13 +100,12 @@ public class FileAttributes extends Attributes {
 	};
 
 	private FileAttributes(Parcel in) {
-		super(in);
 		mFileName = (String) in.readValue(String.class.getClassLoader());
 		mLongName = (String) in.readValue(String.class.getClassLoader());
 		mName = (String) in.readValue(String.class.getClassLoader());
 		mSize = (Long) in.readValue(Long.class.getClassLoader());
 		mStreams = new ArrayList<>();
-		in.readList(mStreams, Attributes.class.getClassLoader());
+		in.readList(mStreams, Stream.class.getClassLoader());
 	}
 
 	public int describeContents() {

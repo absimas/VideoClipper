@@ -11,6 +11,10 @@
 	<!--Streams-->
 	<string name="stream_name">codec_name</string>
 	<string name="stream_long_name">codec_long_name</string>
+	<string name="stream_tbn">time_base</string>
+	<string name="stream_tbc">codec_time_base</string>
+	<string name="stream_tbr">r_frame_rate</string>
+	<string name="stream_codec_tag">codec_tag</string>
 	<string name="stream_channels">channels</string>
 	<string name="stream_width">width</string>
 	<string name="stream_height">height</string>

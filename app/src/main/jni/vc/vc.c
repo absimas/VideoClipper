@@ -128,7 +128,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
             FILE *file;
             if (access(outputPath, F_OK) != -1) {
                 if ((file = fopen(outputPath, "w")) == NULL) {
-                    LOGE("Couldn't open the file!");
+                    LOGE("Couldn't open the file! %s", outputPath);
                     exit(EXIT_FAILURE);
                 }
             } else {

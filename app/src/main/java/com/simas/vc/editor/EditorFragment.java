@@ -4,14 +4,12 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import com.simas.vc.attributes.Attributes;
+
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
