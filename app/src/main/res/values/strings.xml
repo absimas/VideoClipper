@@ -47,9 +47,11 @@
 	<string name="nav_context_menu_action_select_all">Select all</string>
 	<string name="nav_context_menu_action_select_none">Select none</string>
 	<string name="action_concat">CONCATENATE</string>
-	<string name="vc_working">Clipping videos…</string>
 	<string name="clipping">Clipping videos…</string>
+	<string name="vc_working">Clipping videos…</string>
+	<string name="vc_failed">Clipping failed…</string>
 	<string name="vc_finished">Clipping finished!</string>
+	<string name="format_clipping_failed">Unfortunately %s couldn\'t be clipped…</string>
 	<string name="format_click_to_open_video">Click to open %s!</string>
 	<string name="out_of">out of</string><!--00:00:05 out of 00:02:32-->
 	<string name="item_preview_description">Item Preview</string>
@@ -63,4 +65,22 @@
 	<string name="drawer_helper_arrow_description">Pointing to the drawer!</string>
 	<string name="help_drawer">Slide to see the added items!</string>
 	<string name="help_drawer_no_videos">Slide to open the item list!</string>
+
+
+	<string name="clipped_see_notification">Clipping successful! See the notification.</string>
+	<string name="clipping_failed_see_notification">Clipping failed… See the notification for
+		more information</string>
+
+	<!--ProgressDialogActivity-->
+	<string name="close">Close</string>
+	<string name="current_frame">Current frame:</string>
+	<string name="fps">Speed (FPS):</string>
+	<string name="total_size">File size:</string>
+	<string name="total_duration">Total duration:</string>
+	<string name="current_duration">Current duration:</string>
+	<string name="format_clipping_succeeded">Clipping %s succeeded!</string>
+	<string name="open">Open</string>
+	<string name="open_below">Click the button below to open the clipped video!</string>
+	<string name="output_name">Output name:</string>
+	<string name="unknown_error">Unknown error</string>
 </resources>

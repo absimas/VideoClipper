@@ -10,7 +10,6 @@ import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.R;
-import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.nav_drawer.NavItem;
@@ -32,7 +31,7 @@ public class Ffmpeg {
 
 	// C method prototypes
 	public static native Bitmap createPreview(String videoPath);
-	static native boolean cFfmpeg(String[] args);
+	static native int cFfmpeg(String[] args);
 
 	/**
 	 *
@@ -175,7 +174,7 @@ public class Ffmpeg {
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-y")                                  // Overwrite output file if it exists
-				.add("-strict experimental")                          // Use experimental decoders
+				.add("-strict experimental")                // Use experimental decoders
 				.add("-progress")                           // Output progress to tmp file
 				.addSpaced("%s", progressFile.getPath())
 				.addSpaced(sourceList)                      // List of sources
@@ -183,7 +182,7 @@ public class Ffmpeg {
 				.add("-filter_complex")
 				.addSpaced("%s concat=n=%d:v=1:a=1 [v] [a]", streamList, itemCount)
 				.add("-map [v] -map [a]")
-				.add("-strict experimental")                          // Use experimental encoders
+				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file
 				.build();
 

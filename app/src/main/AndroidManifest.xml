@@ -17,10 +17,17 @@
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".background_tasks.ProgressDialogActivity"
+            android:label="@string/vc_working"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.Light.Dialog.MinWidth"
+            android:exported="false">
         </activity>
 
         <service

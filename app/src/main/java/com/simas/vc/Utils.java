@@ -27,6 +27,7 @@ import java.io.OutputStream;
 public class Utils {
 
 	private static final String TAG = "Utils";
+	public static final String VIDEO_MIME = "video";
 	private static final int IO_BUFFER_SIZE = 32768;
 
 	/**

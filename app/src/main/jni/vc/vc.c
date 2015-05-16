@@ -56,7 +56,7 @@ typedef struct CArray {
 } CArray;
 
 // Method prototypes
-jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args);
+jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args);
 jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
 jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath);
 // Helper method prototypes
@@ -65,14 +65,15 @@ CArray convertToCArray(JNIEnv *env, jobjectArray args);
 jobject createBitmap(JNIEnv *pEnv, int pWidth, int pHeight);
 
 // Method implementations
-jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
+jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
+#define TAG "cFfmpeg"
 	// Fork process
     pid_t childID = fork();
 
     switch (childID) {
         case -1:
             LOGE("fork error");
-            return (bool) false;
+            return -666;
         case 0:
             LOGI("Child process started...");
             CArray cArray = convertToCArray(env, args);
@@ -89,21 +90,26 @@ jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
                 switch (endID) {
                     case -1:
                         LOGE("waitpid error!");
-                        return (bool) false;
+                        return -666;
                     case 0:
                         LOGI("Parent waiting for child...");
                         sleep_ms(FFMPEG_WAIT_INTERVAL);
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {
-                                LOGI("Child ended normally.");
-                                return (bool) true;
+                                // If return code != 0, child has failed.
+                                if (status) {
+                                    LOGE("Child ended normally but code returned was: %d", status);
+                                } else {
+                                    LOGI("Child ended normally.");
+                                }
+                                return status;
                             } else if (WIFSIGNALED(status)) {
                                 LOGE("Child ended because of an uncaught signal.n");
                             } else if (WIFSTOPPED(status)) {
                                 LOGI("Child process has stopped.");
                             } else {
-                              return (bool) false;
+                              return status;
                             }
                         }
                 }
@@ -112,6 +118,7 @@ jboolean cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
 }
 
 jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
+#define TAG "cFfprobe"
 	// Fork process
     pid_t childID = fork();
 
@@ -161,8 +168,14 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {
-                                LOGI("Child ended normally.");
-                                return (bool) true;
+                                // If return code != 0, child has failed.
+                                if (status) {
+                                    LOGE("Child ended normally but code returned was: %d", status);
+                                    return (bool) false;
+                                } else {
+                                    LOGI("Child ended normally.");
+                                    return (bool) true;
+                                }
                             } else if (WIFSIGNALED(status)) {
                                 LOGE("Child ended because of an uncaught signal.n");
                             } else if (WIFSTOPPED(status)) {
@@ -386,7 +399,7 @@ static JNINativeMethod ffprobeMethodTable[] = {
 	{"cFfprobe", "([Ljava/lang/String;Ljava/lang/String;)Z", (void *) cFfprobe}
 };
 static JNINativeMethod ffmpegMethodTable[] = {
-	{"cFfmpeg", "([Ljava/lang/String;)Z", (void *) cFfmpeg},
+	{"cFfmpeg", "([Ljava/lang/String;)I", (void *) cFfmpeg},
 	{"createPreview", "(Ljava/lang/String;)Landroid/graphics/Bitmap;", (void *)createPreview}
 };
 

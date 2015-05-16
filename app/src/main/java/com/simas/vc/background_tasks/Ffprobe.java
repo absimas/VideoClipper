@@ -27,6 +27,8 @@ import static com.simas.vc.Utils.*;
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
+// ToDo IntentService so consequent calls to ffprobe are queued.
+
 public class Ffprobe {
 
 	private static final String TAG = "ffprobe";
@@ -38,16 +40,15 @@ public class Ffprobe {
 
 		if (!inputFile.exists()) throw new IOException("The input file doesn't exist!");
 
-
-
-		/* Executable call used
+		/* Executable call used // ToDo gal pretty naudot? td hh:mm:ss:ms...
 			./ffprobe -i 'nature/bee.mp4' \
-			-v quiet -print_format json \// ToDo gal pretty naudot? td hh:mm:ss:ms...
+			-v quiet -print_format json \
 			-show_format -show_entries format=duration,size,format_name,format_long_name,filename,nb_streams \
 			-show_streams -show_entries stream=codec_name,codec_long_name,codec_type,sample_rate,channels,duration,display_aspect_ratio,width,height,time_base,codec_time_base,r_frame_rate
 		*/
 
 		File tmpFile = File.createTempFile("vc-rp", null);
+		Log.e(TAG, "Tmp: " + tmpFile.getPath());
 
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-i")

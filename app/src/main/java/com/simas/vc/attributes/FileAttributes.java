@@ -34,6 +34,9 @@ public class FileAttributes implements Parcelable {
 		return mSize;
 	}
 
+	/**
+	 * Duration in seconds
+	 */
 	public Double getDuration() {
 		return mDuration;
 	}

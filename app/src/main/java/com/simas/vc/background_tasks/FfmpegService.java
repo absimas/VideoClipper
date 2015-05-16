@@ -12,9 +12,10 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -26,15 +27,10 @@ import java.io.IOException;
 
 public class FfmpegService extends IntentService {
 
+	// ToDo instead of (bool) false return a ffmpeg error string (converted from return code)
 	// ToDo detect ffmpeg return codes, i.e. if it failed or not, then don't display the
 		// notification or show an error notifier
 	// ToDo kill process if progress file is empty or malformed
-	// ToDo checkout fancy calls:
-
-//	ffmpeg -i "/home/toto/.ekd_tmp/ekd_toto/video_extension_resol/file_001.mp4"
-//			-i "/home/toto/.ekd_tmp/ekd_toto/video_extension_resol/file_002.mp4"
-//			-filter_complex concat=n=2:v=1:a=1 -codec:v mjpeg -b:v 5000k -an
-//	-threads 4 -y "/home/toto/.ekd_tmp/ekd_toto/video.avi"
 
 	// Statics
 	private static final String TAG = "FfmpegService";
@@ -46,7 +42,6 @@ public class FfmpegService extends IntentService {
 
 	// Argument keys
 	public static final String ARG_EXEC_ARGS = "argc_n_argv";
-	public static final String ARG_INPUT_FILE = "input_file";
 	public static final String ARG_OUTPUT_FILE = "output_file";
 	public static final String ARG_PROGRESS_FILE = "progress_file";
 	public static final String ARG_OUTPUT_DURATION = "output_length";
@@ -61,14 +56,14 @@ public class FfmpegService extends IntentService {
 		String[] args = intent.getStringArrayExtra(ARG_EXEC_ARGS);
 		File output = (File) intent.getSerializableExtra(ARG_OUTPUT_FILE);
 		File progress = (File) intent.getSerializableExtra(ARG_PROGRESS_FILE);
-		int length = intent.getIntExtra(ARG_OUTPUT_DURATION, 0);
+		int duration = intent.getIntExtra(ARG_OUTPUT_DURATION, 0);
 
 		// Launch progress notifier
-		ProgressNotifier notifier = new ProgressNotifier(length, output, progress);
+		ProgressNotifier notifier = new ProgressNotifier(duration, output, progress);
 		notifier.execute();
 		// Launch the process itself
-		boolean ffmpegResult = Ffmpeg.cFfmpeg(args);
-		notifier.cancelBecause(ffmpegResult);
+		int ffmpegResult = Ffmpeg.cFfmpeg(args);
+		notifier.ffmpegCancel(ffmpegResult);
 	}
 
 	@Override
@@ -89,54 +84,92 @@ public class FfmpegService extends IntentService {
 
 	private class ProgressNotifier extends AsyncTask<Void, Void, Boolean> {
 
+		/**
+		 * Amount of milliseconds to wait before re-checking the progress file
+		 */
+		private static final int PROGRESS_FILE_WAIT_DURATION = 1000;
 		private static final String PROGRESS_KEY = "progress=";
 		private static final String OUT_TIME_KEY = "out_time=";
 		private static final String END_VALUE = "end";
-		private static final String VIDEO_MIME = "video";
 		private static final String CONTINUE_VALUE = "continue";
 
-		private final int mTaskNum = ++sTaskCount;
-		private final int mOutputDuration;
-		private final String mOutputDurationString;
+		private final int mDuration;
+		private final String mDurationTime;
 		private boolean mFfmpegSucceeded;
+		private int mFfmpegReturnCode;
 		private File mProgressLog;
 		private File mOutput;
 		private BufferedReader mReader;
 		private NotificationCompat.Builder mBuilder;
+		/**
+		 * Intent used for broadcasting update messages. These are received by {@code
+		 * ProgressDialogActivity}
+		 */
+		private final Intent mUpdateIntent;
+		/**
+		 * Intent used to open up a {@code ProgressDialogActivity}.
+		 */
+		private final Intent mDisplayIntent;
 
 		public ProgressNotifier(int outputDuration, File outputFile, File progressFile) {
-			mOutputDuration = outputDuration;
-			mOutputDurationString = secondsToTime(mOutputDuration);
+			mDuration = outputDuration;
+			mDurationTime = secsToTime(mDuration);
 			mOutput = outputFile;
 			mProgressLog = progressFile;
+			++sTaskCount;
+			mUpdateIntent = new Intent();
+			mUpdateIntent.setAction(ProgressDialogActivity.ACTION_DIALOG_UPDATE);
+			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
+					ProgressDialogActivity.Type.PROGRESS);
+			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_NOTIFICATION_ID, sTaskCount);
+
+			mDisplayIntent = new Intent(VC.getAppContext(), ProgressDialogActivity.class);
+			mDisplayIntent.setAction(ProgressDialogActivity.ACTION_DIALOG_UPDATE);
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_OUTPUT_FILE, outputFile);
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TOTAL_DURATION, mDurationTime);
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
+					ProgressDialogActivity.Type.PROGRESS);
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_NOTIFICATION_ID, sTaskCount);
 		}
 
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
-			mBuilder = new NotificationCompat.Builder(VC.getAppContext());
-			mBuilder.setContentTitle(Utils.getString(R.string.vc_working))
-					.setContentText(Utils.getString(R.string.clipping))
-					.setSmallIcon(R.drawable.ic_action_merge);
+
+			// Open progress dialog on click
+			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
+					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+			mBuilder = new NotificationCompat.Builder(getApplicationContext());
+			mBuilder.setContentTitle(getString(R.string.vc_working))
+					.setTicker(getString(R.string.clipping))
+					.setContentText(getString(R.string.clipping))
+					.setSmallIcon(R.drawable.ic_action_merge)
+					.setContentIntent(pendingIntent)
+					.setPriority(NotificationCompat.PRIORITY_MAX);
+
+			// ToDo dialog intent with more info
 
 			// If length is not set, show an indeterminate progress notification
-			if (mOutputDuration < 1) {
-				mBuilder.setProgress(mOutputDuration, 0, true);
+			if (mDuration < 1) {
+				mBuilder.setProgress(mDuration, 0, true);
 			}
+
 			// Create an un-removable notification to display progress
 			startForeground(INITIAL_ID, mBuilder.build());
 		}
 
+		private static final int MAX_FRUITLESS_ITERATIONS = 5;
+		private int mFruitlessIterations = 0;
+
 		@Override
 		protected Boolean doInBackground(Void... params) {
-			int i = 0;
 			for (;;) {
 				try {
 					if (isCancelled()) {
 						// On older APIs the return value, when cancelled, is NOT ignored
 						return mFfmpegSucceeded;
 					}
-					i++;
 					mReader = new BufferedReader(new FileReader(mProgressLog));
 
 					StringBuilder sb = new StringBuilder();
@@ -147,41 +180,79 @@ public class FfmpegService extends IntentService {
 						sb.append("\n");
 					}
 
+					// Full content/progress file
+					String pg = sb.toString();
+
 					// Make sure last line starts with the preferred key
 					if (lastLine != null && lastLine.startsWith(PROGRESS_KEY)) {
-						// Check if progress ended
-						if (lastLine.replaceAll(PROGRESS_KEY, "").equals(END_VALUE)) {
-							return true;
-						} else if (mOutputDuration > 0) {
-							int index = sb.lastIndexOf(OUT_TIME_KEY);
-							if (index != -1) {
-								int outTimeEndIndex = sb.indexOf("\n", index);
-								if (outTimeEndIndex != -1) {
-									// Parse out time
-									String outTime = sb.substring(index, outTimeEndIndex);
-									outTime = outTime.replaceAll(OUT_TIME_KEY, "");
-									int secs = outTimeToSeconds(outTime);
-									if (secs == -1) {
-										Log.e(TAG, "Failed to parse progress time: " + outTime);
-										// Yse an indeterminate progress instead
-										mBuilder.setProgress(mOutputDuration, 0, true);
-									} else {
-										mBuilder.setProgress(mOutputDuration, secs, false);
-										mBuilder.setContentText(String.format("%s %s %s",
-												// max(currentDur, outputDur)
-												(secs >= mOutputDuration) ? mOutputDurationString : secondsToTime(secs),
-												getString(R.string.out_of), mOutputDurationString));
-									}
-									NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
-								}
+						// Fruitful iteration
+						mFruitlessIterations = 0;
+
+						// Remove the last line
+						int progressStart = pg.lastIndexOf(PROGRESS_KEY);
+						pg = pg.substring(0, progressStart);
+
+						// Trim pg to contain the last block
+						int penultimateProgressStart = pg.lastIndexOf(PROGRESS_KEY);
+						if (penultimateProgressStart != -1) {
+							int penultimateProgressEnd = pg.indexOf('\n', penultimateProgressStart);
+							if (penultimateProgressEnd != -1) {
+								pg = pg.substring(penultimateProgressEnd, pg.length());
 							}
 						}
+
+						// Check if end was reached
+						String progress = lastLine.replaceAll(PROGRESS_KEY, "");
+						if (progress.equals(END_VALUE)) {
+							return true;
+						} else if (mDuration > 0) { // If notification progress is not indeterminate
+							// Calculate outTime start and end indexes
+							int startIndex = pg.lastIndexOf(OUT_TIME_KEY);
+							int endIndex = pg.indexOf("\n", startIndex);
+							int secs = -1;
+							if (startIndex != -1 && endIndex != -1) {
+								// Parse outTime
+								String outTime = pg.substring(startIndex, endIndex);
+								outTime = outTime.replaceAll(OUT_TIME_KEY, "");
+								secs = timeToSecs(outTime);
+							}
+
+							String curDur = null;
+							if (secs == -1) {
+								// Use an indeterminate progress instead
+								mBuilder.setProgress(mDuration, 0, true);
+							} else {
+								mBuilder.setProgress(mDuration, secs, false);
+								// max(currentDuration, totalDuration)
+								curDur = (secs >= mDuration) ? mDurationTime : secsToTime(secs);
+								mBuilder.setContentText(String.format("%s %s %s",
+										curDur, getString(R.string.out_of), mDurationTime));
+							}
+							// Update display intent
+							mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CUR_DURATION,curDur);
+							mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CONTENT, pg);
+							PendingIntent pIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
+									mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+							mBuilder.setContentIntent(pIntent);
+							// Update notification
+							NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
+
+							// Send a broadcast message about the values update
+							mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CONTENT, pg);
+							mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CUR_DURATION,curDur);
+							sendBroadcast(mUpdateIntent);
+						}
+					} else {
+						if (++mFruitlessIterations >= MAX_FRUITLESS_ITERATIONS) {
+							// Stop the service if max iterations reached without getting any data
+							return false;
+						}
 					}
-					Thread.sleep(1000);
+					Thread.sleep(PROGRESS_FILE_WAIT_DURATION);
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (InterruptedException ignored) {
-					Log.i(TAG, "Waiting has been interrupted... Probably by cancelling the task.");
+					Log.i(TAG, "Waiting has been interrupted... Probably by cancelled the task.");
 				} finally {
 					try {
 						if (mReader != null) mReader.close();
@@ -192,89 +263,129 @@ public class FfmpegService extends IntentService {
 			}
 		}
 
-		public void cancelBecause(boolean succeeded) {
-			mFfmpegSucceeded = succeeded;
+		/**
+		 * Cancel called after FFmpeg finishes.
+		 */
+		public void ffmpegCancel(int succeeded) {
+			mFfmpegReturnCode = succeeded;
+			mFfmpegSucceeded = (mFfmpegReturnCode == 0);
 			if (cancel(true)) {
 				Log.i(TAG, String.format("FFmpeg %s first, so it canceled the notifier.",
-						(succeeded) ? "succeeded" : "failed"));
+						(mFfmpegSucceeded) ? "succeeded" : "failed"));
 			}
 		}
 
 		@Override
 		protected void onCancelled() {
 			super.onCancelled();
-			Log.i(TAG, String.format("Notifier exits because it was cancelled. FFmpeg has %s",
+			Log.i(TAG, String.format("Service cancelled. FFmpeg has %s",
 					(mFfmpegSucceeded) ? "succeeded" : "failed"));
-			if (mFfmpegSucceeded) {
-				// FFmpeg succeeded and is killing progress task earlier, so just quietly
-				// quit, by showing the end notification
-				showFinalNotification();
-
-			} else {
-				// FFmpeg task failed, remove notification
-				removeNotification();
-			}
-			mProgressLog.delete();
+			finish();
 		}
 
 		@Override
 		protected void onPostExecute(Boolean didFinish) {
 			super.onPostExecute(didFinish);
-			Log.i(TAG, String.format("Notifier finishes because it %s.",
-					(didFinish != null && didFinish) ? "succeeded" : "failed"));
-			if (didFinish == null || !didFinish) {
-				removeNotification();
+			Log.i(TAG, String.format("Service finished because it %s.",
+					(didFinish == null || !didFinish) ? "failed" : "succeeded"));
+			mFfmpegSucceeded = !(didFinish == null || !didFinish);
+			finish();
+		}
+
+		private void finish() {
+			if (mFfmpegSucceeded) {
+				showSuccessNotification();
 			} else {
-				showFinalNotification();
+				showFailureNotification();
 			}
+
+			// Delete progress file
 			mProgressLog.delete();
-		}
-
-		private void removeNotification() {
-			NOTIFICATION_MANAGER.cancel(INITIAL_ID);
-		}
-
-		private void showFinalNotification() {
-			// Change text
-			mBuilder = new NotificationCompat.Builder(VC.getAppContext());
-			mBuilder.setContentTitle(Utils.getString(R.string.vc_finished))
-					.setContentText(String.format(Utils
-							.getString(R.string.format_click_to_open_video), mOutput.getName()))
-					.setSmallIcon(R.drawable.ic_action_merge);
-
-			// Open file on click
-			Intent intent = new Intent();
-			intent.setAction(android.content.Intent.ACTION_VIEW);
-			intent.setDataAndType(Uri.fromFile(mOutput), VIDEO_MIME);
-			PendingIntent pendingIntent = PendingIntent.getActivity(VC
-					.getAppContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-			mBuilder.setContentIntent(pendingIntent);
-
-			// Notification removes itself after being used
-			mBuilder.setAutoCancel(true);
-
-			// ToDo notification sound
-			// mBuilder.setSound(Uri.parse("file:///sdcard/notification/ringer.mp3"));
-
-			// Show finished notification with a corresponding negative id
-			NOTIFICATION_MANAGER.notify(-mTaskNum, mBuilder.build());
-
-			// Show a toast too
-			Toast.makeText(VC.getAppContext(),
-					"Clipping successful! See the notification.", Toast.LENGTH_LONG).show();
 
 			// Cancel progress notification if the queue is empty
 			if (--sIntentQueueSize <= 0) {
+				sIntentQueueSize = 0;
+				// stopForeground will remove the notification with INITIAL_ID
 				stopForeground(true);
 			}
 		}
 
+		private void showFailureNotification() {
+			// Open error dialog on click
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CONTENT,
+					String.valueOf(mFfmpegReturnCode));
+			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
+					ProgressDialogActivity.Type.ERROR);
+			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
+					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+			String fail = String.format("android.resource://%s/%s", getPackageName(), R.raw.fail);
+
+			mBuilder = new NotificationCompat.Builder(getApplicationContext());
+			mBuilder.setContentTitle(getString(R.string.vc_failed))
+					.setTicker(getString(R.string.vc_failed))
+					.setContentText(String.format(
+							getString(R.string.format_clipping_failed), mOutput.getName()))
+					.setSmallIcon(R.drawable.ic_action_error)
+					.setContentIntent(pendingIntent)
+					.setAutoCancel(true)
+					.setSound(Uri.parse(fail));
+
+			// Show the final notification
+			NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
+
+			// Show a toast too
+			Toast.makeText(getApplicationContext(), R.string.clipping_failed_see_notification,
+					Toast.LENGTH_LONG).show();
+
+			// Send a broadcast message about the values update
+			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
+					ProgressDialogActivity.Type.ERROR);
+			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CONTENT,
+					String.valueOf(mFfmpegReturnCode));
+			sendBroadcast(mUpdateIntent);
+		}
+
+		private void showSuccessNotification() {
+			// Open file on click
+			Intent intent = new Intent();
+			intent.setAction(android.content.Intent.ACTION_VIEW);
+			intent.setDataAndType(Uri.fromFile(mOutput), Utils.VIDEO_MIME);
+			PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
+					intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+			String ok = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);
+
+			// Change text
+			mBuilder = new NotificationCompat.Builder(getApplicationContext());
+			mBuilder.setContentTitle(getString(R.string.vc_finished))
+					.setTicker(getString(R.string.vc_finished))
+					.setContentText(String.format(
+							getString(R.string.format_click_to_open_video), mOutput.getName()))
+					.setSmallIcon(R.drawable.ic_action_merge)
+					.setContentIntent(pendingIntent)
+					.setAutoCancel(true)
+					.setSound(Uri.parse(ok));
+
+			// Show the final notification
+			NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
+
+			// Show a toast too
+			Toast.makeText(getApplicationContext(), R.string.clipped_see_notification,
+					Toast.LENGTH_LONG).show();
+
+			// Send a broadcast message about the values update
+			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
+					ProgressDialogActivity.Type.FINISHED);
+			sendBroadcast(mUpdateIntent);
+		}
+
 		/**
-		 *
-		 * @param outTime
+		 * Converts a time string to seconds.
+		 * @param outTime    string in format of hh:mm:ss:millis
 		 * @return -1 on error
 		 */
-		private int outTimeToSeconds(final String outTime) {
+		private int timeToSecs(final String outTime) {
 			// Remove microseconds
 			int dotIndex = outTime.indexOf(".");
 			if (dotIndex == -1) return -1;
@@ -293,11 +404,15 @@ public class FfmpegService extends IntentService {
 			}
 		}
 
-		private String secondsToTime(int totalSeconds) {
-			if (totalSeconds < 1) return "00:00:00";
-			int hours = totalSeconds / 3600;
-			int minutes = (totalSeconds % 3600) / 60;
-			int seconds = totalSeconds % 60;
+		/**
+		 * Converts seconds to a time string.
+		 * @return string in the format of hh:mm:ss, 00:00:00 if given seconds are negative
+		 */
+		private String secsToTime(int secs) {
+			if (secs < 1) return "00:00:00";
+			int hours = secs / 3600;
+			int minutes = (secs % 3600) / 60;
+			int seconds = secs % 60;
 
 			return String.format("%02d:%02d:%02d", hours, minutes, seconds);
 		}
