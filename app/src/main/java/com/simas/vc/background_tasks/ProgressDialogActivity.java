@@ -19,7 +19,7 @@ import java.io.File;
  * Created by Simas Abramovas on 2015 May 16.
  */
 
-// ToDo if notification is removed toast shouldn't be shown..
+// ToDo if notification is removed toast shouldn't be shown.
 // ToDo when locked, processes stop? >.> or perhaps broadcasts are not sent..
 // ToDo when switching layouts do a transition. Resize would be nice.
 // ToDo rotate on finished screen, brings back progress screen. Probly savedInstanceState.
