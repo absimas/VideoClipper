@@ -27,12 +27,6 @@ import java.io.IOException;
 
 public class FfmpegService extends IntentService {
 
-	// ToDo instead of (bool) false return a ffmpeg error string (converted from return code)
-	// ToDo detect ffmpeg return codes, i.e. if it failed or not, then don't display the
-		// notification or show an error notifier
-	// ToDo kill process if progress file is empty or malformed
-
-	// Statics
 	private static final String TAG = "FfmpegService";
 	private static final int INITIAL_ID = 100000;
 	private static int sTaskCount = INITIAL_ID;
@@ -92,6 +86,7 @@ public class FfmpegService extends IntentService {
 		private static final String OUT_TIME_KEY = "out_time=";
 		private static final String END_VALUE = "end";
 		private static final String CONTINUE_VALUE = "continue";
+		private static final int MAX_FRUITLESS_ITERATIONS = 5;
 
 		private final int mDuration;
 		private final String mDurationTime;
@@ -110,6 +105,7 @@ public class FfmpegService extends IntentService {
 		 * Intent used to open up a {@code ProgressActivity}.
 		 */
 		private final Intent mDisplayIntent;
+		private int mFruitlessIterations = 0;
 
 		public ProgressNotifier(int outputDuration, File outputFile, File progressFile) {
 			mDuration = outputDuration;
@@ -119,17 +115,13 @@ public class FfmpegService extends IntentService {
 			++sTaskCount;
 			mUpdateIntent = new Intent();
 			mUpdateIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
-			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
-					ProgressActivity.Type.PROGRESS);
-			mUpdateIntent.putExtra(ProgressActivity.ARG_NOTIFICATION_ID, sTaskCount);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.PROGRESS);
 
 			mDisplayIntent = new Intent(VC.getAppContext(), ProgressActivity.class);
 			mDisplayIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_OUTPUT_FILE, outputFile);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_TOTAL_DURATION, mDurationTime);
-			mDisplayIntent.putExtra(ProgressActivity.ARG_TYPE,
-					ProgressActivity.Type.PROGRESS);
-			mDisplayIntent.putExtra(ProgressActivity.ARG_NOTIFICATION_ID, sTaskCount);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.PROGRESS);
 		}
 
 		@Override
@@ -148,8 +140,6 @@ public class FfmpegService extends IntentService {
 					.setContentIntent(pendingIntent)
 					.setPriority(NotificationCompat.PRIORITY_MAX);
 
-			// ToDo dialog intent with more info
-
 			// If length is not set, show an indeterminate progress notification
 			if (mDuration < 1) {
 				mBuilder.setProgress(mDuration, 0, true);
@@ -158,9 +148,6 @@ public class FfmpegService extends IntentService {
 			// Create an un-removable notification to display progress
 			startForeground(INITIAL_ID, mBuilder.build());
 		}
-
-		private static final int MAX_FRUITLESS_ITERATIONS = 5;
-		private int mFruitlessIterations = 0;
 
 		@Override
 		protected Boolean doInBackground(Void... params) {
@@ -319,24 +306,26 @@ public class FfmpegService extends IntentService {
 			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
-			String fail = String.format("android.resource://%s/%s", getPackageName(), R.raw.fail);
+			// Show notification and a toast only if the progress activity is hidden
+			if (!ProgressActivity.isShown()) {
+				String str = String.format("android.resource://%s/%s", getPackageName(),R.raw.fail);
+				mBuilder = new NotificationCompat.Builder(getApplicationContext());
+				mBuilder.setContentTitle(getString(R.string.vc_failed))
+						.setTicker(getString(R.string.vc_failed))
+						.setContentText(String.format(
+								getString(R.string.format_clipping_failed), mOutput.getName()))
+						.setSmallIcon(R.drawable.ic_action_error)
+						.setContentIntent(pendingIntent)
+						.setAutoCancel(true)
+						.setSound(Uri.parse(str));
 
-			mBuilder = new NotificationCompat.Builder(getApplicationContext());
-			mBuilder.setContentTitle(getString(R.string.vc_failed))
-					.setTicker(getString(R.string.vc_failed))
-					.setContentText(String.format(
-							getString(R.string.format_clipping_failed), mOutput.getName()))
-					.setSmallIcon(R.drawable.ic_action_error)
-					.setContentIntent(pendingIntent)
-					.setAutoCancel(true)
-					.setSound(Uri.parse(fail));
+				// Show the final notification
+				NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
 
-			// Show the final notification
-			NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
-
-			// Show a toast too
-			Toast.makeText(getApplicationContext(), R.string.clipping_failed_see_notification,
-					Toast.LENGTH_LONG).show();
+				// Show a toast
+				Toast.makeText(getApplicationContext(), R.string.clipping_failed_see_notification,
+						Toast.LENGTH_LONG).show();
+			}
 
 			// Send a broadcast message about the values update
 			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
@@ -354,29 +343,29 @@ public class FfmpegService extends IntentService {
 			PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
 					intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-			String ok = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);
+			// Show notification and a toast only if the progress activity is hidden
+			if (!ProgressActivity.isShown()) {
+				String str = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);
+				mBuilder = new NotificationCompat.Builder(getApplicationContext());
+				mBuilder.setContentTitle(getString(R.string.vc_finished))
+						.setTicker(getString(R.string.vc_finished))
+						.setContentText(String.format(
+								getString(R.string.format_click_to_open_video), mOutput.getName()))
+						.setSmallIcon(R.drawable.ic_action_merge)
+						.setContentIntent(pendingIntent)
+						.setAutoCancel(true)
+						.setSound(Uri.parse(str));
 
-			// Change text
-			mBuilder = new NotificationCompat.Builder(getApplicationContext());
-			mBuilder.setContentTitle(getString(R.string.vc_finished))
-					.setTicker(getString(R.string.vc_finished))
-					.setContentText(String.format(
-							getString(R.string.format_click_to_open_video), mOutput.getName()))
-					.setSmallIcon(R.drawable.ic_action_merge)
-					.setContentIntent(pendingIntent)
-					.setAutoCancel(true)
-					.setSound(Uri.parse(ok));
+				// Show the final notification
+				NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
 
-			// Show the final notification
-			NOTIFICATION_MANAGER.notify(sTaskCount, mBuilder.build());
-
-			// Show a toast too
-			Toast.makeText(getApplicationContext(), R.string.clipped_see_notification,
-					Toast.LENGTH_LONG).show();
+				// Show a toast
+				Toast.makeText(getApplicationContext(), R.string.clipped_see_notification,
+						Toast.LENGTH_LONG).show();
+			}
 
 			// Send a broadcast message about the values update
-			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
-					ProgressActivity.Type.FINISHED);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.FINISHED);
 			sendBroadcast(mUpdateIntent);
 		}
 

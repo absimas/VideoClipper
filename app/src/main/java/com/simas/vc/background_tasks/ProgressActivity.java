@@ -1,6 +1,5 @@
 package com.simas.vc.background_tasks;
 
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,10 +18,8 @@ import java.io.File;
  * Created by Simas Abramovas on 2015 May 16.
  */
 
-// ToDo if notification is removed toast shouldn't be shown.
 // ToDo when locked, processes stop? >.> or perhaps broadcasts are not sent..
 // ToDo when switching layouts do a transition. Resize would be nice.
-// ToDo rotate on finished screen, brings back progress screen. Probly savedInstanceState.
 
 public class ProgressActivity extends AppCompatActivity {
 
@@ -36,13 +33,13 @@ public class ProgressActivity extends AppCompatActivity {
 	public static final String ARG_OUTPUT_FILE = "output_file";
 	public static final String ARG_TOTAL_DURATION = "output_duration";
 	public static final String ARG_CUR_DURATION = "current_duration";
-	public static final String ARG_NOTIFICATION_ID = "notification_id";
 	// Progress file keys
 	private static final String FPS = "fps=";
 	private static final String FRAME = "frame=";
 	private static final String OUT_TIME = "out_time=";
 	private static final String TOTAL_SIZE = "total_size=";
 
+	private static boolean sActivityShown;
 	private final String TAG = getClass().getName();
 
 	public enum Type {
@@ -54,22 +51,16 @@ public class ProgressActivity extends AppCompatActivity {
 	private String mCurrentDuration, mOutputDuration;
 	private TextView[] mTextViews;
 	private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
 		private final String TAG = getClass().getName();
+
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			setIntent(intent);
 			onNewIntent(getIntent());
 		}
+
 	};
-
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putParcelable(KEY_PREVIOUS_INTENT, getIntent());
-		outState.putSerializable(KEY_PREVIOUS_FILE, mOutputFile);
-		outState.putString(KEY_PREVIOUS_TOTAL_DURATION, mOutputDuration);
-	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +80,7 @@ public class ProgressActivity extends AppCompatActivity {
 	@Override
 	protected void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
-		if (getIntent() == null || getIntent().getSerializableExtra(ARG_TYPE) == null) {
+		if (intent == null || intent.getSerializableExtra(ARG_TYPE) == null) {
 			return;
 		}
 
@@ -108,17 +99,14 @@ public class ProgressActivity extends AppCompatActivity {
 		// Change fields if content is set
 		String content = getIntent().getStringExtra(ARG_CONTENT);
 		if (content != null) updateFields(content);
+	}
 
-		// Remove the notification when an intent of failure or finish is received
-		// Worth to note that the reception is done only when the dialog is shown
-		if (mType == Type.FINISHED || mType == Type.ERROR) {
-			int notificationId = intent.getIntExtra(ARG_NOTIFICATION_ID, -1);
-			if (notificationId != -1) {
-				NotificationManager notificationManager = (NotificationManager)
-						getSystemService(Context.NOTIFICATION_SERVICE);
-				notificationManager.cancel(notificationId);
-			}
-		}
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putParcelable(KEY_PREVIOUS_INTENT, getIntent());
+		outState.putSerializable(KEY_PREVIOUS_FILE, mOutputFile);
+		outState.putString(KEY_PREVIOUS_TOTAL_DURATION, mOutputDuration);
 	}
 
 	/**
@@ -230,13 +218,19 @@ public class ProgressActivity extends AppCompatActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		sActivityShown = true;
 		registerReceiver(mReceiver, new IntentFilter(ACTION_DIALOG_UPDATE));
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
+		sActivityShown = false;
 		unregisterReceiver(mReceiver);
+	}
+
+	public static boolean isShown() {
+		return sActivityShown;
 	}
 
 	public void onClose(View view) {
