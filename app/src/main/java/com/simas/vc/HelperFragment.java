@@ -100,6 +100,7 @@ public class HelperFragment extends Fragment {
 	 */
 	private void animateLayoutAlpha(@NonNull final Helper helper, boolean visible,
 	                                @Nullable final Runnable onComplete) {
+		if (getActivity() == null) return;
 		if (helper.mAnimator != null) {
 			// Reset the state
 			((MainActivity)getActivity()).modifiedMenuForActivity = null;

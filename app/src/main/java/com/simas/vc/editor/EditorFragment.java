@@ -3,6 +3,7 @@ package com.simas.vc.editor;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.simas.vc.DelayedHandler;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
@@ -36,6 +38,11 @@ public class EditorFragment extends Fragment {
 		ACTIONS, FILENAME, LENGTH
 	}
 	private Map<Data, View> mDataMap = new HashMap<>();
+	/**
+	 * Handler runs all the messages posted to it only when the fragment is ready, i.e. at the end
+	 * of {@code onCreateView}. Messages can be added by calling fragment's {@code post} method.
+	 */
+	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
 
 	public EditorFragment() {}
 
@@ -136,7 +143,12 @@ public class EditorFragment extends Fragment {
 				case STATE:
 					// Full update if changed to valid from in-progress
 					if (newValue == NavItem.State.VALID && oldValue == NavItem.State.INPROGRESS) {
-						updateEditorToCurrentItem();
+						post(new Runnable() {
+							@Override
+							public void run() {
+								updateEditorToCurrentItem();
+							}
+						});
 					} else if (newValue == NavItem.State.INVALID) {
 						// ToDo remove item from the drawer
 
@@ -180,7 +192,6 @@ public class EditorFragment extends Fragment {
 		final TextView length = (TextView) mDataMap.get(Data.LENGTH);
 		final View actions = mDataMap.get(Data.ACTIONS);
 
-
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
@@ -199,6 +210,14 @@ public class EditorFragment extends Fragment {
 
 	public NavItem getCurrentItem() {
 		return currentItem;
+	}
+
+	/**
+	 * Queues the given runnable
+	 * @param runnable    message to be queued
+	 */
+	public void post(Runnable runnable) {
+		mDelayedHandler.add(runnable);
 	}
 
 }

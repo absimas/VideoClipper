@@ -24,9 +24,12 @@ import java.io.File;
 // ToDo when switching layouts do a transition. Resize would be nice.
 // ToDo rotate on finished screen, brings back progress screen. Probly savedInstanceState.
 
-public class ProgressDialogActivity extends AppCompatActivity {
+public class ProgressActivity extends AppCompatActivity {
 
 	// Intent action and arguments
+	private static final String KEY_PREVIOUS_INTENT = "previous_intent";
+	private static final String KEY_PREVIOUS_FILE = "previous_file";
+	private static final String KEY_PREVIOUS_TOTAL_DURATION = "previous_total_duration";
 	public static final String ACTION_DIALOG_UPDATE = "dialog_update_action";
 	public static final String ARG_TYPE = "type";
 	public static final String ARG_CONTENT = "content";
@@ -54,48 +57,68 @@ public class ProgressDialogActivity extends AppCompatActivity {
 		private final String TAG = getClass().getName();
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			if (intent == null || intent.getSerializableExtra(ARG_TYPE) == null) {
-				finish();
-				return;
-			}
-
-			updateLayout((Type) intent.getSerializableExtra(ARG_TYPE));
-			String content = intent.getStringExtra(ARG_CONTENT);
-			if (content == null) {
-				finish();
-				return;
-			}
-			mCurrentDuration = intent.getStringExtra(ARG_CUR_DURATION);
-			updateFields(content);
-
-			// Remove the notification when an intent of failure or finish is received
-			// Worth to note that the reception is done only when the dialog is shown
-			if (mType == Type.FINISHED || mType == Type.ERROR) {
-				int notificationId = intent.getIntExtra(ARG_NOTIFICATION_ID, -1);
-				if (notificationId != -1) {
-					NotificationManager notificationManager = (NotificationManager)
-							getSystemService(Context.NOTIFICATION_SERVICE);
-					notificationManager.cancel(notificationId);
-				}
-			}
+			setIntent(intent);
+			onNewIntent(getIntent());
 		}
 	};
+
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putParcelable(KEY_PREVIOUS_INTENT, getIntent());
+		outState.putSerializable(KEY_PREVIOUS_FILE, mOutputFile);
+		outState.putString(KEY_PREVIOUS_TOTAL_DURATION, mOutputDuration);
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Restore state if set
+		if (savedInstanceState != null) {
+			// Fetch previous intent
+			Intent intent = savedInstanceState.getParcelable(KEY_PREVIOUS_INTENT);
+			setIntent(intent);
+			mOutputFile = (File) savedInstanceState.getSerializable(KEY_PREVIOUS_FILE);
+			mOutputDuration = savedInstanceState.getString(KEY_PREVIOUS_TOTAL_DURATION);
+		}
+
+		onNewIntent(getIntent());
+	}
+
+	@Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
 		if (getIntent() == null || getIntent().getSerializableExtra(ARG_TYPE) == null) {
-			finish();
 			return;
 		}
 
-		mOutputFile = (File) getIntent().getSerializableExtra(ARG_OUTPUT_FILE);
-		mOutputDuration = getIntent().getStringExtra(ARG_TOTAL_DURATION);
+		// Set fields if empty
+		if (mOutputFile == null) {
+			mOutputFile = (File) getIntent().getSerializableExtra(ARG_OUTPUT_FILE);
+		}
+		if (mOutputDuration == null) {
+			mOutputDuration = getIntent().getStringExtra(ARG_TOTAL_DURATION);
+		}
+		// Current duration should be re-set each time
 		mCurrentDuration = getIntent().getStringExtra(ARG_CUR_DURATION);
 
+		// Change layout if needed (method will decide)
 		updateLayout((Type) getIntent().getSerializableExtra(ARG_TYPE));
+		// Change fields if content is set
 		String content = getIntent().getStringExtra(ARG_CONTENT);
 		if (content != null) updateFields(content);
+
+		// Remove the notification when an intent of failure or finish is received
+		// Worth to note that the reception is done only when the dialog is shown
+		if (mType == Type.FINISHED || mType == Type.ERROR) {
+			int notificationId = intent.getIntExtra(ARG_NOTIFICATION_ID, -1);
+			if (notificationId != -1) {
+				NotificationManager notificationManager = (NotificationManager)
+						getSystemService(Context.NOTIFICATION_SERVICE);
+				notificationManager.cancel(notificationId);
+			}
+		}
 	}
 
 	/**
@@ -164,10 +187,10 @@ public class ProgressDialogActivity extends AppCompatActivity {
 				}
 
 				// Total duration
-				mTextViews[2].setText((mOutputDuration != null) ? mOutputDuration : "");
+				mTextViews[2].setText(mOutputDuration);
 
 				// Current duration
-				mTextViews[3].setText((mCurrentDuration != null) ? mCurrentDuration : "");
+				mTextViews[3].setText(mCurrentDuration);
 
 				// Current frame
 				startIndex = content.indexOf(FRAME);

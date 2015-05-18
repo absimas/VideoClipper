@@ -166,7 +166,13 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 		outState.putBundle(PLAYER_STATE, mPlayer.getSavedState());
 		outState.putBoolean(PLAYER_FULLSCREEN_STATE, mContainer.isFullscreen());
 		outState.putBoolean(PLAYER_CONTROLS_VISIBILITY, mControls.isShowing());
+		// Remove visibility listener
 		mControls.removeOnVisibilityChangedListener();
+		// Remove prepared listeners
+		mPlayer.removeAllOnPreparedListeners();
+		// Clear player's message queue
+		Handler playerHandler = mPlayer.getHandler();
+		if (playerHandler != null) playerHandler.removeCallbacksAndMessages(null);
 	}
 
 	private class GestureListener extends GestureDetector.SimpleOnGestureListener {

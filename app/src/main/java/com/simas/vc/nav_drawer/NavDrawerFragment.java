@@ -340,14 +340,18 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		getList().setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				// If it's not the header that's been clicked
-				if (position != 0) {
+				// Make sure it's not the header that's been clicked
+				if (position == 0) {
+					return false;
+				} else {
+					// Make sure a valid item has been clicked
+					boolean valid = (adapter.getItem(position-1).getState() == NavItem.State.VALID);
+					if (!valid) return false;
+
 					// Need to enable multiple mode and force-check manually, so CAB is called
 					getList().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 					getList().setItemChecked(position, true);
 					return true;
-				} else {
-					return false;
 				}
 			}
 		});

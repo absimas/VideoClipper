@@ -71,7 +71,7 @@
 	<string name="clipping_failed_see_notification">Clipping failed… See the notification for
 		more information</string>
 
-	<!--ProgressDialogActivity-->
+	<!--ProgressActivity-->
 	<string name="close">Close</string>
 	<string name="current_frame">Current frame:</string>
 	<string name="fps">Speed (FPS):</string>

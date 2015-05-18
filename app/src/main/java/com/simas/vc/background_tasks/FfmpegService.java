@@ -103,11 +103,11 @@ public class FfmpegService extends IntentService {
 		private NotificationCompat.Builder mBuilder;
 		/**
 		 * Intent used for broadcasting update messages. These are received by {@code
-		 * ProgressDialogActivity}
+		 * ProgressActivity}
 		 */
 		private final Intent mUpdateIntent;
 		/**
-		 * Intent used to open up a {@code ProgressDialogActivity}.
+		 * Intent used to open up a {@code ProgressActivity}.
 		 */
 		private final Intent mDisplayIntent;
 
@@ -118,18 +118,18 @@ public class FfmpegService extends IntentService {
 			mProgressLog = progressFile;
 			++sTaskCount;
 			mUpdateIntent = new Intent();
-			mUpdateIntent.setAction(ProgressDialogActivity.ACTION_DIALOG_UPDATE);
-			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
-					ProgressDialogActivity.Type.PROGRESS);
-			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_NOTIFICATION_ID, sTaskCount);
+			mUpdateIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
+					ProgressActivity.Type.PROGRESS);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_NOTIFICATION_ID, sTaskCount);
 
-			mDisplayIntent = new Intent(VC.getAppContext(), ProgressDialogActivity.class);
-			mDisplayIntent.setAction(ProgressDialogActivity.ACTION_DIALOG_UPDATE);
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_OUTPUT_FILE, outputFile);
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TOTAL_DURATION, mDurationTime);
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
-					ProgressDialogActivity.Type.PROGRESS);
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_NOTIFICATION_ID, sTaskCount);
+			mDisplayIntent = new Intent(VC.getAppContext(), ProgressActivity.class);
+			mDisplayIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_OUTPUT_FILE, outputFile);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_TOTAL_DURATION, mDurationTime);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_TYPE,
+					ProgressActivity.Type.PROGRESS);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_NOTIFICATION_ID, sTaskCount);
 		}
 
 		@Override
@@ -229,8 +229,8 @@ public class FfmpegService extends IntentService {
 										curDur, getString(R.string.out_of), mDurationTime));
 							}
 							// Update display intent
-							mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CUR_DURATION,curDur);
-							mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CONTENT, pg);
+							mDisplayIntent.putExtra(ProgressActivity.ARG_CUR_DURATION,curDur);
+							mDisplayIntent.putExtra(ProgressActivity.ARG_CONTENT, pg);
 							PendingIntent pIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 									mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 							mBuilder.setContentIntent(pIntent);
@@ -238,8 +238,8 @@ public class FfmpegService extends IntentService {
 							NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
 
 							// Send a broadcast message about the values update
-							mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CONTENT, pg);
-							mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CUR_DURATION,curDur);
+							mUpdateIntent.putExtra(ProgressActivity.ARG_CONTENT, pg);
+							mUpdateIntent.putExtra(ProgressActivity.ARG_CUR_DURATION,curDur);
 							sendBroadcast(mUpdateIntent);
 						}
 					} else {
@@ -312,10 +312,10 @@ public class FfmpegService extends IntentService {
 
 		private void showFailureNotification() {
 			// Open error dialog on click
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_CONTENT,
+			mDisplayIntent.putExtra(ProgressActivity.ARG_CONTENT,
 					String.valueOf(mFfmpegReturnCode));
-			mDisplayIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
-					ProgressDialogActivity.Type.ERROR);
+			mDisplayIntent.putExtra(ProgressActivity.ARG_TYPE,
+					ProgressActivity.Type.ERROR);
 			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
@@ -339,9 +339,9 @@ public class FfmpegService extends IntentService {
 					Toast.LENGTH_LONG).show();
 
 			// Send a broadcast message about the values update
-			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
-					ProgressDialogActivity.Type.ERROR);
-			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_CONTENT,
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
+					ProgressActivity.Type.ERROR);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_CONTENT,
 					String.valueOf(mFfmpegReturnCode));
 			sendBroadcast(mUpdateIntent);
 		}
@@ -375,8 +375,8 @@ public class FfmpegService extends IntentService {
 					Toast.LENGTH_LONG).show();
 
 			// Send a broadcast message about the values update
-			mUpdateIntent.putExtra(ProgressDialogActivity.ARG_TYPE,
-					ProgressDialogActivity.Type.FINISHED);
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
+					ProgressActivity.Type.FINISHED);
 			sendBroadcast(mUpdateIntent);
 		}
 

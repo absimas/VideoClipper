@@ -22,12 +22,17 @@
             </intent-filter>
         </activity>
 
+        <!--Activity is started in another task so when removed from history and recents, doesn't
+            interfere with the application-->
         <activity
-            android:name=".background_tasks.ProgressDialogActivity"
+            android:name=".background_tasks.ProgressActivity"
             android:label="@string/vc_working"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.AppCompat.Light.Dialog.MinWidth"
-            android:exported="false">
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=".VCProgress">
         </activity>
 
         <service

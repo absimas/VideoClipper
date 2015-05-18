@@ -1,13 +1,8 @@
 package com.simas.vc;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -16,7 +11,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
 
-import com.simas.vc.background_tasks.ProgressDialogActivity;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;

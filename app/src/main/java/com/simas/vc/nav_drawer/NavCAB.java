@@ -51,6 +51,12 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 			checkedPositions.clear();
 		} else {
 			if (checked) {
+				// If an item is not valid -- don't select it
+				int adapterPos = position-1;
+				if (getAdapter().getItem(adapterPos).getState() != NavItem.State.VALID) {
+					getListView().setItemChecked(position, false);
+					return;
+				}
 				// Remove duplicates
 				while (checkedPositions.remove((Integer) position));
 				checkedPositions.add(position);
@@ -97,7 +103,6 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 			}
 				return true;
 			case R.id.nav_contextual_action_copy: {
-				Log.e(TAG, "copying " + checkedPositions.size() + " amount");
 				// Clone items and add to a list
 				List<NavItem> items = new ArrayList<>();
 				for (int position : checkedPositions) {

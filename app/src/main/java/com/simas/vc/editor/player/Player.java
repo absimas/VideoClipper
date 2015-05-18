@@ -120,6 +120,10 @@ public final class Player extends VideoView implements MediaPlayer.OnPreparedLis
 		mPreparedListeners.remove(listener);
 	}
 
+	public void removeAllOnPreparedListeners() {
+		mPreparedListeners.clear();
+	}
+
 	@Override
 	public void setOnPreparedListener(MediaPlayer.OnPreparedListener l) {
 		if (l != this) {

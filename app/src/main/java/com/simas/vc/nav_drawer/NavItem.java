@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+// ToDo instead of re-parsing duplicate attrs perhaps they should be copied (just like the preview)
+
 public class NavItem implements Parcelable, Cloneable {
 
 	private final String TAG = getClass().getName();
 	/**
-	 * Item preview bitmap. // ToDo mPreview shouldn't be parcelled but instead re-created after un-parcelling
+	 * Item preview bitmap.
 	 */
 	private Bitmap mPreview;
 	/**
@@ -64,7 +66,7 @@ public class NavItem implements Parcelable, Cloneable {
 
 	// ToDo extension list documentation
 	private static final List<String> VALID_AUDIO_EXTENSIONS = new ArrayList<String>() { {
-		add("mp3");
+//		add("mp3");
 	}};
 
 	private static final List<String> VALID_VIDEO_EXTENSIONS = new ArrayList<String>() { {
@@ -74,10 +76,10 @@ public class NavItem implements Parcelable, Cloneable {
 	}};
 
 	private static final List<String> VALID_PICTURE_EXTENSIONS = new ArrayList<String>() { {
-		add("jpg");
-		add("jpeg");
-		add("png");
-		add("bmp");
+//		add("jpg");
+//		add("jpeg");
+//		add("png");
+//		add("bmp");
 	}};
 
 	/**
@@ -154,9 +156,23 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	/**
-	 * Blocking method that fetches and scales the preview image
+	 * Blocking method that fetches and scales the preview image.<br/>
+	 * <b>Note:</b> if this item is a duplicate of another one (file paths match), then the original
+	 * preview is deep-copied instead of being re-parsed.
 	 */
 	private Bitmap parsePreview() {
+		// Loop existing items
+		for (NavItem item : mParent.getItems()) {
+			// Check if this one is a duplicate
+			if (item.getFile().compareTo(getFile()) == 0) {
+				// Make sure the original preview is parsed
+				if (item.mPreview != null) {
+					// Deep copy the preview and use it for this item
+					return item.mPreview.copy(item.mPreview.getConfig(), true);
+				}
+			}
+		}
+
 		Bitmap preview = Ffmpeg.createPreview(getFile().getPath());
 		if (preview == null || EditorFragment.sPreviewSize == 0) {
 			return null;
@@ -276,7 +292,6 @@ public class NavItem implements Parcelable, Cloneable {
 		out.writeSerializable(mType);
 		out.writeParcelable(mAttributes, flags);
 		out.writeSerializable(mState);
-//		out.writeParcelable(mPreview, flags);
 	}
 
 	public static final Parcelable.Creator<NavItem> CREATOR = new Parcelable.Creator<NavItem>() {
@@ -294,9 +309,7 @@ public class NavItem implements Parcelable, Cloneable {
 		mType = (Type) in.readSerializable();
 		mAttributes = in.readParcelable(Stream.class.getClassLoader());
 		mState = (State) in.readSerializable();
-
-		// Re-fecth the image from file
-//		mPreview = in.readParcelable(Bitmap.class.getClassLoader());
+		// Parse preview
 		mPreview = parsePreview();
 	}
 
@@ -312,6 +325,7 @@ public class NavItem implements Parcelable, Cloneable {
 		mFile = otherItem.getFile();
 		mState = otherItem.mState;
 		// Deep copy bitmap
+		// ToDo other item might have it's preview not set yet => CAB should prevent copying non-valid items
 		mPreview = otherItem.mPreview.copy(otherItem.mPreview.getConfig(), true);
 	}
 
