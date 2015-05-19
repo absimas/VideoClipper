@@ -149,9 +149,7 @@ jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
             // Free char*
             (*env)->ReleaseStringUTFChars(env, output, outputPath);
         	// Start FFprobe
-            LOGE("FFprobe starts.");
             ffprobe(cArray.size, cArray.arr);
-            LOGE("FFprobe actually finished normally.");
             exit(EXIT_SUCCESS); // Will not be reached, because FFprobe kills the process
         default:
             LOGI("Parent process started...");
