@@ -260,12 +260,12 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 						// Remove the ProgressBar and cover
 						setProgressVisible(false);
 						mPlayer.setBackgroundColor(0);
-						// Make sure we're not restoring player's state, e.g. rotating the device
-						if (!mIsRestoring) {
+						// Show controls if it's a newly opened video or
+						// The state is being restored and controls need to be reshown afterseeking
+						if (!mIsRestoring || mControls.isShowing()) {
 							mControls.show();
-						} else {
-							mIsRestoring = false;
 						}
+						mIsRestoring = false;
 					}
 				}, 200);
 			}
@@ -273,9 +273,8 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 		final NavDrawerFragment drawerFragment = (NavDrawerFragment) getActivity()
 				.getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-		// If drawer is open or is closing, wait for it to be closed, then change the player's
-		// video path
-		if (drawerFragment.isDrawerOpen() || drawerFragment.isDrawerClosing()) {
+		// If drawer is closing, wait for it to be closed, then change the player's video path
+		if (drawerFragment.isDrawerClosing()) {
 			drawerFragment.addDrawerStateListener(new DrawerLayout.DrawerListener() {
 				@Override
 				public void onDrawerClosed(View drawerView) {

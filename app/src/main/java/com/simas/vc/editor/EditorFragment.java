@@ -65,11 +65,12 @@ public class EditorFragment extends Fragment {
 		// Display a black window while working
 		final ViewGroup root = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
 		final View black = new View(getActivity());
-		black.setBackgroundColor(Color.BLACK);
+		black.setBackgroundColor(Color.RED);
 
 		// Fragment won't be visible when HelperFragment is shown on top.
 		// No need for a black view then.
-		if (isVisible()) {
+		final boolean visibleOnCreation = isVisible();
+		if (visibleOnCreation) {
 			root.addView(black,
 					ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 		}
@@ -101,6 +102,7 @@ public class EditorFragment extends Fragment {
 								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
 							} else {
 								params.height = height;
+								//noinspection SuspiciousNameCombination
 								params.width = height;
 							}
 							sPreviewSize = params.width;
@@ -110,6 +112,7 @@ public class EditorFragment extends Fragment {
 								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
 							} else {
 								params.width = width;
+								//noinspection SuspiciousNameCombination
 								params.height = width;
 							}
 							sPreviewSize = params.height;
@@ -121,6 +124,9 @@ public class EditorFragment extends Fragment {
 							@Override
 							public void run() {
 								root.removeView(black);
+								if (!visibleOnCreation) {
+									mDelayedHandler.resume();
+								}
 							}
 						});
 					}
@@ -133,7 +139,9 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.LENGTH, rootView.findViewById(R.id.length_value));
 		mDataMap.put(Data.ACTIONS, rootView.findViewById(R.id.editor_actions));
 
-		mDelayedHandler.resume();
+		if (visibleOnCreation) {
+			mDelayedHandler.resume();
+		}
 
 		return rootView;
 	}

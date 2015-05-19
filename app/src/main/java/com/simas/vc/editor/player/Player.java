@@ -58,7 +58,6 @@ public final class Player extends VideoView implements MediaPlayer.OnPreparedLis
 
 	private void init() {
 		mPrepared = false;
-
 		// Multiple prepared listener implementation
 		setOnPreparedListener(this);
 	}

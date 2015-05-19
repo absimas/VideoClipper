@@ -1,7 +1,6 @@
 package com.simas.vc.nav_drawer;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Environment;
@@ -23,14 +22,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.VCException;
-import com.simas.vc.attributes.FileAttributes;
-import com.simas.vc.attributes.Stream;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.Utils;
 import com.simas.vc.background_tasks.Ffmpeg;
@@ -38,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
@@ -68,9 +65,15 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private ListView mDrawerList;
 	private View mFragmentContainerView;
 	/**
+	 * {@code isDrawerOpen} does not provide consistent data on the drawer state:
+	 * (closing/opening/closed/opened). The state is saved manually via {@code setDrawerOpen}.
+	 */
+	private boolean mIsDrawerClosing;
+	/**
 	 * Specific group of listeners that are notified about the open and close states of the drawer.
 	 */
-	private List<DrawerLayout.DrawerListener> mDrawerStateListeners = new ArrayList<>();
+	private CopyOnWriteArrayList<DrawerLayout.DrawerListener>
+			mDrawerStateListeners = new CopyOnWriteArrayList<>();
 	/**
 	 * First initialized when the drawer is opened, so outside of {@code NavDrawerFragment} need
 	 * to check if it's not {@code null}.
@@ -141,29 +144,11 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		return inflater.inflate(R.layout.nav_header, null);
 	}
 
-	private void hideKeyboard() {
-		// Check if no view has focus:
-		View view = getActivity().getCurrentFocus();
-		if (view != null) {
-			InputMethodManager inputManager = (InputMethodManager) getActivity()
-					.getSystemService(Context.INPUT_METHOD_SERVICE);
-			inputManager.hideSoftInputFromWindow(view.getWindowToken(),
-					InputMethodManager.HIDE_NOT_ALWAYS);
-		}
-	}
-
+	/**
+	 * Specifies if the drawer is in the open state (closing should considered as open).
+	 */
 	public boolean isDrawerOpen() {
 		return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(mFragmentContainerView);
-	}
-
-	/**
-	 * Convenience function that checks if the drawer is currently closing
-	 * @return returns true if the drawer is not null, is visible but not in an open state,
-	 * otherwise false
-	 */
-	public boolean isDrawerClosing() {
-		return mDrawerLayout != null && !mDrawerLayout.isDrawerOpen(mFragmentContainerView) &&
-				mDrawerLayout.isDrawerVisible(mFragmentContainerView);
 	}
 
 	/**
@@ -172,12 +157,25 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 * @param open    true if the drawer should be opened, false if closed
 	 */
 	public void setDrawerOpen(boolean open) {
-		if (mDrawerLayout == null) return;
+		if (mDrawerLayout == null) {
+			return;
+		}
 		if (open) {
 			mDrawerLayout.openDrawer(mFragmentContainerView);
 		} else {
+			// If drawer is open and has been said to close, it's in the closing state
+			if (isDrawerOpen()) mIsDrawerClosing = true;
+
 			mDrawerLayout.closeDrawer(mFragmentContainerView);
 		}
+	}
+
+	/**
+	 * Checks if the drawer is closing. This state is determined by the {@code setDrawerOpen}
+	 * method invocations.
+	 */
+	public boolean isDrawerClosing() {
+		return mIsDrawerClosing;
 	}
 
 	/**
@@ -209,6 +207,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onDrawerClosed(View drawerView) {
 				super.onDrawerClosed(drawerView);
+				mIsDrawerClosing = false;
 				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
 					listener.onDrawerClosed(drawerView);
 				}
@@ -246,7 +245,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 				getActivity().supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
 			}
-
 		};
 
 		// If the user hasn't 'learned' about the drawer, open it to introduce them to the drawer,
@@ -265,7 +263,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-		// Sadly adapter needs a reference to the list its connected to
+		// The adapter needs a reference to the list its connected to
 		adapter = new NavAdapter(getActivity());
 		// Update adapter's list
 		adapter.attachToList(getList());
