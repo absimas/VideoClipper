@@ -133,6 +133,8 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.LENGTH, rootView.findViewById(R.id.length_value));
 		mDataMap.put(Data.ACTIONS, rootView.findViewById(R.id.editor_actions));
 
+		mDelayedHandler.resume();
+
 		return rootView;
 	}
 
