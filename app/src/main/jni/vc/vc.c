@@ -4,22 +4,22 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/pixfmt.h>
+
 // Android includes
 #include <android/log.h>
 #include <android/bitmap.h>
 // Standard includes
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <time.h>
 #include <wchar.h>
 #include <jni.h>
 #include <dlfcn.h>
-// stdout redirection includes
-#include <sys/stat.h>
 #include <fcntl.h>
 
 /* Notes
@@ -44,6 +44,7 @@
 // Time between checks if the child process has been closed
 static const int FFMPEG_WAIT_INTERVAL = 1000;
 static const int FFPROBE_WAIT_INTERVAL = 300;
+static const int MAX_UNMODIFIED_LOG_ITERATIONS = 3;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
 static const char* mFfprobeActivityPath = "com/simas/vc/background_tasks/Ffprobe";
 
@@ -57,10 +58,11 @@ typedef struct CArray {
 
 // Method prototypes
 jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args);
-jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
+jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
 jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath);
 // Helper method prototypes
 void sleep_ms(int milliseconds);
+time_t get_mtime(const char *path);
 CArray convertToCArray(JNIEnv *env, jobjectArray args);
 jobject createBitmap(JNIEnv *pEnv, int pWidth, int pHeight);
 
@@ -72,16 +74,17 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
 
     switch (childID) {
         case -1:
-            LOGE("fork error");
-            return -666;
+            LOGE("Fork error");
+            return EXIT_FAILURE;
         case 0:
             LOGI("Child process started...");
             CArray cArray = convertToCArray(env, args);
+
         	// Start FFmpeg
-            ffmpeg(cArray.size, cArray.arr);
-            exit(EXIT_SUCCESS); // Will not be reached, because FFmpeg exits the process
+            int result = ffmpeg(cArray.size, cArray.arr);
+            exit(result);
         default:
-            LOGI("Parent process started...");
+            LOGI("Parent listening to child: %d", childID);
             // Check if child has finished every FFMPEG_WAIT_INTERVAL ms
             int status;
             for(;;) {
@@ -90,10 +93,105 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
                 switch (endID) {
                     case -1:
                         LOGE("waitpid error!");
-                        return -666;
+                        return EXIT_FAILURE;
                     case 0:
                         LOGI("Parent waiting for child...");
                         sleep_ms(FFMPEG_WAIT_INTERVAL);
+                    default:
+                        if (endID == childID) {
+                            if (WIFEXITED(status)) {
+                                // If return code != 0, child has failed.
+                                if (status) {
+                                    LOGE("Child ended normally but code returned was: %s",
+                                        av_err2str(status));
+                                } else {
+                                    LOGI("Child ended normally.");
+                                }
+                                return status;
+                            } else if (WIFSIGNALED(status)) {
+                                LOGE("Child ended because of an uncaught signal.");
+                            } else if (WIFSTOPPED(status)) {
+                                LOGI("Child process has stopped.");
+                            } else {
+                              return status;
+                            }
+                        }
+                }
+            }
+    }
+}
+
+jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
+#define TAG "cFfprobe"
+    // Fork process
+    pid_t childID = fork();
+
+	const char *logPath = (*env)->GetStringUTFChars(env, jLogPath, 0);
+
+    switch (childID) {
+        case -1:
+            LOGE("fork error");
+            return EXIT_FAILURE;
+        case 0:
+            LOGI("Child process started...");
+		    CArray cArray = convertToCArray(env, args);
+		    // Open output file
+		    FILE *logFile;
+		    if (access(logPath, F_OK) != -1) {
+		        if ((logFile = fopen(logPath, "w")) == NULL) {
+		            LOGE("Couldn't open the file! %s", logPath);
+		            exit(EXIT_FAILURE);
+		        }
+		    } else {
+		        LOGE("File not found!");
+		        exit(EXIT_FAILURE);
+		    }
+
+		    // Redirect stdout to a file
+		    if (dup2(fileno(logFile), fileno(stdout)) == -1) {
+		        LOGE("Error redirecting stdout");
+		        exit(EXIT_FAILURE);
+		    }
+		    // File descriptor duplicated, can now close the file
+		    fclose(logFile);
+
+//		    // Free output path string
+//		    (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
+
+		    // Start FFprobe
+		    int result = ffprobe(cArray.size, cArray.arr);
+
+		    // Flush FFprobe output
+			fflush(stdout);
+
+			// Exit the child process and return the FFprobe result code
+			exit(result);
+        default:
+            LOGI("Parent listening to child: %d", childID);
+            // Check if child has finished every FFPROBE_WAIT_INTERVAL ms
+            int status, unmodifiedIterations = 0;
+            long logModificationTime = 0;
+            for(;;) {
+                pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
+
+                switch (endID) {
+                    case -1:
+                        LOGE("waitpid error!");
+                        return EXIT_FAILURE;
+                    case 0:
+                        // Check the log modification time
+                        if (logModificationTime != 0 && logModificationTime == get_mtime(logPath)) {
+                            // If log hasn't been modified for MAX_UNMODIFIED_LOG_ITERATIONS, exit
+							if (++unmodifiedIterations >= MAX_UNMODIFIED_LOG_ITERATIONS) {
+								return EXIT_FAILURE;
+							}
+                        } else {
+                            unmodifiedIterations = 0;
+                        }
+                        logModificationTime = get_mtime(logPath);
+
+                        LOGV("Parent waiting for child...");
+                        sleep_ms(FFPROBE_WAIT_INTERVAL);
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {
@@ -110,78 +208,6 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
                                 LOGI("Child process has stopped.");
                             } else {
                               return status;
-                            }
-                        }
-                }
-            }
-    }
-}
-
-jboolean cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output) {
-#define TAG "cFfprobe"
-	// Fork process
-    pid_t childID = fork();
-
-    switch (childID) {
-        case -1:
-            LOGE("Fork error!");
-            return (bool) false;
-        case 0:
-            LOGI("Child process started...");
-            // Convert strings to char*
-            const char *outputPath = (*env)->GetStringUTFChars(env, output, 0);
-            CArray cArray = convertToCArray(env, args);
-            // Open output file
-            FILE *file;
-            if (access(outputPath, F_OK) != -1) {
-                if ((file = fopen(outputPath, "w")) == NULL) {
-                    LOGE("Couldn't open the file! %s", outputPath);
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                LOGE("File not found!");
-                exit(EXIT_FAILURE);
-            }
-            // Redirect stdout to a file
-            dup2(fileno(file), fileno(stdout));
-            // File descriptor duplicated, can now close the file
-            fclose(file);
-            // Free char*
-            (*env)->ReleaseStringUTFChars(env, output, outputPath);
-        	// Start FFprobe
-            ffprobe(cArray.size, cArray.arr);
-            exit(EXIT_SUCCESS); // Will not be reached, because FFprobe kills the process
-        default:
-            LOGI("Parent process started...");
-            // Check if child has finished every FFPROBE_WAIT_INTERVAL ms
-            int status;
-            for(;;) {
-                pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
-
-                switch (endID) {
-                    case -1:
-                        LOGE("Waitpid error!");
-                        return (bool) false;
-                    case 0:
-                        LOGI("Parent waiting for child...");
-                        sleep_ms(FFPROBE_WAIT_INTERVAL);
-                    default:
-                        if (endID == childID) {
-                            if (WIFEXITED(status)) {
-                                // If return code != 0, child has failed.
-                                if (status) {
-                                    LOGE("Child ended normally but code returned was: %d", status);
-                                    return (bool) false;
-                                } else {
-                                    LOGI("Child ended normally.");
-                                    return (bool) true;
-                                }
-                            } else if (WIFSIGNALED(status)) {
-                                LOGE("Child ended because of an uncaught signal.n");
-                            } else if (WIFSTOPPED(status)) {
-                                LOGI("Child process has stopped.");
-                            } else {
-                              return (bool) false;
                             }
                         }
                 }
@@ -394,9 +420,17 @@ void sleep_ms(int milliseconds) {
 #endif
 }
 
+time_t get_mtime(const char *path) {
+    struct stat statbuf;
+    if (stat(path, &statbuf) == -1) {
+        return 0;
+    }
+    return statbuf.st_mtime;
+}
+
 // JNI Initialization
 static JNINativeMethod ffprobeMethodTable[] = {
-	{"cFfprobe", "([Ljava/lang/String;Ljava/lang/String;)Z", (void *) cFfprobe}
+	{"cFfprobe", "([Ljava/lang/String;Ljava/lang/String;)I", (void *) cFfprobe}
 };
 static JNINativeMethod ffmpegMethodTable[] = {
 	{"cFfmpeg", "([Ljava/lang/String;)I", (void *) cFfmpeg},

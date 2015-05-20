@@ -40,8 +40,8 @@ public class NavAdapter extends BaseAdapter {
 
 		private final NavItem.OnUpdatedListener previewListener = new NavItem.OnUpdatedListener() {
 			@Override
-			public void onUpdated(NavItem.ItemAttribute attribute,
-			                      Object oldValue, final Object newValue) {
+			public void onUpdated(final NavItem.ItemAttribute attribute,
+			                      final Object oldValue, final Object newValue) {
 				if (attribute == NavItem.ItemAttribute.PREVIEW) {
 					final ImageView preview = mImageView;
 					final ProgressBar progress = mProgressBar;

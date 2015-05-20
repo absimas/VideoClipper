@@ -148,23 +148,22 @@ public class EditorFragment extends Fragment {
 
 	private NavItem.OnUpdatedListener mItemUpdateListener = new NavItem.OnUpdatedListener() {
 		@Override
-		public void onUpdated(NavItem.ItemAttribute attribute, Object oldValue, Object newValue) {
-			switch (attribute) {
-				case STATE:
-					// Full update if changed to valid from in-progress
-					if (newValue == NavItem.State.VALID && oldValue == NavItem.State.INPROGRESS) {
-						post(new Runnable() {
-							@Override
-							public void run() {
+		public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
+		                      final Object newValue) {
+			post(new Runnable() {
+				@Override
+				public void run() {
+					switch (attribute) {
+						case STATE:
+							// Full update if changed to valid from in-progress
+							if (newValue == NavItem.State.VALID && oldValue == NavItem.State.INPROGRESS) {
 								updateEditorToCurrentItem();
 							}
-						});
-					} else if (newValue == NavItem.State.INVALID) {
-						// ToDo remove item from the drawer
-
+							break;
 					}
-					break;
-			}
+
+				}
+			});
 		}
 	};
 

@@ -1,6 +1,7 @@
 package com.simas.vc.background_tasks;
 
 import android.os.AsyncTask;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.simas.vc.VC;
@@ -21,24 +22,31 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.SynchronousQueue;
+
 import static com.simas.vc.Utils.*;
 
 /**
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
-// ToDo IntentService so consequent calls to ffprobe are queued.
-
 public class Ffprobe {
 
 	private static final String TAG = "ffprobe";
 
-	private static native boolean cFfprobe(String[] args, String outputPath);
+	private static native int cFfprobe(String[] args, String outputPath);
 
-	public static void parseAttributes(File inputFile, @NonNull VarRunnable onComplete)
-			throws IOException, InterruptedException {
-
-		if (!inputFile.exists()) throw new IOException("The input file doesn't exist!");
+	/**
+	 * This operation is synchronous and cannot be run on the UI thread.
+	 */
+	public synchronized static FileAttributes parseAttributes(File inputFile) throws VCException {
+		if (Looper.myLooper() == Looper.getMainLooper()) {
+			throw new IllegalStateException("parseAttributes cannot be run on the UI thread!");
+		}
 
 		/* Executable call used // ToDo gal pretty naudot? td hh:mm:ss:ms...
 			./ffprobe -i 'nature/bee.mp4' \
@@ -47,14 +55,26 @@ public class Ffprobe {
 			-show_streams -show_entries stream=codec_name,codec_long_name,codec_type,sample_rate,channels,duration,display_aspect_ratio,width,height,time_base,codec_time_base,r_frame_rate
 		*/
 
-		File tmpFile = File.createTempFile("vc-rp", null);
-		Log.e(TAG, "Tmp: " + tmpFile.getPath());
+		// Check if input exists
+		if (!inputFile.exists()) {
+			throw new VCException("Input file doesn't exist!");
+		}
 
-		String[] args = new ArgumentBuilder(TAG)
+		// Create a temporary file to hold the stdout output
+		File tmpFile;
+		try {
+			tmpFile = File.createTempFile("vc-out", null);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new VCException("Temporary file couldn't be created! Please try again.");
+		}
+
+		// Create arguments for ffprobe
+		final String[] args = new ArgumentBuilder(TAG)
 				.add("-i")
 				.addSpaced("%s", inputFile.getPath())   // Spaced input file path
 				.add("-v quiet -print_format json")     // Output quietly in JSON
-				// Format entries to show
+						// Format entries to show
 				.add("-show_format -show_entries format=%s,%s,%s,%s,%s,%s",
 						getStr(R.string.format_duration), getStr(R.string.format_size),
 						getStr(R.string.format_name), getStr(R.string.format_long_name),
@@ -70,83 +90,52 @@ public class Ffprobe {
 						getStr(R.string.stream_codec_tag))
 				.build();
 
-		new FfprobeTask(onComplete, tmpFile).execute(args);
-	}
+		if (cFfprobe(args, tmpFile.getPath()) != 0) {
+			throw new VCException(getStr(R.string.ffprobe_fail));
+		}
 
-	private static class FfprobeTask extends AsyncTask<String, Void, Boolean> {
+		BufferedReader reader = null;
+		FileAttributes fa = null;
+		try {
+			// Parse file
+			reader = new BufferedReader(new FileReader(tmpFile));
+			StringBuilder sb = new StringBuilder();
+			String line = reader.readLine();
 
-		private VarRunnable mSuccessRunnable;
-		private File mTmpFile;
+			while (line != null) {
+				sb.append(line);
+				sb.append('\n');
+				line = reader.readLine();
+			}
+			String content = sb.toString();
 
-		public FfprobeTask(@NonNull VarRunnable successAction, @NonNull File tmpFile) {
-			mSuccessRunnable = successAction;
-			try {
-				if (!tmpFile.exists()) throw new IOException();
-				mTmpFile = tmpFile;
-			} catch (IOException e) {
-				throw new IllegalStateException("Temporary file couldn't be created!");
+			int firstOpeningBrace = content.indexOf('{');
+			int lastClosingBrace = content.lastIndexOf('}');
+			if (firstOpeningBrace == -1 || lastClosingBrace == -1) {
+				return null;
+			}
+			String json = content.substring(firstOpeningBrace, lastClosingBrace+1);
+
+			// Parse JSON
+			fa = parseJsonAttributes(json);
+			Log.i(TAG, "Parsed attributes: " + fa);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new VCException(getStr(R.string.ffprobe_fail));
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
-		@Override
-		protected Boolean doInBackground(String... args) {
-			if (!cFfprobe(args, mTmpFile.getPath())) {
-				return false;
-			}
-			FileAttributes fa = null;
-			BufferedReader reader = null;
-			try {
-				// Parse file
-				reader = new BufferedReader(new FileReader(mTmpFile));
-				StringBuilder sb = new StringBuilder();
-				String line = reader.readLine();
+		// Delete the tmp file
+		tmpFile.delete();
 
-				while (line != null) {
-					sb.append(line);
-					sb.append('\n');
-					line = reader.readLine();
-				}
-				String content = sb.toString();
-
-				int firstOpeningBrace = content.indexOf('{');
-				int lastClosingBrace = content.lastIndexOf('}');
-				if (firstOpeningBrace == -1 || lastClosingBrace == -1) {
-					return false;
-				}
-				String json = content.substring(firstOpeningBrace, lastClosingBrace+1);
-
-				// Parse JSON
-				fa = parseJsonAttributes(json);
-				Log.i(TAG, "FfprobeTask returned: " + fa);
-			} catch (IOException e) {
-				e.printStackTrace();
-				return false;
-			} catch (VCException e) {
-				e.printStackTrace();
-				// ToDo display error to the user!
-			} finally {
-				if (reader != null) {
-					try {
-						reader.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-			// Update runnable
-			if (mSuccessRunnable != null) {
-				mSuccessRunnable.setVariable(fa);
-			}
-			return true;
-		}
-
-		@Override
-		protected void onPostExecute(Boolean result) {
-			super.onPostExecute(result);
-			mSuccessRunnable.run();
-		}
-
+		return fa;
 	}
 
 	private static FileAttributes parseJsonAttributes(@NonNull String json)

@@ -7,6 +7,7 @@ import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.simas.vc.VCException;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.background_tasks.VarRunnable;
 import com.simas.vc.R;
@@ -53,7 +54,8 @@ public class NavItem implements Parcelable, Cloneable {
 	private NavAdapter mParent;
 
 	/**
-	 * Thread-safe list holding all the update listeners
+	 * Thread-safe list holding all the update listeners. These can be called from a <b>non-UI
+	 * thread</b>, so make sure to check that in your runnables
 	 */
 	private final CopyOnWriteArraySet<OnUpdatedListener> mUpdateListeners =
 			new CopyOnWriteArraySet<>();
@@ -116,43 +118,36 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	/**
-	 * Must be called after setting {@code mFile}
+	 * {@code mFile} must be set before this is called.
 	 */
 	private void parseItem() {
-		try {
-			parseAttributes();
-			// The above method will invoke a preview parser, which will invoke the state validator
-		} catch (InterruptedException | IOException e) {
-			e.printStackTrace();
-			setState(State.INVALID);
-		}
-	}
-
-	private void parseAttributes() throws IOException, InterruptedException {
-		Ffprobe.parseAttributes(getFile(), new VarRunnable() {
+		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				if (getVariable() == null) {
-					setState(State.INVALID);
-				} else {
-					setAttributes((FileAttributes) getVariable());
-
-					// Now fetch the preview in a separate thread and validate the item
-					new Thread(new Runnable() {
-						@Override
-						public void run() {
-							Bitmap preview = parsePreview();
-							if (preview == null) {
-								setState(State.INVALID);
-							} else {
-								setPreview(preview);
-								setState(State.VALID);
-							}
-						}
-					}).start();
+				// Attributes
+				FileAttributes attributes = null;
+				try {
+					attributes = Ffprobe.parseAttributes(getFile());
+				} catch (VCException e) {
+					e.printStackTrace();
+					// ToDo display to user
 				}
+				if (attributes == null) {
+					setState(State.INVALID);
+					return;
+				}
+				setAttributes(attributes);
+
+				// Preview
+				Bitmap preview = parsePreview();
+				if (preview == null) {
+					setState(State.INVALID);
+					return;
+				}
+				setPreview(preview);
+				setState(State.VALID);
 			}
-		});
+		}).start();
 	}
 
 	/**
@@ -332,7 +327,7 @@ public class NavItem implements Parcelable, Cloneable {
 
 	/* Update listener */
 	public interface OnUpdatedListener {
-		void onUpdated(ItemAttribute attribute, Object oldValue, Object newValue);
+		void onUpdated(final ItemAttribute attribute, final Object oldValue, final Object newValue);
 	}
 
 	public void registerUpdateListener(OnUpdatedListener listener) {

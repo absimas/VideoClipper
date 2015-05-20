@@ -47,7 +47,6 @@ public class Ffmpeg {
 			throw new VCException(Utils.getString(R.string.at_least_2_videos));
 		}
 
-		// ToDo incorrect total duration with nature videos
 		// Fetch item validity and calculate total duration
 		int duration = -1;
 		for (NavItem item : items) {
@@ -58,7 +57,6 @@ public class Ffmpeg {
 						"still being processed.");
 			}
 		}
-
 
 		// Prepare a tmp file for progress output
 		File progressFile = File.createTempFile("vc-pg", null);

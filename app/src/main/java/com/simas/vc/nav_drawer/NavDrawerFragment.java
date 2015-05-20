@@ -517,8 +517,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		// Enable concat action when state validates
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
 			@Override
-			public void onUpdated(NavItem.ItemAttribute attribute,
-			                      Object oldValue, Object newValue) {
+			public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
+			                      final Object newValue) {
 				Utils.runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
@@ -526,15 +526,18 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						if (mConcatAction != null) {
 							mConcatAction.setEnabled(isConcatenatable());
 						}
+
+						if (newValue == NavItem.State.INVALID) {
+							// If an invalid state was reached, remove this item from the drawer
+							adapter.removeItem(item);
+							adapter.notifyDataSetChanged();
+						}
 					}
 				});
 
 				if (newValue == NavItem.State.VALID) {
 					// Upon reaching the VALID state, remove this listener
 					item.unregisterUpdateListener(this);
-				} else if (newValue == NavItem.State.INVALID) {
-					// If an invalid state was reached, remove this item from the drawer
-					adapter.removeItem(item);
 				}
 			}
 		});

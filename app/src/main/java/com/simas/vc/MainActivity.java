@@ -19,6 +19,9 @@ import com.simas.vc.nav_drawer.NavDrawerFragment;
 // ToDo FFprobe/FFmpeg should queue, otherwise with 2 calls it fails (probly coz of the same report file?)
 // ToDo use dimensions in xml instead of hard-coded values
 // ToDo after rotate helper text gets re-set. E.g. with added items you see slide to open list
+// ToDo sometimes helper doesn't get initialized. Then ActionBar acts weirdly but also more
+	// correctly: you can add items and when you select one of them, you get the proper title set
+		// unlike it usually does
 
 public class MainActivity extends AppCompatActivity
 		implements NavDrawerFragment.NavigationDrawerCallbacks {

@@ -22,6 +22,8 @@ import java.util.List;
  * Created by Simas Abramovas on 2015 Mar 10.
  */
 
+// ToDo since you can't select progressing/invalid items means that you can't remove invalid items...
+
 public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 
 	public NavDrawerFragment navDrawerFragment;

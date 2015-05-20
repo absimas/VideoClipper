@@ -66,7 +66,7 @@ public class ArgumentBuilder {
 
 	public String[] build() {
 		String[] args = mArgs.toArray(new String[mArgs.size()]);
-		Log.e(TAG, Arrays.toString(args));
+		Log.i(TAG, Arrays.toString(args));
 		return args;
 	}
 
