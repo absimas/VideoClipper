@@ -1,20 +1,20 @@
 <LinearLayout
-	android:id="@+id/editor_actions"
-	android:visibility="invisible"
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:custom="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/editor_actions"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:orientation="vertical">
+	android:orientation="vertical"
+	android:visibility="invisible">
 	<com.simas.vc.editor.LabeledLinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
 		custom:label="Info"
 		custom:containerPadding="10dp"
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="5dp"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content">
+		custom:labelHorizontalPadding="5dp">
 		<TableLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content">
@@ -70,56 +70,58 @@
 			</TableRow>
 		</TableLayout>
 
-	<com.simas.vc.editor.LabeledLinearLayout
-		custom:label="Streams"
-		custom:containerPadding="10dp"
-		custom:containerStrokeColor="@color/indigo"
-		custom:labelColor="@color/blue"
-		custom:labelSize="18sp"
-		custom:labelHorizontalPadding="5dp"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content">
 		<com.simas.vc.editor.LabeledLinearLayout
-			custom:label="Audio"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			custom:label="Streams"
 			custom:containerPadding="10dp"
 			custom:containerStrokeColor="@color/indigo"
 			custom:labelColor="@color/blue"
-			custom:labelSize="16sp"
-			custom:labelHorizontalPadding="5dp"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"/>
+			custom:labelSize="18sp"
+			custom:labelHorizontalPadding="5dp">
+			<com.simas.vc.editor.LabeledLinearLayout
+				android:id="@+id/video_streams_container"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				custom:label="Video"
+				custom:containerPadding="10dp"
+				custom:containerStrokeColor="@color/indigo"
+				custom:labelColor="@color/blue"
+				custom:labelSize="16sp"
+				custom:labelHorizontalPadding="5dp"/>
 
-		<com.simas.vc.editor.LabeledLinearLayout
-			custom:label="Video"
-			custom:containerPadding="10dp"
-			custom:containerStrokeColor="@color/indigo"
-			custom:labelColor="@color/blue"
-			custom:labelSize="16sp"
-			custom:labelHorizontalPadding="5dp"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"/>
+			<com.simas.vc.editor.LabeledLinearLayout
+				android:id="@+id/audio_streams_container"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				custom:label="Audio"
+				custom:containerPadding="10dp"
+				custom:containerStrokeColor="@color/indigo"
+				custom:labelColor="@color/blue"
+				custom:labelSize="16sp"
+				custom:labelHorizontalPadding="5dp"/>
 		</com.simas.vc.editor.LabeledLinearLayout>
 	</com.simas.vc.editor.LabeledLinearLayout>
 
 	<com.simas.vc.editor.LabeledLinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
 		custom:label="Crop"
 		custom:containerPadding="10dp"
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="5dp"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content">
+		custom:labelHorizontalPadding="5dp">
 	</com.simas.vc.editor.LabeledLinearLayout>
 
 	<com.simas.vc.editor.LabeledLinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
 		custom:label="Cut"
 		custom:containerPadding="10dp"
 		custom:containerStrokeColor="@color/indigo"
 		custom:labelColor="@color/blue"
 		custom:labelSize="21sp"
-		custom:labelHorizontalPadding="5dp"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content">
+		custom:labelHorizontalPadding="5dp">
 	</com.simas.vc.editor.LabeledLinearLayout>
 </LinearLayout>

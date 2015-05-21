@@ -44,7 +44,7 @@
 // Time between checks if the child process has been closed
 static const int FFMPEG_WAIT_INTERVAL = 1000;
 static const int FFPROBE_WAIT_INTERVAL = 300;
-static const int MAX_UNMODIFIED_LOG_ITERATIONS = 3;
+static const int MAX_LOG_UNMODIFYING_ITERATIONS = 10;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
 static const char* mFfprobeActivityPath = "com/simas/vc/background_tasks/Ffprobe";
 
@@ -176,7 +176,7 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
             LOGI("Parent listening to child: %d", childID);
             int unmodifiedIterations = 0;
             long logModificationTime = 0;
-            bool loop = true;
+            int loop = true;
             while (loop) {
                 // Check if child has finished every FFPROBE_WAIT_INTERVAL ms
                 pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
@@ -190,13 +190,15 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 	                case 0:
                         // Check the log modification time
                         if (logModificationTime != 0 && logModificationTime == get_mtime(logPath)) {
-                            // If log hasn't been modified for MAX_UNMODIFIED_LOG_ITERATIONS, exit
                             ++unmodifiedIterations;
+                            LOGI("Log file unmodified for %d iteration(s)!", unmodifiedIterations);
                         } else {
                             unmodifiedIterations = 0;
                         }
 
-                        if (unmodifiedIterations >= MAX_UNMODIFIED_LOG_ITERATIONS) {
+                        if (unmodifiedIterations >= MAX_LOG_UNMODIFYING_ITERATIONS) {
+                            LOGE("Log file hasn't been modified for %d millis! Quitting.",
+                                    unmodifiedIterations * FFPROBE_WAIT_INTERVAL);
                             status = EXIT_FAILURE;
                             loop = false;
                         } else {
@@ -206,24 +208,24 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 	                        LOGV("Parent waiting for child...");
 	                        sleep_ms(FFPROBE_WAIT_INTERVAL);
                         }
-                        break; // ToDo ??????
+                        break;
                     default:
                         if (endID == childID) {
                             if (WIFEXITED(status)) {
-                                // If return code != 0, child has failed.
+                                LOGI("Child ended normally.");
                                 if (status) {
-                                    LOGE("Child ended normally but code returned was: %d", status);
-                                } else {
-                                    LOGI("Child ended normally.");
+                                    LOGE("However the return code is: %d", status);
+                                    status = EXIT_FAILURE;
                                 }
-                                loop = false;
-                            } else if (WIFSIGNALED(status)) {
-                                LOGE("Child ended because of an uncaught signal.n");
-                            } else if (WIFSTOPPED(status)) {
-                                LOGI("Child process has stopped.");
                             } else {
-                                loop = false;
+	                            if (WIFSIGNALED(status)) {
+	                                LOGE("Child ended because of an uncaught signal.n");
+	                            } else if (WIFSTOPPED(status)) {
+	                                LOGI("Child process has stopped.");
+	                            }
+	                            status = EXIT_FAILURE;
                             }
+                            loop = false;
                         }
                 }
             }
@@ -418,8 +420,8 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 CArray convertToCArray(JNIEnv *env, jobjectArray args) {
     CArray cArray;
 	cArray.size = (*env)->GetArrayLength(env, args);
-	cArray.arr = (const char **) malloc(sizeof(const char *) * cArray.size);
 	cArray.jstrings = (jstring *) malloc(sizeof(jstring) * cArray.size);
+	cArray.arr = (const char **) malloc(sizeof(const char *) * cArray.size);
 
 	for(int i=0; i<cArray.size; ++i) {
 		cArray.jstrings[i] = (jstring)(*env)->GetObjectArrayElement(env, args, i);
@@ -433,9 +435,13 @@ void freeCArray(JNIEnv *env, CArray cArray) {
 	for(int i=0; i<cArray.size; ++i) {
 		// Free char*
 		(*env)->ReleaseStringUTFChars(env, cArray.jstrings[i], cArray.arr[i]);
+
 		// Free jstring
 		free(cArray.jstrings[i]);
 	}
+	// Free char**
+    free(cArray.arr);
+
 	// Free jstring[]
 	free(cArray.jstrings);
 }

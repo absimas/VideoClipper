@@ -218,22 +218,24 @@ public class ProgressActivity extends AppCompatActivity {
 		}
 	}
 
+	private static File sProgressingFile;
+
 	@Override
 	protected void onResume() {
 		super.onResume();
-		sActivityShown = true;
+		sProgressingFile = mOutputFile;
 		registerReceiver(mReceiver, new IntentFilter(ACTION_DIALOG_UPDATE));
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		sActivityShown = false;
+		sProgressingFile = null;
 		unregisterReceiver(mReceiver);
 	}
 
-	public static boolean isShown() {
-		return sActivityShown;
+	public static File getProgressingFile() {
+		return sProgressingFile;
 	}
 
 	public void onClose(View view) {
