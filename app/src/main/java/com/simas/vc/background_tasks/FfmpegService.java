@@ -134,8 +134,8 @@ public class FfmpegService extends IntentService {
 
 			mBuilder = new NotificationCompat.Builder(getApplicationContext());
 			mBuilder.setContentTitle(getString(R.string.vc_working))
-					.setTicker(getString(R.string.clipping))
-					.setContentText(getString(R.string.clipping))
+					.setTicker(getString(R.string.initialising))
+					.setContentText(getString(R.string.initialising))
 					.setSmallIcon(R.drawable.ic_action_merge)
 					.setContentIntent(pendingIntent)
 					.setPriority(NotificationCompat.PRIORITY_MAX);
@@ -208,6 +208,7 @@ public class FfmpegService extends IntentService {
 							if (secs == -1) {
 								// Use an indeterminate progress instead
 								mBuilder.setProgress(mDuration, 0, true);
+								mBuilder.setContentText(getString(R.string.clipping));
 							} else {
 								mBuilder.setProgress(mDuration, secs, false);
 								// max(currentDuration, totalDuration)
@@ -221,6 +222,10 @@ public class FfmpegService extends IntentService {
 							PendingIntent pIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 									mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 							mBuilder.setContentIntent(pIntent);
+
+							// Update notification text (initially it's "initialising")
+							mBuilder.setTicker(getString(R.string.clipping));
+
 							// Update notification
 							NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
 

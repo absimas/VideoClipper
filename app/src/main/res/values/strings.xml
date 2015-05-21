@@ -48,15 +48,16 @@
 	<string name="nav_context_menu_action_select_none">Select none</string>
 	<string name="action_concat">CONCATENATE</string>
 	<string name="clipping">Clipping videos…</string>
-	<string name="vc_working">Clipping videos…</string>
-	<string name="vc_failed">Clipping failed…</string>
-	<string name="vc_finished">Clipping finished!</string>
+	<string name="initialising">Initialising…</string>
+	<string name="vc_working">Video Clipper is working…</string>
+	<string name="vc_failed">Video Clipper has failed…</string>
+	<string name="vc_finished">Video Clipper finished!</string>
 	<string name="format_clipping_failed">Unfortunately %s couldn\'t be clipped…</string>
 	<string name="format_click_to_open_video">Click to open %s!</string>
 	<string name="out_of">out of</string><!--00:00:05 out of 00:02:32-->
 	<string name="item_preview_description">Item Preview</string>
 	<string name="filename_action">Filename:</string>
-	<string name="length_action">Length:</string>
+	<string name="duration_action">Duration:</string>
 
 	<!--Helpers-->
 	<string name="help_add_item">You can add items here!</string>
@@ -83,4 +84,6 @@
 	<string name="open_below">Click the button below to open the clipped video!</string>
 	<string name="output_name">Output name:</string>
 	<string name="unknown_error">Unknown error</string>
+	<string name="format_parse_failed">Couldn\'t parse file %s, please try again…</string>
+	<string name="size_action">Size:</string>
 </resources>

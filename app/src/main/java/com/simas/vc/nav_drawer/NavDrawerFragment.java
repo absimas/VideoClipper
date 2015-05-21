@@ -24,8 +24,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
+
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
+import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.Utils;
@@ -528,6 +531,11 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						}
 
 						if (newValue == NavItem.State.INVALID) {
+							// Display a toast notifying of the error if item parsing failed
+							Toast.makeText(VC.getAppContext(),
+									String.format(getString(R.string.format_parse_failed),
+											item.getFile().getName()), Toast.LENGTH_LONG)
+									.show();
 							// If an invalid state was reached, remove this item from the drawer
 							adapter.removeItem(item);
 							adapter.notifyDataSetChanged();

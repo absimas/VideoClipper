@@ -56,6 +56,9 @@ public class ProgressActivity extends AppCompatActivity {
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
+			// If currently showing a finished dialog, then ignore the updates. A new dialog in
+			// such a case can only be called via startActivity when onCreate is called
+			if (mType == Type.FINISHED) return;
 			setIntent(intent);
 			onNewIntent(getIntent());
 		}
