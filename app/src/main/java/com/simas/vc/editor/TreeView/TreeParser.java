@@ -4,19 +4,14 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
 import com.simas.vc.R;
 import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.attributes.VideoStream;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +22,6 @@ import java.util.List;
 public class TreeParser {
 
 	private final String TAG = getClass().getName();
-	private final Context mContext;
 	private final LayoutInflater mInflater;
 	private final List<AudioStream> mAudioStreams;
 	private final List<VideoStream> mVideoStreams;
@@ -46,11 +40,23 @@ public class TreeParser {
 		public void setChildrenVisibility(boolean visible) {
 			expanded = visible;
 			if (visible) {
+				// Remove/add line
+				mOverlay.addLineForNode(this);
+
+				// Show children
 				for (Node child : children) {
 					child.view.setVisibility(View.VISIBLE);
+
+					// Show children's children too if there's only 1 direct child
+					if (children.size() == 1) {
+						child.setChildrenVisibility(true);
+					}
 				}
 			} else {
-				// When hiding also hide all the children's children
+				// Remove line
+				mOverlay.removeLinesForNode(this);
+
+				// Hide the children and their children too
 				for (Node child : children) {
 					child.setChildrenVisibility(false);
 					child.view.setVisibility(View.GONE);
@@ -64,8 +70,7 @@ public class TreeParser {
 
 	}
 
-	public TreeParser(Context context, @NonNull FileAttributes attributes) {
-		mContext = context;
+	public TreeParser(@NonNull Context context, @NonNull FileAttributes attributes) {
 		mInflater = LayoutInflater.from(context);
 		mAudioStreams = attributes.getAudioStreams();
 		mVideoStreams = attributes.getVideoStreams();
@@ -96,13 +101,6 @@ public class TreeParser {
 			public void onClick(View v) {
 				// Set expanded flag
 				root.expanded = !root.expanded;
-
-				// Remove/add line
-				if (root.expanded) {
-					mOverlay.addLineForNode(root);
-				} else {
-					mOverlay.removeLinesForNode(root);
-				}
 
 				// Update children visibility
 				root.setChildrenVisibility(root.expanded);
@@ -135,13 +133,6 @@ public class TreeParser {
 				public void onClick(View v) {
 					// Set expanded flag
 					group.expanded = !group.expanded;
-
-					// Remove/add line
-					if (group.expanded) {
-						mOverlay.addLineForNode(group);
-					} else {
-						mOverlay.removeLinesForNode(group);
-					}
 
 					// Update children visibility
 					group.setChildrenVisibility(group.expanded);
