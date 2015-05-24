@@ -63,21 +63,19 @@ public class Ffmpeg {
 
 		// ToDo check stream counts
 
-		VideoStream videoStream = null;
+		VideoStream stream = null;
 		// Loop items
 		for (NavItem item : items) {
 			// Loop streams
-			for (Stream stream : item.getAttributes().getStreams()) {
-				if (stream.getType() == Stream.Type.VIDEO) {
-					if (videoStream == null) {
-						videoStream = (VideoStream) stream;
-					} else {
-						if (!concatDemuxerFieldsMatch(videoStream, (VideoStream) stream)) {
-							// VideoStreams have different fields, concat demuxer is not applicable
-							// Instead, use a filter
-							concatFilter(outputFile, progressFile, items, duration);
-							return;
-						}
+			for (VideoStream videoStream : item.getAttributes().getVideoStreams()) {
+				if (stream == null) {
+					stream = videoStream;
+				} else {
+					if (!concatDemuxerFieldsMatch(stream, videoStream)) {
+						// VideoStreams have different fields, concat demuxer is not applicable
+						// Instead, use a filter
+						concatFilter(outputFile, progressFile, items, duration);
+						return;
 					}
 				}
 			}

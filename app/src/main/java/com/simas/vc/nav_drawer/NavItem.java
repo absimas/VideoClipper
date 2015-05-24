@@ -152,28 +152,32 @@ public class NavItem implements Parcelable, Cloneable {
 
 	/**
 	 * Blocking method that fetches and scales the preview image.<br/>
-	 * <b>Note:</b> if this item is a duplicate of another one (file paths match), then the original
-	 * preview is deep-copied instead of being re-parsed.
+	 * <b>Note:</b> if this item is a duplicate of another one (file paths match), then existing
+	 * preview is used.
 	 */
 	private Bitmap parsePreview() {
 		// Loop existing items
 		for (NavItem item : mParent.getItems()) {
-			// Check if this one is a duplicate
-			if (item.getFile().compareTo(getFile()) == 0) {
-				// Make sure the original preview is parsed
-				if (item.mPreview != null) {
-					// Deep copy the preview and use it for this item
-					return item.mPreview.copy(item.mPreview.getConfig(), true);
-				}
+			// Check if the other item has a preview and if the files match
+			if (item.getPreview() != null && item.getFile().compareTo(getFile()) == 0) {
+				/*// Deep copy the preview and use it for this item
+				return item.getPreview().copy(item.getPreview().getConfig(), true);*/
+				// Use the already parsed image
+				return item.getPreview();
 			}
 		}
 
 		Bitmap preview = Ffmpeg.createPreview(getFile().getPath());
-		if (preview == null || EditorFragment.sPreviewSize == 0) {
+		if (preview == null) {
+			Log.e(TAG, "Couldn't parse the preview!");
 			return null;
+		} else if (NavDrawerFragment.sPreviewSize == 0) {
+			Log.e(TAG, "Preview size is unset! Using full size.");
+			return preview;
 		}
+
 		// Scale preview
-		Bitmap scaledPreview = scaleDown(preview, Utils.dpToPx(EditorFragment.sPreviewSize));
+		Bitmap scaledPreview = scaleDown(preview, Utils.dpToPx(NavDrawerFragment.sPreviewSize));
 		// Recycle the un-scaled version
 		preview.recycle();
 
@@ -317,13 +321,11 @@ public class NavItem implements Parcelable, Cloneable {
 		mParent = otherItem.mParent;
 		mType = otherItem.mType;
 		mAttributes = otherItem.mAttributes;
-		mFile = otherItem.getFile();
+		mFile = otherItem.mFile;
 		mState = otherItem.mState;
-		// Deep copy bitmap
-		// ToDo other item might have it's preview not set yet => CAB should prevent copying non-valid items
-		mPreview = otherItem.mPreview.copy(otherItem.mPreview.getConfig(), true);
+		// Use the existing preview
+		mPreview = otherItem.mPreview;
 	}
-
 
 	/* Update listener */
 	public interface OnUpdatedListener {

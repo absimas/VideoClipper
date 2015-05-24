@@ -76,7 +76,22 @@ public class FfmpegService extends IntentService {
 		return false;
 	}
 
-	private class ProgressNotifier extends AsyncTask<Void, Void, Boolean> {
+	private class MyTask extends AsyncTask<Void, Void, Void> {
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void aVoid) {
+			super.onPostExecute(aVoid);
+			// doInBackground finished, use your variable now
+		}
+
+	}
+
+		private class ProgressNotifier extends AsyncTask<Void, Void, Boolean> {
 
 		/**
 		 * Amount of milliseconds to wait before re-checking the progress file
@@ -313,7 +328,7 @@ public class FfmpegService extends IntentService {
 
 			// Show notification and a toast only if the progress for current file isn't shown
 			File progressingFile = ProgressActivity.getProgressingFile();
-			if (progressingFile != null &&  progressingFile.compareTo(mOutput) != 0) {
+			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(),R.raw.fail);
 				mBuilder = new NotificationCompat.Builder(getApplicationContext());
 				mBuilder.setContentTitle(getString(R.string.vc_failed))
@@ -333,11 +348,8 @@ public class FfmpegService extends IntentService {
 						Toast.LENGTH_LONG).show();
 			}
 
-			// Send a broadcast message about the values update
-			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE,
-					ProgressActivity.Type.ERROR);
-			mUpdateIntent.putExtra(ProgressActivity.ARG_CONTENT,
-					String.valueOf(mFfmpegReturnCode));
+			// Send a broadcast message about the occured error
+			mUpdateIntent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.ERROR);
 			sendBroadcast(mUpdateIntent);
 		}
 
@@ -351,7 +363,7 @@ public class FfmpegService extends IntentService {
 
 			// Show notification and a toast only if the progress for current file isn't shown
 			File progressingFile = ProgressActivity.getProgressingFile();
-			if (progressingFile != null &&  progressingFile.compareTo(mOutput) != 0) {
+			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);
 				mBuilder = new NotificationCompat.Builder(getApplicationContext());
 				mBuilder.setContentTitle(getString(R.string.vc_finished))

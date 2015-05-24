@@ -10,13 +10,13 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
-
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 
-// ToDo FFprobe/FFmpeg should queue, otherwise with 2 calls it fails (probly coz of the same report file?)
+import java.io.File;
+
 // ToDo use dimensions in xml instead of hard-coded values
 // ToDo after rotate helper text gets re-set. E.g. with added items you see slide to open list
 // ToDo sometimes helper doesn't get initialized. Then ActionBar acts weirdly but also more
@@ -131,6 +131,9 @@ public class MainActivity extends AppCompatActivity
 				}
 			}
 		});
+
+		// ToDo remove default item
+		mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
 	}
 
 	@Override

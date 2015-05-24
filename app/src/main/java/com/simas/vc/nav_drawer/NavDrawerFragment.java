@@ -131,13 +131,29 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		}
 	}
 
+	public static int sPreviewSize;
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 	                         Bundle savedInstanceState) {
 		mDrawerList = (ListView) inflater
 				.inflate(R.layout.fragment_navigation_drawer, container, false);
 
-		View header = createHeader(inflater);
+		final View header = createHeader(inflater);
+		// When available, fetch the item width and height
+		header.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+			@Override
+			public void onLayoutChange(View v, int left, int top, int right, int bottom,
+			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+				int width  = header.getWidth(),
+						height = header.getHeight();
+				Log.e(TAG, "got: " + width + " " + height);
+				if (width > 0 && height > 0) {
+					header.removeOnLayoutChangeListener(this);
+					sPreviewSize = (width > height) ? width : height;
+				}
+			}
+		});
 		getList().addHeaderView(header);
 
 		return getList();
@@ -533,7 +549,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						if (newValue == NavItem.State.INVALID) {
 							// Display a toast notifying of the error if item parsing failed
 							Toast.makeText(VC.getAppContext(),
-									String.format(getString(R.string.format_parse_failed),
+									String.format(Utils.getString(R.string.format_parse_failed),
 											item.getFile().getName()), Toast.LENGTH_LONG)
 									.show();
 							// If an invalid state was reached, remove this item from the drawer

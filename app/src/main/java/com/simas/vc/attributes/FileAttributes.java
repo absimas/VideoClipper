@@ -13,7 +13,8 @@ public class FileAttributes implements Parcelable {
 
 	private String mFileName, mLongName, mName;
 	private Long mSize = 0l;
-	private List<Stream> mStreams = new ArrayList<>();
+	private List<AudioStream> mAudioStreams = new ArrayList<>();
+	private List<VideoStream> mVideoStreams = new ArrayList<>();
 	private Double mDuration;
 
 	public FileAttributes() {}
@@ -41,8 +42,11 @@ public class FileAttributes implements Parcelable {
 		return mDuration;
 	}
 
-	public List<Stream> getStreams() {
-		return mStreams;
+	public List<AudioStream> getAudioStreams() {
+		return mAudioStreams;
+	}
+	public List<VideoStream> getVideoStreams() {
+		return mVideoStreams;
 	}
 
 
@@ -67,7 +71,11 @@ public class FileAttributes implements Parcelable {
 	}
 
 	public FileAttributes addStream(Stream stream) {
-		mStreams.add(stream);
+		if (stream instanceof AudioStream) {
+			mAudioStreams.add((AudioStream) stream);
+		} else {
+			mVideoStreams.add((VideoStream) stream);
+		}
 		return this;
 	}
 
@@ -88,7 +96,8 @@ public class FileAttributes implements Parcelable {
 		out.writeValue(mLongName);
 		out.writeValue(mName);
 		out.writeValue(mSize);
-		out.writeList(mStreams);
+		out.writeList(mAudioStreams);
+		out.writeList(mVideoStreams);
 	}
 
 	public static final Parcelable.Creator<FileAttributes> CREATOR
@@ -107,8 +116,10 @@ public class FileAttributes implements Parcelable {
 		mLongName = (String) in.readValue(String.class.getClassLoader());
 		mName = (String) in.readValue(String.class.getClassLoader());
 		mSize = (Long) in.readValue(Long.class.getClassLoader());
-		mStreams = new ArrayList<>();
-		in.readList(mStreams, Stream.class.getClassLoader());
+		mAudioStreams = new ArrayList<>();
+		in.readList(mAudioStreams, AudioStream.class.getClassLoader());
+		mVideoStreams = new ArrayList<>();
+		in.readList(mVideoStreams, VideoStream.class.getClassLoader());
 	}
 
 	public int describeContents() {

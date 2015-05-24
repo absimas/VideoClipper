@@ -22,24 +22,24 @@ android {
 	applicationVariants.all { variant ->
 		variant.getVariantData().ndkCompileTask.enabled = false
 	}
-	// Custom tasks that compile libraries with ndk-build using the customized makefile
-	//noinspection GroovyAssignabilityCheck
-	task ndkBuildDebug(type: Exec) {
-		// Fetch NDK directory from local.properties
-		Properties properties = new Properties()
-		properties.load(project.rootProject.file('local.properties').newDataInputStream())
-		def ndkDir = properties.getProperty('ndk.dir')
-
-		println("DEBUG")
-
-		commandLine "$ndkDir/ndk-build",
-				"NDK_DEBUG=0",
-				"-B", // Force a rebuild
-				'NDK_PROJECT_PATH=build/intermediates/ndk',
-				'NDK_LIBS_OUT=src/main/jniLibs',
-				'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
-				'NDK_APPLICATION_MK=src/main/jni/Application.mk'
-	}
+//	// Custom tasks that compile libraries with ndk-build using the customized makefile
+//	//noinspection GroovyAssignabilityCheck
+//	task ndkBuildDebug(type: Exec) {
+//		// Fetch NDK directory from local.properties
+//		Properties properties = new Properties()
+//		properties.load(project.rootProject.file('local.properties').newDataInputStream())
+//		def ndkDir = properties.getProperty('ndk.dir')
+//
+//		println("DEBUG")
+//
+//		commandLine "$ndkDir/ndk-build",
+//				"NDK_DEBUG=0",
+//				"-B", // Force a rebuild
+//				'NDK_PROJECT_PATH=build/intermediates/ndk',
+//				'NDK_LIBS_OUT=src/main/jniLibs',
+//				'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
+//				'NDK_APPLICATION_MK=src/main/jni/Application.mk'
+//	}
 //	//noinspection GroovyAssignabilityCheck
 //	task ndkBuildRelease(type: Exec) {
 //		// Fetch NDK directory from local.properties
@@ -56,14 +56,14 @@ android {
 //				'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
 //				'NDK_APPLICATION_MK=src/main/jni/Application.mk'
 //	}
-
-	tasks.whenTaskAdded { task ->
-		if (task.name == 'compileDebugJava') {
-			task.dependsOn ndkBuildDebug
-		} /*else if (task.name == 'compileReleaseJava') {
-			task.dependsOn ndkBuildRelease
-		}*/
-	}
+//
+//	tasks.whenTaskAdded { task ->
+//		if (task.name == 'compileDebugJava') {
+//			task.dependsOn ndkBuildDebug
+//		} /*else if (task.name == 'compileReleaseJava') {
+//			task.dependsOn ndkBuildRelease
+//		}*/
+//	}
 }
 
 dependencies {

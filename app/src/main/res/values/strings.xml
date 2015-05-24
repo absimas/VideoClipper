@@ -52,12 +52,12 @@
 	<string name="vc_working">Video Clipper is working…</string>
 	<string name="vc_failed">Video Clipper has failed…</string>
 	<string name="vc_finished">Video Clipper finished!</string>
-	<string name="format_clipping_failed">Unfortunately %s couldn\'t be clipped…</string>
 	<string name="format_click_to_open_video">Click to open %s!</string>
-	<string name="out_of">out of</string><!--00:00:05 out of 00:02:32-->
+	<string name="out_of">out of</string><!--e.g. 00:00:05 out of 00:02:32-->
 	<string name="item_preview_description">Item Preview</string>
-	<string name="filename_action">Filename:</string>
-	<string name="duration_action">Duration:</string>
+	<string name="filename_info">Filename:</string>
+	<string name="duration_info">Duration:</string>
+	<string name="size_info">Size:</string>
 
 	<!--Helpers-->
 	<string name="help_add_item">You can add items here!</string>
@@ -85,5 +85,8 @@
 	<string name="output_name">Output name:</string>
 	<string name="unknown_error">Unknown error</string>
 	<string name="format_parse_failed">Couldn\'t parse file %s, please try again…</string>
-	<string name="size_action">Size:</string>
+	<string name="format_clipping_failed">Unfortunately %s couldn\'t be clipped…</string>
+	<string name="the_file">the file</string>
+	<string name="try_again">Please try again…</string>
+	<string name="megabyte">mb</string>
 </resources>

@@ -23,7 +23,7 @@
 				android:layout_height="wrap_content"
 				android:orientation="horizontal">
 				<TextView
-					android:text="@string/filename_action"
+					android:text="@string/filename_info"
 					android:layout_weight="1"
 					android:layout_width="0dp"
 					android:layout_height="match_parent"/>
@@ -40,7 +40,7 @@
 				android:layout_height="wrap_content"
 				android:orientation="horizontal">
 				<TextView
-					android:text="@string/size_action"
+					android:text="@string/size_info"
 					android:layout_weight="1"
 					android:layout_width="0dp"
 					android:layout_height="match_parent"/>
@@ -57,7 +57,7 @@
 				android:layout_height="wrap_content"
 				android:orientation="horizontal">
 				<TextView
-					android:text="@string/duration_action"
+					android:text="@string/duration_info"
 					android:layout_weight="1"
 					android:layout_width="0dp"
 					android:layout_height="match_parent"/>
@@ -69,39 +69,19 @@
 					android:layout_height="match_parent"/>
 			</TableRow>
 		</TableLayout>
-
-		<com.simas.vc.editor.LabeledLinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			custom:label="Streams"
-			custom:containerPadding="10dp"
-			custom:containerStrokeColor="@color/indigo"
-			custom:labelColor="@color/blue"
-			custom:labelSize="18sp"
-			custom:labelHorizontalPadding="5dp">
-			<com.simas.vc.editor.LabeledLinearLayout
-				android:id="@+id/video_streams_container"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				custom:label="Video"
-				custom:containerPadding="10dp"
-				custom:containerStrokeColor="@color/indigo"
-				custom:labelColor="@color/blue"
-				custom:labelSize="16sp"
-				custom:labelHorizontalPadding="5dp"/>
-
-			<com.simas.vc.editor.LabeledLinearLayout
-				android:id="@+id/audio_streams_container"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				custom:label="Audio"
-				custom:containerPadding="10dp"
-				custom:containerStrokeColor="@color/indigo"
-				custom:labelColor="@color/blue"
-				custom:labelSize="16sp"
-				custom:labelHorizontalPadding="5dp"/>
-		</com.simas.vc.editor.LabeledLinearLayout>
 	</com.simas.vc.editor.LabeledLinearLayout>
+
+	<com.simas.vc.editor.LabeledLinearLayout
+		android:id="@+id/stream_container"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:padding="0dp"
+		custom:label="Streams"
+		custom:containerPadding="10dp"
+		custom:containerStrokeColor="@color/indigo"
+		custom:labelColor="@color/blue"
+		custom:labelSize="21sp"
+		custom:labelHorizontalPadding="5dp"/>
 
 	<com.simas.vc.editor.LabeledLinearLayout
 		android:layout_width="match_parent"

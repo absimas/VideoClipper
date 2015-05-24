@@ -3,6 +3,7 @@ package com.simas.vc.nav_drawer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -192,6 +193,7 @@ public class NavAdapter extends BaseAdapter {
 					}
 				}
 			});
+
 			// Save the ViewHolder for re-use
 			holder = new ViewHolder();
 			holder.mImageView = (ImageView) convertView.findViewById(R.id.preview_image);

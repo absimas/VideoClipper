@@ -1,6 +1,7 @@
 package com.simas.vc.editor;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
@@ -11,6 +12,8 @@ import android.os.Build;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
@@ -22,6 +25,7 @@ import com.simas.vc.Utils;
 /**
  * Notes:
  * - Default orientation: VERTICAL.
+ * - This layout doesn't have any padding. If specified, it will be ignored.
  */
 public class LabeledLinearLayout extends LinearLayout {
 
@@ -128,7 +132,7 @@ public class LabeledLinearLayout extends LinearLayout {
 		// Measure label height
 		Rect rect = new Rect();
 		mLabelPaint.getTextBounds("C", 0, 1, rect);
-		mLabelHeight = rect.height();
+		mLabelHeight = rect.bottom + rect.height();
 
 		invalidate();
 	}
@@ -165,8 +169,8 @@ public class LabeledLinearLayout extends LinearLayout {
 	@Override
 	public void setPadding(int left, int top, int right, int bottom) {
 		// Padding is always increased to fit the text
-		super.setPadding((int) (left + mLabelHeight), (int) (top + mLabelHeight),
-				(int) (right + mLabelHeight), (int) (bottom + mLabelHeight));
+		super.setPadding((int) mLabelHeight, (int) mLabelHeight,
+				(int) mLabelHeight, (int) mLabelHeight);
 	}
 
 	@Override

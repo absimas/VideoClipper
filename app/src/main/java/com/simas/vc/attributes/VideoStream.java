@@ -1,9 +1,9 @@
 package com.simas.vc.attributes;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.simas.vc.VCException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Simas Abramovas on 2015 Mar 11.
@@ -15,103 +15,96 @@ import com.simas.vc.VCException;
  */
 public class VideoStream extends Stream {
 
-	private Integer mWidth, mHeight;
-	private String mTBN, mTBC, mTBR;
-	private String mAspectRatio;
+	public static final String FIELD_WIDTH = "Width";
+	public static final String FIELD_HEIGHT = "Height";
+	public static final String FIELD_ASPECT_RATIO = "Aspect ratio";
+	private static final String FIELD_TBN = "TBN";
+	private static final String FIELD_TBR = "TBR";
+	private static final String FIELD_TBC = "TBC";
+
+	/**
+	 * Values are displayed to the user in a specific order. This order is saved in an ArrayList.
+	 * Index 0 will be displayed first.
+	 */
+	public static final List<String> KEY_PRIORITIES = new ArrayList<String>() {{
+		addAll(Stream.KEY_PRIORITIES);
+		add(FIELD_WIDTH);
+		add(FIELD_HEIGHT);
+		add(FIELD_ASPECT_RATIO);
+	}};
 
 	public VideoStream(Integer width, Integer height, String codecName) throws VCException {
-		super(Type.VIDEO, codecName);
+		super(codecName);
+		// Add values
 		setWidth(width);
 		setHeight(height);
 	}
 
 	public Integer getWidth() {
-		return mWidth;
+		return (Integer) getValue(FIELD_WIDTH);
 	}
 
 	public Integer getHeight() {
-		return mHeight;
+		return (Integer) getValue(FIELD_HEIGHT);
 	}
 
 	public String getAspectRatio() {
-		return mAspectRatio;
+		return (String) getValue(FIELD_ASPECT_RATIO);
 	}
 
 	public String getTBN() {
-		return mTBN;
+		return (String) getValue(FIELD_TBN);
 	}
 
 	public String getTBR() {
-		return mTBR;
+		return (String) getValue(FIELD_TBR);
 	}
 
 	public String getTBC() {
-		return mTBC;
+		return (String) getValue(FIELD_TBC);
 	}
 
 	public VideoStream setWidth(Integer width) throws VCException {
-		if (width == null) throw new VCException("Vide stream width must be valid!");
-		mWidth = width;
+		if (width == null) throw new VCException("Video stream width must be valid!");
+		setValue(FIELD_WIDTH, width);
 		return this;
 	}
 
 	public VideoStream setHeight(Integer height) throws VCException {
 		if (height == null) throw new VCException("Video stream height must be valid!");
-		mHeight = height;
+		setValue(FIELD_HEIGHT, height);
 		return this;
 	}
 
-	public VideoStream setAspectRatio(String aspectRation) {
-		mAspectRatio = aspectRation;
+	public VideoStream setAspectRatio(String aspectRatio) {
+		setValue(FIELD_ASPECT_RATIO, aspectRatio);
 		return this;
 	}
 
 	public VideoStream setTBN(String tbn) {
-		mTBN = tbn;
+		setValue(FIELD_TBN, tbn);
 		return this;
 	}
 
 	public VideoStream setTBC(String tbc) {
-		mTBC = tbc;
+		setValue(FIELD_TBC, tbc);
 		return this;
 	}
 
 	public VideoStream setTBR(String tbr) {
-		mTBR = tbr;
+		setValue(FIELD_TBR, tbr);
 		return this;
+	}
+
+	@Override
+	public List<String> getKeyPriorities() {
+		return KEY_PRIORITIES;
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s\nVideoStream Width: %d, Height: %d, AspectRation: %s",
 				super.toString(), getWidth(), getHeight(), getAspectRatio());
-	}
-
-	/* Parcelable */
-	@Override
-	public void writeToParcel(Parcel out, int flags) {
-		super.writeToParcel(out, flags);
-		out.writeValue(mWidth);
-		out.writeValue(mHeight);
-		out.writeValue(mAspectRatio);
-	}
-
-	public static final Parcelable.Creator<VideoStream> CREATOR
-			= new Parcelable.Creator<VideoStream>() {
-		public VideoStream createFromParcel(Parcel in) {
-			return new VideoStream(in);
-		}
-
-		public VideoStream[] newArray(int size) {
-			return new VideoStream[size];
-		}
-	};
-
-	private VideoStream(Parcel in) {
-		super(in);
-		mWidth = (Integer) in.readValue(Integer.class.getClassLoader());
-		mHeight = (Integer) in.readValue(Integer.class.getClassLoader());
-		mAspectRatio = (String) in.readValue(String.class.getClassLoader());
 	}
 
 }

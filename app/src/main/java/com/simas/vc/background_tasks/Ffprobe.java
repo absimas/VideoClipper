@@ -1,6 +1,5 @@
 package com.simas.vc.background_tasks;
 
-import android.os.AsyncTask;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -22,11 +21,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.SynchronousQueue;
 
 import static com.simas.vc.Utils.*;
 
@@ -169,8 +163,8 @@ public class Ffprobe {
 
 		// Streams
 		for (JSONObject jObj : jStream) {
-			Stream.Type type = getStreamType(jObj);
-			if (type == null) continue;
+			StreamType streamType = getStreamType(jObj);
+			if (streamType == null) continue;
 
 			// Stream
 			Stream stream;
@@ -178,7 +172,7 @@ public class Ffprobe {
 			// Codec name
 			String codecName = getString(jObj, getStr(R.string.stream_name));
 
-			switch (type) {
+			switch (streamType) {
 				case AUDIO:
 					stream = new AudioStream(codecName)
 							.setChannelCount(getInt(jObj, getStr(R.string.stream_channels)))
@@ -212,7 +206,7 @@ public class Ffprobe {
 				stream.setCodecTag(Integer.decode(tag));
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
-				throw new VCException("Unrecognized codec found!");
+//				throw new VCException("Unrecognized codec found!");
 			}
 
 			// Codec long name
@@ -225,17 +219,21 @@ public class Ffprobe {
 		return fa;
 	}
 
-	private static Stream.Type getStreamType(JSONObject obj) {
+	private static StreamType getStreamType(JSONObject obj) {
 		String attributeType = getString(obj, getStr(R.string.stream_type));
 		if (attributeType != null) {
-			Stream.Type type;
+			StreamType streamType;
 			try {
-				return Stream.Type.valueOf(attributeType.toUpperCase());
+				return StreamType.valueOf(attributeType.toUpperCase());
 			} catch (Exception e) {
 				Log.w(TAG, "Unrecognized attribute type: " + attributeType);
 			}
 		}
 		return null;
+	}
+
+	enum StreamType {
+		AUDIO, VIDEO
 	}
 
 	private static String getStr(int res) {

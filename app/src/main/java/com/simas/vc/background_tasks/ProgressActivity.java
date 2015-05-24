@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
@@ -101,7 +101,7 @@ public class ProgressActivity extends AppCompatActivity {
 		updateLayout((Type) getIntent().getSerializableExtra(ARG_TYPE));
 		// Change fields if content is set
 		String content = getIntent().getStringExtra(ARG_CONTENT);
-		if (content != null) updateFields(content);
+		updateFields(content);
 	}
 
 	@Override
@@ -153,9 +153,12 @@ public class ProgressActivity extends AppCompatActivity {
 		mType = newType;
 	}
 
-	private void updateFields(@NonNull String content) {
+	private void updateFields(@Nullable String content) {
 		switch (mType) {
 			case PROGRESS:
+				// Content mustn't be null for progress typed content
+				if (content == null) return;
+
 				// Output name
 				if (mOutputFile != null) {
 					mTextViews[0].setText(mOutputFile.getName());
@@ -171,7 +174,8 @@ public class ProgressActivity extends AppCompatActivity {
 					try {
 						long bytes = Long.parseLong(value);
 						double mb = bytes / 1024.0 / 1024.0;
-						mTextViews[1].setText(String.format("%.2f MB", mb));
+						mTextViews[1].setText(String.format("%.2f %s",
+								mb, getString(R.string.megabyte)));
 					} catch (NumberFormatException e) {
 						e.printStackTrace();
 					}
@@ -209,11 +213,15 @@ public class ProgressActivity extends AppCompatActivity {
 				mTextViews[1].setText(R.string.open_below);
 				break;
 			case ERROR:
+				// Include file path in the error if it's available
 				if (mOutputFile != null) {
 					mTextViews[0].setText(String.format(getString(R.string.format_clipping_failed),
-							mOutputFile.getName()) + "\nError code returned was:");
+							mOutputFile.getName()));
+				} else {
+					mTextViews[0].setText(String.format(getString(R.string.format_clipping_failed),
+							getString(R.string.the_file)));
 				}
-				mTextViews[1].setText(content);
+				mTextViews[1].setText(getString(R.string.try_again));
 				break;
 		}
 	}

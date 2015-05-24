@@ -10,9 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import com.simas.vc.DelayedHandler;
-import com.simas.vc.attributes.Stream;
+import com.simas.vc.editor.TreeView.TreeParser;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
@@ -22,9 +21,6 @@ import java.util.Map;
 /**
  * Created by Simas Abramovas on 2015 Mar 12.
  */
-
-// ToDo weird super padding on TableLayout on galaxy S2
-// ToDo test invalid items should be removed from the drawer immediately. Just show an AlertDialog.
 
 public class EditorFragment extends Fragment {
 
@@ -135,11 +131,11 @@ public class EditorFragment extends Fragment {
 			}
 		});
 
+		// ToDo do nested lookup so it's faster
 		mDataMap.put(Data.FILENAME, rootView.findViewById(R.id.filename_value));
 		mDataMap.put(Data.SIZE, rootView.findViewById(R.id.size_value));
 		mDataMap.put(Data.DURATION, rootView.findViewById(R.id.duration_value));
-		mDataMap.put(Data.AUDIO_STREAMS, rootView.findViewById(R.id.audio_streams_container));
-		mDataMap.put(Data.VIDEO_STREAMS, rootView.findViewById(R.id.video_streams_container));
+		mDataMap.put(Data.STREAMS, rootView.findViewById(R.id.stream_container));
 		mDataMap.put(Data.ACTIONS, rootView.findViewById(R.id.editor_actions));
 
 		if (visibleOnCreation) {
@@ -199,12 +195,12 @@ public class EditorFragment extends Fragment {
 	}
 
 	private void updateEditorToCurrentItem() {
+		if (getActivity() == null) return;
 		final NavItem curItem = currentItem;
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView size = (TextView) mDataMap.get(Data.SIZE);
 		final TextView duration = (TextView) mDataMap.get(Data.DURATION);
-		final ViewGroup audioStreams = (ViewGroup) mDataMap.get(Data.AUDIO_STREAMS);
-		final ViewGroup videoStream = (ViewGroup) mDataMap.get(Data.VIDEO_STREAMS);
+		final ViewGroup streams = (ViewGroup) mDataMap.get(Data.STREAMS);
 		final View actions = mDataMap.get(Data.ACTIONS);
 
 		// Prep strings
@@ -212,8 +208,7 @@ public class EditorFragment extends Fragment {
 		final String sizeStr = String.format("%.2f mb", mb);
 		final String durationStr = String.format("%.2f", curItem.getAttributes().getDuration());
 
-
-
+		final TreeParser slp = new TreeParser(getActivity(), curItem.getAttributes());
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
@@ -228,29 +223,9 @@ public class EditorFragment extends Fragment {
 				filename.setText(curItem.getFile().getName());
 				size.setText(sizeStr);
 				duration.setText(durationStr);
-
+				streams.removeAllViews();
+				streams.addView(slp.layout);
 				actions.setVisibility(View.VISIBLE);
-
-
-				// Parse streams
-				int audio = 0, video = 0;
-				for (Stream stream : curItem.getAttributes().getStreams()) {
-					LabeledLinearLayout lll = new LabeledLinearLayout(getActivity());
-
-					switch (stream.getType()) {
-						case AUDIO:
-							lll.setLabel(String.format("Audio stream %d", audio++));
-
-
-							audioStreams.addView(lll);
-							break;
-						case VIDEO:
-							lll.setLabel(String.format("Video stream %d", video++));
-
-							videoStream.addView(lll);
-							break;
-					}
-				}
 			}
 		});
 	}
