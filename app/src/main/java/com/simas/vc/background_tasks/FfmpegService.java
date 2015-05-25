@@ -124,7 +124,7 @@ public class FfmpegService extends IntentService {
 
 		public ProgressNotifier(int outputDuration, File outputFile, File progressFile) {
 			mDuration = outputDuration;
-			mDurationTime = secsToTime(mDuration);
+			mDurationTime = Utils.secsToTime(mDuration);
 			mOutput = outputFile;
 			mProgressLog = progressFile;
 			++sTaskCount;
@@ -228,8 +228,14 @@ public class FfmpegService extends IntentService {
 								mBuilder.setContentText(getString(R.string.clipping));
 							} else {
 								mBuilder.setProgress(mDuration, secs, false);
+
 								// max(currentDuration, totalDuration)
-								curDur = (secs >= mDuration) ? mDurationTime : secsToTime(secs);
+								if (secs >= mDuration) {
+									curDur = mDurationTime;
+								} else {
+									curDur = Utils.secsToTime(secs);
+								}
+
 								mBuilder.setContentText(String.format("%s %s %s",
 										curDur, getString(R.string.out_of), mDurationTime));
 							}
@@ -321,7 +327,7 @@ public class FfmpegService extends IntentService {
 
 		private void showFailureNotification() {
 			// Open error dialog on click
-			mDisplayIntent.putExtra(ProgressActivity.ARG_CONTENT,String.valueOf(mFfmpegReturnCode));
+			mDisplayIntent.putExtra(ProgressActivity.ARG_CONTENT, String.valueOf(mFfmpegReturnCode));
 			mDisplayIntent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.ERROR);
 			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
@@ -410,19 +416,6 @@ public class FfmpegService extends IntentService {
 			} catch (NumberFormatException e) {
 				return -1;
 			}
-		}
-
-		/**
-		 * Converts seconds to a time string.
-		 * @return string in the format of hh:mm:ss, 00:00:00 if given seconds are negative
-		 */
-		private String secsToTime(int secs) {
-			if (secs < 1) return "00:00:00";
-			int hours = secs / 3600;
-			int minutes = (secs % 3600) / 60;
-			int seconds = secs % 60;
-
-			return String.format("%02d:%02d:%02d", hours, minutes, seconds);
 		}
 
 	}

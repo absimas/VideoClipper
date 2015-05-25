@@ -549,7 +549,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						if (newValue == NavItem.State.INVALID) {
 							// Display a toast notifying of the error if item parsing failed
 							Toast.makeText(VC.getAppContext(),
-									String.format(Utils.getString(R.string.format_parse_failed),
+									String.format(VC.getStr(R.string.format_parse_failed),
 											item.getFile().getName()), Toast.LENGTH_LONG)
 									.show();
 							// If an invalid state was reached, remove this item from the drawer

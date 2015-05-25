@@ -89,4 +89,7 @@
 	<string name="the_file">the file</string>
 	<string name="try_again">Please try again…</string>
 	<string name="megabyte">mb</string>
+	<string name="hour_short">h</string>
+	<string name="minute_short">m</string>
+	<string name="second_short">s</string>
 </resources>

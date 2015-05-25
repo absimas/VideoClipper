@@ -158,7 +158,7 @@ public class Utils {
 	 * @param key    String representing the key to look for
 	 * @return String for the given key or null if it wasn't found
 	 */
-	public static String getString(JSONObject obj, String key) {
+	public static String getJSONString(JSONObject obj, String key) {
 		try {
 			return obj.getString(key);
 		} catch (JSONException e) {
@@ -174,7 +174,7 @@ public class Utils {
 	 * @param key    String representing the key to look for
 	 * @return int for the given key or null if it wasn't found
 	 */
-	public static Integer getInt(JSONObject obj, String key) {
+	public static Integer getJSONInteger(JSONObject obj, String key) {
 		try {
 			return obj.getInt(key);
 		} catch (JSONException e) {
@@ -190,7 +190,7 @@ public class Utils {
 	 * @param key    String representing the key to look for
 	 * @return double for the given key or null if it wasn't found
 	 */
-	public static Double getDouble(JSONObject obj, String key) {
+	public static Double getJSONDouble(JSONObject obj, String key) {
 		try {
 			return obj.getDouble(key);
 		} catch (JSONException e) {
@@ -215,16 +215,6 @@ public class Utils {
 		}
 	}
 
-	/**
-	 * Convenience method to return a string associated with the applications context and the
-	 * given resource id.
-	 * @param resourceId    resource id that the string is associated with
-	 * @return string associated with the given resourceId and the application's context
-	 */
-	public static String getString(int resourceId) {
-		return VC.getAppContext().getString(resourceId);
-	}
-
 	public static void runOnUiThread(Runnable runnable) {
 		new Handler(Looper.getMainLooper()).post(runnable);
 	}
@@ -236,6 +226,48 @@ public class Utils {
 			return resources.getDimensionPixelSize(resourceId);
 		}
 		return 0;
+	}
+
+	/**
+	 * Converts seconds to a time string. Format hh:mm:ss
+	 * @return string in the format of hh:mm:ss, 00:00:00 if given seconds are negative
+	 */
+	public static String secsToTime(int secs) {
+		if (secs < 0) return "00:00:00";
+		int hours = secs / 3600;
+		int minutes = (secs % 3600) / 60;
+		int seconds = secs % 60;
+
+		return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+	}
+
+
+	/**
+	 * Converts seconds to a time full time string. Format h hour(s) XX minute(s) XX second
+	 * @return string in the format of hh:mm:ss, 00:00:00 if given seconds are negative
+	 */
+	public static String secsToFullTime(int secs) {
+		if (secs < 0) return "0" + VC.getStr(R.string.second_short);
+		int hours = secs / 3600;
+		int minutes = (secs % 3600) / 60;
+		int seconds = secs % 60;
+
+		String output = "";
+		if (hours > 0) {
+			// If hours present, print minutes and seconds too
+			output = String.format("%2d%s %2d%s ",
+					hours, VC.getStr(R.string.hour_short),
+					minutes, VC.getStr(R.string.minute_short));
+		} else if (minutes > 0) {
+			// If hours aren't present but minutes are, print them
+			output = String.format("%2d%s ", minutes, VC.getStr(R.string.minute_short));
+		}
+		// When not 0, seconds are always printed
+		if (seconds > 0) {
+			output += String.format("%2d%s", seconds, VC.getStr(R.string.second_short));
+		}
+
+		return output;
 	}
 
 	public static Size getScreenSize() {

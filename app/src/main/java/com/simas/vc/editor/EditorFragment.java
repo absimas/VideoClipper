@@ -203,7 +203,8 @@ public class EditorFragment extends Fragment {
 		// Prep strings
 		double mb = curItem.getAttributes().getSize() / 1024.0 / 1024.0;
 		final String sizeStr = String.format("%.2f mb", mb);
-		final String durationStr = String.format("%.2f", curItem.getAttributes().getDuration());
+		final String durationStr = Utils
+				.secsToFullTime(curItem.getAttributes().getDuration().intValue());
 
 		final TreeParser slp = new TreeParser(getActivity(), curItem.getAttributes());
 

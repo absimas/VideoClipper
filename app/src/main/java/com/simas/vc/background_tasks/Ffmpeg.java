@@ -10,7 +10,6 @@ import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.R;
-import com.simas.vc.attributes.Stream;
 import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.nav_drawer.NavItem;
 
@@ -37,18 +36,18 @@ public class Ffmpeg {
 	 *
 	 * @param outputFile       output file (must already exist)
 	 * @param items            items which will be concatenated
-	 * @throws IOException  An un-recoverable, internal error
+	 * @throws IOException An un-recoverable, internal error
 	 * @throws VCException An error message to be printed out for the user
 	 */
 	public static void concat(@NonNull File outputFile, @NonNull List<NavItem> items)
 			throws IOException, VCException {
 		// Check source count
 		if (items.size() < 2) {
-			throw new VCException(Utils.getString(R.string.at_least_2_videos));
+			throw new VCException(VC.getStr(R.string.at_least_2_videos));
 		}
 
 		// Fetch item validity and calculate total duration
-		int duration = -1;
+		int duration = 0;
 		for (NavItem item : items) {
 			if (item.getState() == NavItem.State.VALID) {
 				duration += item.getAttributes().getDuration();
