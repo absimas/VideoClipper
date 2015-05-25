@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity
 		});
 
 		// ToDo remove default item
-		mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//		mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
 	}
 
 	@Override

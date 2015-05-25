@@ -21,6 +21,7 @@ public class VideoStream extends Stream {
 	private static final String FIELD_TBN = "TBN";
 	private static final String FIELD_TBR = "TBR";
 	private static final String FIELD_TBC = "TBC";
+	private static final String INVALID_ASPECT_RATIO = "0:1";
 
 	/**
 	 * Values are displayed to the user in a specific order. This order is saved in an ArrayList.
@@ -77,7 +78,10 @@ public class VideoStream extends Stream {
 	}
 
 	public VideoStream setAspectRatio(String aspectRatio) {
-		setValue(FIELD_ASPECT_RATIO, aspectRatio);
+		// Ignore invalid aspect ration
+		if (!INVALID_ASPECT_RATIO.equals(aspectRatio)) {
+			setValue(FIELD_ASPECT_RATIO, aspectRatio);
+		}
 		return this;
 	}
 

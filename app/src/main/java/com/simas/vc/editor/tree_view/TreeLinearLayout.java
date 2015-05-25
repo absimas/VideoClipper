@@ -18,6 +18,7 @@ import com.simas.vc.Utils;
 // ToDo abstractize with an adapter?
 // ToDo abstract click listener in TreeParser
 // ToDo save expanded nodes views in onSaveInstanceStance
+// ToDo animate node expansion
 
 /**
  * Notes:
