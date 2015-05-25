@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <com.simas.vc.editor.TreeView.TreeOverlay
+    <com.simas.vc.editor.tree_view.TreeOverlay
         android:id="@+id/overlays"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

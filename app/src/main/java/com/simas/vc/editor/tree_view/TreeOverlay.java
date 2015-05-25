@@ -1,4 +1,4 @@
-package com.simas.vc.editor.TreeView;
+package com.simas.vc.editor.tree_view;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -25,7 +25,7 @@ public class TreeOverlay extends RelativeLayout {
 	private Paint mLinePaint;
 
 
-	public static class Line {
+	protected static class Line {
 
 		TreeParser.Node node;
 		int startX, startY, stopX, stopY;

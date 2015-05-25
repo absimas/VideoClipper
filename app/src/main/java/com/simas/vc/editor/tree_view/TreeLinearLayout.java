@@ -1,4 +1,4 @@
-package com.simas.vc.editor.TreeView;
+package com.simas.vc.editor.tree_view;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -58,7 +58,7 @@ public class TreeLinearLayout extends LinearLayout {
 			// Enable manual drawing
 			setWillNotDraw(false);
 
-			mLinePaint.setFlags(Paint.ANTI_ALIAS_FLAG | Paint.LINEAR_TEXT_FLAG);
+			mLinePaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 			mLinePaint.setColor(LINE_COLOR);
 			mLinePaint.setStrokeWidth(3);
 

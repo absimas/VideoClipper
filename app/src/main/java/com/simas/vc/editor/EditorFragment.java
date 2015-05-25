@@ -11,7 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import com.simas.vc.DelayedHandler;
-import com.simas.vc.editor.TreeView.TreeParser;
+import com.simas.vc.Utils;
+import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
@@ -28,8 +29,6 @@ public class EditorFragment extends Fragment {
 
 	public NavItem currentItem;
 	private PlayerFragment mPlayerFragment;
-	private static final int DEFAULT_PLAYER_CONTAINER_SIZE = 300;
-	public static int sPreviewSize = DEFAULT_PLAYER_CONTAINER_SIZE;
 
 	private enum Data {
 		ACTIONS, FILENAME, DURATION, SIZE, STREAMS, AUDIO_STREAMS, VIDEO_STREAMS
@@ -95,24 +94,22 @@ public class EditorFragment extends Fragment {
 						if (getResources().getConfiguration()
 								.orientation == Configuration.ORIENTATION_LANDSCAPE) {
 							if (height <= 0) {
-								Log.e(TAG, "height is 0 in landscape mode! Using the default...");
-								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
+								Log.w(TAG, "Height is 0 in landscape! Using screen's height...");
+								params.width = params.height = Utils.getScreenSize().getHeight();
 							} else {
 								params.height = height;
 								//noinspection SuspiciousNameCombination
 								params.width = height;
 							}
-							sPreviewSize = params.width;
 						} else {
 							if (width <= 0) {
-								Log.e(TAG, "width is 0 in portrait mode! Using the default...");
-								params.width = params.height = DEFAULT_PLAYER_CONTAINER_SIZE;
+								Log.w(TAG, "Width is 0 in portrait! Using screen's width...");
+								params.width = params.height = Utils.getScreenSize().getWidth();
 							} else {
 								params.width = width;
 								//noinspection SuspiciousNameCombination
 								params.height = width;
 							}
-							sPreviewSize = params.height;
 						}
 						playerFragmentContainer.setLayoutParams(params);
 
@@ -131,12 +128,12 @@ public class EditorFragment extends Fragment {
 			}
 		});
 
-		// ToDo do nested lookup so it's faster
-		mDataMap.put(Data.FILENAME, rootView.findViewById(R.id.filename_value));
-		mDataMap.put(Data.SIZE, rootView.findViewById(R.id.size_value));
-		mDataMap.put(Data.DURATION, rootView.findViewById(R.id.duration_value));
-		mDataMap.put(Data.STREAMS, rootView.findViewById(R.id.stream_container));
-		mDataMap.put(Data.ACTIONS, rootView.findViewById(R.id.editor_actions));
+		View actions = rootView.findViewById(R.id.editor_actions);
+		mDataMap.put(Data.ACTIONS, actions);
+		mDataMap.put(Data.FILENAME, actions.findViewById(R.id.filename_value));
+		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
+		mDataMap.put(Data.DURATION, actions.findViewById(R.id.duration_value));
+		mDataMap.put(Data.STREAMS, actions.findViewById(R.id.stream_container));
 
 		if (visibleOnCreation) {
 			mDelayedHandler.resume();

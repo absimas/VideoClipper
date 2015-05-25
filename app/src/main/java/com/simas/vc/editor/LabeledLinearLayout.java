@@ -26,6 +26,7 @@ import com.simas.vc.Utils;
  * Notes:
  * - Default orientation: VERTICAL.
  * - This layout doesn't have any padding. If specified, it will be ignored.
+ * - Container is drawn with a hairline paint, i.e. 1px stroke.
  */
 public class LabeledLinearLayout extends LinearLayout {
 
@@ -35,8 +36,8 @@ public class LabeledLinearLayout extends LinearLayout {
 	private static final float DEFAULT_CONTAINER_PADDING = Utils.dpToPx(10);
 	private static final int DEFAULT_LABEL_COLOR = Color.RED;
 	private static final int DEFAULT_CONTAINER_STROKE_COLOR = Color.RED;
-	private Paint mContainerPaint;
-	private Paint mLabelPaint;
+	private final Paint mContainerPaint = new Paint();
+	private final Paint mLabelPaint = new Paint();
 	private String mLabel;
 	private float mLabelHeight;
 	private float mLabelWidth;
@@ -71,12 +72,10 @@ public class LabeledLinearLayout extends LinearLayout {
 	private void init(@Nullable AttributeSet attrs) {
 		if (!isInEditMode()) {
 			// Initialize container paint
-			mContainerPaint = new Paint();
-			mContainerPaint.setStrokeWidth(0);
+			mContainerPaint.setStrokeWidth(0); // Hairline mode
 			mContainerPaint.setStyle(Paint.Style.STROKE);
 
 			// Initialize label paint
-			mLabelPaint = new Paint();
 			mLabelPaint.setFlags(Paint.ANTI_ALIAS_FLAG | Paint.LINEAR_TEXT_FLAG);
 
 			// Defaults
@@ -126,17 +125,6 @@ public class LabeledLinearLayout extends LinearLayout {
 		}
 	}
 
-	public void setLabelSize(float size) {
-		mLabelPaint.setTextSize(size);
-
-		// Measure label height
-		Rect rect = new Rect();
-		mLabelPaint.getTextBounds("C", 0, 1, rect);
-		mLabelHeight = rect.bottom + rect.height();
-
-		invalidate();
-	}
-
 	public void setLabelColor(int color) {
 		mLabelPaint.setColor(color);
 		invalidate();
@@ -160,10 +148,42 @@ public class LabeledLinearLayout extends LinearLayout {
 	public void setLabel(String label) {
 		mLabel = label;
 
-		// Measure label width
-		mLabelWidth = mLabelPaint.measureText(mLabel);
+		// Re-calculate the width for this new label
+		calculateLabelWidth();
 
 		invalidate();
+	}
+
+	public void setLabelSize(float size) {
+		mLabelPaint.setTextSize(size);
+
+		// Re-calculate the width with the new paint
+		calculateLabelWidth();
+
+		// Calculate label height
+		calculateLabelHeight();
+
+		invalidate();
+	}
+
+	/**
+	 * (Re)-calculates and sets the current label's width. Does not re-draw the layout.
+	 */
+	protected void calculateLabelWidth() {
+		// If label is set, measure its width
+		if (mLabel != null) {
+			mLabelWidth = mLabelPaint.measureText(mLabel);
+		}
+	}
+
+	/**
+	 * (Re)-calculates and sets the label's height. The calculating is done for the tallest
+	 * letter that can be used for the label. Currently "I". Does not re-draw the layout.
+	 */
+	protected void calculateLabelHeight() {
+		Rect rect = new Rect();
+		mLabelPaint.getTextBounds("I", 0, 1, rect);
+		mLabelHeight = rect.bottom + rect.height();
 	}
 
 	@Override
@@ -177,30 +197,26 @@ public class LabeledLinearLayout extends LinearLayout {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		if (!isInEditMode()) {
-			// Draw container
-			{
-				float left = mContainerPadding,
-						right = canvas.getWidth() - mContainerPadding,
-						top = mLabelHeight / 2,
-						bottom = canvas.getHeight() - mContainerPadding;
-				// Draw top-left line
-				canvas.drawLine(left, top, mContainerPadding * 3 - mLabelHorizontalPadding, top,
-						mContainerPaint);
-				// Draw top-right line
-				canvas.drawLine(mLabelWidth + mContainerPadding * 3 + mLabelHorizontalPadding, top,
-						right, top, mContainerPaint);
-				// Draw right line
-				canvas.drawLine(right, top, right, bottom, mContainerPaint);
-				// Draw left line
-				canvas.drawLine(left, top, left, bottom, mContainerPaint);
-				// Draw bottom line
-				canvas.drawLine(left, bottom, right, bottom, mContainerPaint);
-			}
+			/* Draw container */
+			float left = mContainerPadding,
+					right = canvas.getWidth() - mContainerPadding,
+					top = mLabelHeight / 2,
+					bottom = canvas.getHeight() - mContainerPadding;
+			// Draw top-left line
+			canvas.drawLine(left, top, mContainerPadding * 3 - mLabelHorizontalPadding, top,
+					mContainerPaint);
+			// Draw top-right line
+			canvas.drawLine(mLabelWidth + mContainerPadding * 3 + mLabelHorizontalPadding,
+					top, right, top, mContainerPaint);
+			// Draw right line
+			canvas.drawLine(right, top, right, bottom, mContainerPaint);
+			// Draw left line
+			canvas.drawLine(left, top, left, bottom, mContainerPaint);
+			// Draw bottom line
+			canvas.drawLine(left, bottom, right, bottom, mContainerPaint);
 
-			// Draw label
-			{
-				canvas.drawText(mLabel, mContainerPadding * 3, mLabelHeight, mLabelPaint);
-			}
+			/* Draw label */
+			canvas.drawText(mLabel, mContainerPadding * 3, mLabelHeight, mLabelPaint);
 		}
 	}
 

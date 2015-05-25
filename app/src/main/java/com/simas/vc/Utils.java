@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -235,6 +236,30 @@ public class Utils {
 			return resources.getDimensionPixelSize(resourceId);
 		}
 		return 0;
+	}
+
+	public static Size getScreenSize() {
+		DisplayMetrics metrics = VC.getAppResources().getDisplayMetrics();
+		return new Size(metrics.widthPixels, metrics.heightPixels);
+	}
+
+	public static class Size {
+
+		private int mWidth, mHeight;
+
+		public Size(int width, int height) {
+			mWidth = width;
+			mHeight = height;
+		}
+
+		public int getWidth() {
+			return mWidth;
+		}
+
+		public int getHeight() {
+			return mHeight;
+		}
+
 	}
 
 }

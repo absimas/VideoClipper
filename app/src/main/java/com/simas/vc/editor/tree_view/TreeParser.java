@@ -1,4 +1,4 @@
-package com.simas.vc.editor.TreeView;
+package com.simas.vc.editor.tree_view;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -8,10 +8,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.simas.vc.R;
-import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.attributes.Stream;
-import com.simas.vc.attributes.VideoStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,8 +21,6 @@ public class TreeParser {
 
 	private final String TAG = getClass().getName();
 	private final LayoutInflater mInflater;
-	private final List<AudioStream> mAudioStreams;
-	private final List<VideoStream> mVideoStreams;
 	private final LinearLayout mContainer;
 	private final TreeOverlay mOverlay;
 	public final FrameLayout layout;
@@ -36,6 +32,10 @@ public class TreeParser {
 		public boolean expanded;
 		public int parentLeftPadding;
 		public int level;
+
+		public Node(int level) {
+			this.level = level;
+		}
 
 		public void setChildrenVisibility(boolean visible) {
 			expanded = visible;
@@ -64,23 +64,16 @@ public class TreeParser {
 			}
 		}
 
-		public Node(int level) {
-			this.level = level;
-		}
-
 	}
 
 	public TreeParser(@NonNull Context context, @NonNull FileAttributes attributes) {
 		mInflater = LayoutInflater.from(context);
-		mAudioStreams = attributes.getAudioStreams();
-		mVideoStreams = attributes.getVideoStreams();
-
 		layout = (FrameLayout) mInflater.inflate(R.layout.stream_tree, null);
 		mOverlay = (TreeOverlay) layout.findViewById(R.id.overlays);
 		mContainer = (LinearLayout) layout.findViewById(R.id.field_container);
 
-		createStreamList(mAudioStreams, "Audio");
-		createStreamList(mVideoStreams, "Video");
+		createStreamList(attributes.getAudioStreams(), "Audio");
+		createStreamList(attributes.getVideoStreams(), "Video");
 	}
 
 	private void createStreamList(List<? extends Stream> streams, String rootName) {
@@ -108,7 +101,7 @@ public class TreeParser {
 		});
 
 		// Groups (streams)
-		int parentLeftPadding = rootView.getPaddingLeft();
+		int rootLeftPadding = rootView.getPaddingLeft();
 		int groupCount = streams.size();
 		for (int i=0; i<groupCount; ++i) {
 			final Node group = new Node(1);
@@ -118,7 +111,7 @@ public class TreeParser {
 			// View
 			TreeLinearLayout groupView = (TreeLinearLayout) mInflater
 					.inflate(R.layout.stream_group, mContainer, false);
-			group.parentLeftPadding = parentLeftPadding;
+			group.parentLeftPadding = rootLeftPadding;
 			groupView.setNode(group);
 			group.view = groupView;
 			mContainer.addView(groupView);
@@ -140,7 +133,7 @@ public class TreeParser {
 			});
 
 			// Children (fields)
-			parentLeftPadding = groupText.getPaddingLeft() + groupView.getPaddingLeft();
+			int groupLeftPadding = groupText.getPaddingLeft() + groupView.getPaddingLeft();
 			int childCount = stream.fields.size();
 			for (int j=0; j<childCount; ++j) {
 				final Node child = new Node(2);
@@ -149,7 +142,7 @@ public class TreeParser {
 				// View
 				TreeLinearLayout childView = (TreeLinearLayout) mInflater
 						.inflate(R.layout.stream_child, mContainer, false);
-				child.parentLeftPadding = parentLeftPadding;
+				child.parentLeftPadding = groupLeftPadding;
 				childView.setNode(child);
 				child.view = childView;
 				mContainer.addView(childView);
