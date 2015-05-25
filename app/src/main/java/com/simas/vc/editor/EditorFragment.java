@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.Utils;
+import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
@@ -194,6 +195,7 @@ public class EditorFragment extends Fragment {
 	private void updateEditorToCurrentItem() {
 		if (getActivity() == null) return;
 		final NavItem curItem = currentItem;
+		final FileAttributes attributes = curItem.getAttributes();
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView size = (TextView) mDataMap.get(Data.SIZE);
 		final TextView duration = (TextView) mDataMap.get(Data.DURATION);
@@ -201,12 +203,11 @@ public class EditorFragment extends Fragment {
 		final View actions = mDataMap.get(Data.ACTIONS);
 
 		// Prep strings
-		double mb = curItem.getAttributes().getSize() / 1024.0 / 1024.0;
+		double mb = attributes.getSize() / 1024.0 / 1024.0;
 		final String sizeStr = String.format("%.2f mb", mb);
-		final String durationStr = Utils
-				.secsToFullTime(curItem.getAttributes().getDuration().intValue());
+		final String durationStr = Utils.secsToFullTime(attributes.getDuration().intValue());
 
-		final TreeParser slp = new TreeParser(getActivity(), curItem.getAttributes());
+		final TreeParser slp = new TreeParser(getActivity(), attributes);
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
