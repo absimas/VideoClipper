@@ -202,6 +202,7 @@ public class EditorFragment extends Fragment {
 		final ViewGroup streams = (ViewGroup) mDataMap.get(Data.STREAMS);
 		final View actions = mDataMap.get(Data.ACTIONS);
 
+
 		// Prep strings
 		double mb = attributes.getSize() / 1024.0 / 1024.0;
 		final String sizeStr = String.format("%.2f mb", mb);
