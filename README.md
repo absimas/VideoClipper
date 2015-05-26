@@ -2,7 +2,7 @@
 Android video manipulation app
 
 # Purpose
-This tool is a wrapper for the FFmpeg and FFprobe libraries. Its purpose is to ease the use of the aforementioned libraries and provide an understandable UI for regular users.
+This tool is a wrapper for FFmpeg and FFprobe libraries. Its purpose is to ease the use of the aforementioned libraries and provide an understandable UI for regular users.
 
 # Functionality
 Currently the app can accomplish the following:
