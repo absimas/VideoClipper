@@ -24,6 +24,10 @@ import java.util.List;
 // ToDo rename concat to merge (including the action) or not?
 // ToDo VCException use res instead of hardcoded string
 
+/**
+ * Contains the convenience methods that might call {@code FfmpegService} to do furhter work via
+ * JNI.
+ */
 public class Ffmpeg {
 
 	private static final String TAG = "ffmpeg";

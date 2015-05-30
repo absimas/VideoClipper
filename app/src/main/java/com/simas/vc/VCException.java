@@ -4,6 +4,9 @@ package com.simas.vc;
  * Created by Simas Abramovas on 2015 Mar 02.
  */
 
+/**
+ * Exceptions with a message that can be displayed to the user, i.e. is not an internal problem.
+ */
 public class VCException extends Exception {
 
 	private String mMessage, mExtra;

@@ -9,6 +9,9 @@ import android.content.res.Resources;
  * Created by Simas Abramovas on 2015 Mar 11.
  */
 
+/**
+ * Main application that is initialized when the JVM first starts an application.
+ */
 public class VC extends Application {
 
 	private static Context mContext;

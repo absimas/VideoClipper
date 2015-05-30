@@ -15,6 +15,9 @@ import android.widget.LinearLayout;
 // ToDo custom xml settingsas nurodantis ar rodyt arrow prie checked itemo ar ne
 // ToDo CAB open + check = change background, CAB closed + check = arrow
 
+/**
+ * Custom layout for NavItems.
+ */
 public class NavItemLayout extends LinearLayout implements Checkable {
 
 	private boolean mChecked;

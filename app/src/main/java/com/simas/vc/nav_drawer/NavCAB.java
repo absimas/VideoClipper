@@ -26,6 +26,10 @@ import java.util.List;
 // ToDo however removing invalid or "stuck" items should still be available, so deleting should be always possible
 	// ToDo deleted progressing item, should have it's parse processes cancelled.
 
+/**
+ * Navigation Contextual Action Bar (CAB) which is displayed when the user long clicks an item.
+ * Provides additional actions like selection, duplication and removal.
+ */
 public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 
 	public NavDrawerFragment navDrawerFragment;

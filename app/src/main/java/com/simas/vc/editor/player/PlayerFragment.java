@@ -29,6 +29,10 @@ import com.simas.vc.nav_drawer.NavDrawerFragment;
 // ToDo double tap not working when pressing the controls, do interceptTouchEvent
 	// Perhaps should just scale controls for lower density devices
 
+/**
+ * Fragment that combines {@code Controls}, {@code PlayerContainer} and {@code Player} and
+ * creates specific connected functionality.
+ */
 public class PlayerFragment extends Fragment implements View.OnKeyListener {
 
 	private static final String PLAYER_STATE = "player_state";

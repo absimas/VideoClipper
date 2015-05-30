@@ -22,6 +22,7 @@ import java.util.List;
 // ToDo use resources instead of strings in VCException in Stream classes
 
 /**
+ * Class containing field values for any typed stream.
  * Required fields are specified as the constructor parameters. The setters used in the
  * constructor should throw exceptions if an invalid value is given.
  */

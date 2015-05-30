@@ -43,6 +43,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
 
+/**
+ * Navigation drawer fragment that contains all added items. Also manages the CAB.
+ */
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
 	private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";

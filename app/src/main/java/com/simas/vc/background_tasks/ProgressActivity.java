@@ -21,6 +21,9 @@ import java.io.File;
 // ToDo when locked, processes stop? >.> or perhaps broadcasts are not sent..
 // ToDo when switching layouts do a transition. Resize would be nice.
 
+/**
+ * Displays the progress inside of an {@code Activity} that is customized to look like a dialog.
+ */
 public class ProgressActivity extends AppCompatActivity {
 
 	// Intent action and arguments

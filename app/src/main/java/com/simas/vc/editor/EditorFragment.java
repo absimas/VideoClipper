@@ -24,6 +24,10 @@ import java.util.Map;
  * Created by Simas Abramovas on 2015 Mar 12.
  */
 
+/**
+ * Fragment containing the information about the opened NavItem, as well as actions that can be
+ * invoked.
+ */
 public class EditorFragment extends Fragment {
 
 	private final String TAG = getClass().getName();

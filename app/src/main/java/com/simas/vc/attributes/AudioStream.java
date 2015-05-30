@@ -10,6 +10,7 @@ import java.util.List;
  */
 
 /**
+ * Class containing field values for a specific audio stream.
  * Required fields are specified as the constructor parameters. The setters used in the
  * constructor should throw exceptions if an invalid value is given.
  */

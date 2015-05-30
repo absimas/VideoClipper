@@ -24,8 +24,7 @@ import java.lang.reflect.Field;
 	// Prevent a bug on Galaxy S2: when controls visible, portrait and scroll down => shadow follows
 
 /**
- * Need to create a custom MediaController, because by default it's drawn on top of everything,
- * including the drawer...
+ * Custom {@code MediaController} that provides more functionality than its predecessor.
  */
 @SuppressLint("ViewConstructor")
 final class Controls extends MediaController {

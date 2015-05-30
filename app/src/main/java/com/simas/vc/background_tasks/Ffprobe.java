@@ -27,6 +27,9 @@ import static com.simas.vc.Utils.*;
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
+/**
+ * Connects to FFprobe library via JNI inside of a separate process.
+ */
 public class Ffprobe {
 
 	private static final String TAG = "ffprobe";

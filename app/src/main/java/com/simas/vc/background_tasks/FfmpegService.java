@@ -25,6 +25,9 @@ import java.io.IOException;
  * Created by Simas Abramovas on 2015 Mar 16.
  */
 
+/**
+ * Connects to FFmpeg library via JNI inside of a separate process.
+ */
 public class FfmpegService extends IntentService {
 
 	private static final String TAG = "FfmpegService";
@@ -76,22 +79,7 @@ public class FfmpegService extends IntentService {
 		return false;
 	}
 
-	private class MyTask extends AsyncTask<Void, Void, Void> {
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void aVoid) {
-			super.onPostExecute(aVoid);
-			// doInBackground finished, use your variable now
-		}
-
-	}
-
-		private class ProgressNotifier extends AsyncTask<Void, Void, Boolean> {
+	private class ProgressNotifier extends AsyncTask<Void, Void, Boolean> {
 
 		/**
 		 * Amount of milliseconds to wait before re-checking the progress file

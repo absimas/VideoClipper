@@ -1,3 +1,6 @@
+/**
+ * Main package containing utilities and utility classes.
+ */
 package com.simas.vc;
 
 import android.database.DataSetObserver;
@@ -23,6 +26,9 @@ import java.io.File;
 	// correctly: you can add items and when you select one of them, you get the proper title set
 		// unlike it usually does
 
+/**
+ * Activity that contains all the top-level fragments and manages their transitions.
+ */
 public class MainActivity extends AppCompatActivity
 		implements NavDrawerFragment.NavigationDrawerCallbacks {
 

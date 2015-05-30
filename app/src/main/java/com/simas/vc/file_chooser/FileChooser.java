@@ -35,6 +35,9 @@ import java.util.List;
 // ToDo save scroll position when going deeper
 // ToDo on-click-outside doesn't dismiss on Galaxy S2
 
+/**
+ * Custom dialog for choosing a file from the device's drive.
+ */
 public class FileChooser extends DialogFragment
 		implements AdapterView.OnItemClickListener, DialogInterface.OnKeyListener {
 

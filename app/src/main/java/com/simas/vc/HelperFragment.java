@@ -19,7 +19,8 @@ import android.widget.TextView;
  */
 
 /**
- * All the posted messages will be run after onCreateView
+ * Fragment displays the helper text for specific actions.
+ * All the posted messages will be run after onCreateView.
  */
 public class HelperFragment extends Fragment {
 

@@ -26,6 +26,9 @@ import java.util.List;
 	// should display an error message when selected but previous selection shouldn't be changed
 // ToDo test out new bitmap parcelling
 
+/**
+ * Custom adapter for navigation list, that's located inside of the drawer.
+ */
 public class NavAdapter extends BaseAdapter {
 
 	private final String TAG = getClass().getName();

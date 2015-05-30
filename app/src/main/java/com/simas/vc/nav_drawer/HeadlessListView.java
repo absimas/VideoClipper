@@ -1,3 +1,6 @@
+/**
+ * Classes connected to the navigation drawer, e.g. Navigation Item, Drawer Fragment, etc.
+ */
 package com.simas.vc.nav_drawer;
 
 import android.annotation.TargetApi;

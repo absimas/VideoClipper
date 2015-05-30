@@ -25,6 +25,9 @@ import java.io.OutputStream;
  * Created by Simas Abramovas on 2015 Feb 28.
  */
 
+/**
+ * Helper methods
+ */
 public class Utils {
 
 	private static final String TAG = "Utils";
