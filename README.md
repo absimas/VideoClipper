@@ -1,8 +1,52 @@
 # Video Clipper
 Android video manipulation app
 
-# Purpose
-This tool is a wrapper for FFmpeg and FFprobe libraries. Its purpose is to ease the use of the aforementioned libraries and provide an understandable UI for regular users.
+## Support
+I am very open to receiving help for this open source project.
+If you have any suggestions, critic or questions feel free to contact me!
+
+# Usage (developers)
+When first compiling this library you need to complete a few steps:
+
+1. Download ffmpeg library
+ 
+        `git clone https://github.com/FFmpeg/FFmpeg app/src/main/jni/ffmpeg/`
+2. Build ffmpeg
+ 
+      `./app/src/main/jni/build_ffmpeg.sh`
+3. Compile libvc.so. Uncomment a block of code in `app/build.gradle`:
+
+        // Debug tasks
+        /*	// Disable implicit Android.mk creation for all app variants
+	        // Custom tasks that compile libraries with ndk-build using the customized makefile
+	        //noinspection GroovyAssignabilityCheck
+	        task ndkBuildDebug(type: Exec) {
+		        // Fetch NDK directory from local.properties
+		        Properties properties = new Properties()
+		        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+		        def ndkDir = properties.getProperty('ndk.dir')
+		        println("DEBUG")
+		        commandLine "$ndkDir/ndk-build",
+				        "NDK_DEBUG=0",
+        				"-B", // Force a rebuild
+        				'NDK_PROJECT_PATH=build/intermediates/ndk',
+        				'NDK_LIBS_OUT=src/main/jniLibs',
+				        'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
+				        'NDK_APPLICATION_MK=src/main/jni/Application.mk'
+	        }
+	        tasks.whenTaskAdded { task ->
+		        if (task.name == 'compileDebugJava') {
+			        task.dependsOn ndkBuildDebug
+		        }
+        	}
+        */
+        
+**Note:** Code in step 3 needs to be uncommented only if:
+- You're compiling for the first time (and lib still doesn't exist)
+- When you change native code, i.e. `vc.c`
+
+
+-----
 
 # Functionality
 Currently the app can accomplish the following:
@@ -18,14 +62,3 @@ Future improvements of this app are highly dependent on the functionality of FFm
 - Image overlay
 - Addition of extra audio streams
 - Pre-installed transitions
-
-# Main classes
-The main classes and their purposes are:
-- `FfmpegService` - queue jobs and contact FFmpeg library via JNI
-- `Ffprobe` - parse file Attributes using FFprobe library that's also called via JNI
-- `NavDrawerFragment`, `EditorFragment`, `HelperFragment` - specific task fragments
-- `MainActivity` - connect all the top-level fragments
-
-## Other info
-I am very open to receiving help for this open source project.
-If you have any suggestions, critic or questions feel free to contact me!
