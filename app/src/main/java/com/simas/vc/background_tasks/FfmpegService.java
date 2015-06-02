@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2015. Simas Abramovas
+ *
+ * This file is part of VideoClipper.
+ *
+ * VideoClipper is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * VideoClipper is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.simas.vc.background_tasks;
 
 import android.app.ActivityManager;
@@ -11,19 +29,13 @@ import android.os.AsyncTask;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.R;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-
-/**
- * Created by Simas Abramovas on 2015 Mar 16.
- */
 
 /**
  * Connects to FFmpeg library via JNI inside of a separate process.

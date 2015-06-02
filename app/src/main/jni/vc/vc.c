@@ -1,3 +1,4 @@
+// ToDo inlude a copyright notice and a license in c files
 // FFmpeg includes
 #include <ffmpeg.h>
 #include <libavcodec/avcodec.h>

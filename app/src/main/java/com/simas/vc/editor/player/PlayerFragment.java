@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2015. Simas Abramovas
+ *
+ * This file is part of VideoClipper.
+ *
+ * VideoClipper is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * VideoClipper is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.simas.vc.editor.player;
 
 import android.annotation.TargetApi;
@@ -21,10 +39,6 @@ import com.simas.vc.VC;
 import com.simas.vc.R;
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
-
-/**
- * Created by Simas Abramovas on 2015 May 03.
- */
 
 // ToDo double tap not working when pressing the controls, do interceptTouchEvent
 	// Perhaps should just scale controls for lower density devices

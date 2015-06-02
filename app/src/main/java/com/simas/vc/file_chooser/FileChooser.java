@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2015. Simas Abramovas
+ *
+ * This file is part of VideoClipper.
+ *
+ * VideoClipper is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * VideoClipper is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.simas.vc.file_chooser;
 
 import android.app.Activity;
@@ -18,7 +36,6 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-
 import com.simas.vc.R;
 import com.simas.vc.VC;
 import com.simas.vc.nav_drawer.NavItem;
@@ -26,10 +43,6 @@ import com.simas.vc.Utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Created by Simas Abramovas on 2015 Mar 09.
- */
 
 // ToDo replace with native file chooser?
 // ToDo save scroll position when going deeper

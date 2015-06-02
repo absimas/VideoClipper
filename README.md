@@ -48,6 +48,10 @@ When first compiling this library you need to complete a few steps:
 
 -----
 
+# License
+
+This project is GNU GPL software. See [COPYING](COPYING) for the complete license.
+
 # Functionality
 Currently the app can accomplish the following:
 - Parse a chosen video file and determine its *Attributes*
