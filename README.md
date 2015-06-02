@@ -5,6 +5,9 @@ Android video manipulation app
 I am very open to receiving help for this open source project.
 If you have any suggestions, critic or questions feel free to contact me!
 
+# License
+This project is GNU GPL software. See [COPYING](COPYING) for the complete license.
+
 # Usage (developers)
 When first compiling this library you need to complete a few steps:
 
@@ -47,10 +50,6 @@ When first compiling this library you need to complete a few steps:
 
 
 -----
-
-# License
-
-This project is GNU GPL software. See [COPYING](COPYING) for the complete license.
 
 # Functionality
 Currently the app can accomplish the following:
