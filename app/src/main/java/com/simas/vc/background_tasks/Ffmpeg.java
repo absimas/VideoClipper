@@ -217,9 +217,6 @@ public class Ffmpeg {
 	 *         Height
 	 *     </li>
 	 *     <li>
-	 *         Aspect ration
-	 *     </li>
-	 *     <li>
 	 *         Codec tag
 	 *     </li>
 	 *     <li>
@@ -237,7 +234,6 @@ public class Ffmpeg {
 	public static boolean concatDemuxerFieldsMatch(VideoStream va1, VideoStream va2) {
 		return Utils.equals(va1.getWidth(), va2.getWidth()) &&
 				Utils.equals(va1.getHeight(), va2.getHeight()) &&
-				Utils.equals(va1.getAspectRatio(), va2.getAspectRatio()) &&
 				Utils.equals(va1.getCodecTag(), va2.getCodecTag()) &&
 				Utils.equals(va1.getTBN(), va2.getTBN()) &&
 				Utils.equals(va1.getTBC(), va2.getTBC()) &&
