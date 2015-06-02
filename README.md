@@ -48,9 +48,6 @@ When first compiling this library you need to complete a few steps:
 - You're compiling for the first time (and lib still doesn't exist)
 - When you change native code, i.e. `vc.c`
 
-
------
-
 # Functionality
 Currently the app can accomplish the following:
 - Parse a chosen video file and determine its *Attributes*
