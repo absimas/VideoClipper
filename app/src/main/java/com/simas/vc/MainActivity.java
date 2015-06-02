@@ -32,7 +32,6 @@ import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
-import java.io.File;
 
 // ToDo use dimensions in xml instead of hard-coded values
 // ToDo after rotate helper text gets re-set. E.g. with added items you see slide to open list

@@ -235,13 +235,13 @@ public class Ffmpeg {
 	 * @return true if the required field set matches
 	 */
 	public static boolean concatDemuxerFieldsMatch(VideoStream va1, VideoStream va2) {
-		return va1.getWidth().equals(va2.getWidth()) &&
-				va1.getHeight().equals(va2.getHeight()) &&
-				va1.getAspectRatio().equals(va2.getAspectRatio()) &&
-				va1.getCodecTag().equals(va2.getCodecTag()) &&
-				va1.getTBN().equals(va2.getTBN()) &&
-				va1.getTBC().equals(va2.getTBC()) &&
-				va1.getTBR().equals(va2.getTBR());
+		return Utils.equals(va1.getWidth(), va2.getWidth()) &&
+				Utils.equals(va1.getHeight(), va2.getHeight()) &&
+				Utils.equals(va1.getAspectRatio(), va2.getAspectRatio()) &&
+				Utils.equals(va1.getCodecTag(), va2.getCodecTag()) &&
+				Utils.equals(va1.getTBN(), va2.getTBN()) &&
+				Utils.equals(va1.getTBC(), va2.getTBC()) &&
+				Utils.equals(va1.getTBR(), va2.getTBR());
 	}
 
 }

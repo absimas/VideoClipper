@@ -24,6 +24,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -308,6 +309,15 @@ public class Utils {
 			return mHeight;
 		}
 
+	}
+
+	/**
+	 * Compares 2 {@code Object} references.
+	 * @return false if the objects differ or either of them is {@code null}, otherwise true
+	 */
+	public static boolean equals(@Nullable Object obj1, @Nullable Object obj2) {
+		if (obj1 == null || obj2 == null) return false;
+		return obj1.equals(obj2);
 	}
 
 }
