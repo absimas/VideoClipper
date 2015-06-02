@@ -13,10 +13,10 @@ When first compiling this library you need to complete a few steps:
 
 1. Download ffmpeg library
  
-        `git clone https://github.com/FFmpeg/FFmpeg app/src/main/jni/ffmpeg/`
+        git clone https://github.com/FFmpeg/FFmpeg app/src/main/jni/ffmpeg/
 2. Build ffmpeg
  
-      `./app/src/main/jni/build_ffmpeg.sh`
+        ./app/src/main/jni/build_ffmpeg.sh
 3. Compile libvc.so. Uncomment a block of code in `app/build.gradle`:
 
         // Debug tasks
