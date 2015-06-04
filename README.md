@@ -5,18 +5,18 @@ Android video manipulation app
 I am very open to receiving help for this open source project.
 If you have any suggestions, critic or questions feel free to contact me!
 
-# License
+## License
 This project is GNU GPL software. See [COPYING](COPYING) for the complete license.
 
-# Usage (developers)
+## Usage (developers)
 When first compiling this library you need to complete a few steps:
 
 1. Download ffmpeg library
  
-        `git clone https://github.com/FFmpeg/FFmpeg app/src/main/jni/ffmpeg/`
+        git clone https://github.com/FFmpeg/FFmpeg app/src/main/jni/ffmpeg/
 2. Build ffmpeg
  
-      `./app/src/main/jni/build_ffmpeg.sh`
+        ./app/src/main/jni/build_ffmpeg.sh
 3. Compile libvc.so. Uncomment a block of code in `app/build.gradle`:
 
         // Debug tasks
@@ -48,13 +48,13 @@ When first compiling this library you need to complete a few steps:
 - You're compiling for the first time (and lib still doesn't exist)
 - When you change native code, i.e. `vc.c`
 
-# Functionality
+## Functionality
 Currently the app can accomplish the following:
 - Parse a chosen video file and determine its *Attributes*
 - Concatenate multiple videos (at the moment possible only with same resolution videos)
 - Re-encode streams to a common codec while concatenating (based on the output chosen)
 
-# Expansion
+## Expansion
 Future improvements of this app are highly dependent on the functionality of FFmpeg and FFprobe libraries which are the basis of this tool. Currently planned video modifications include:
 - Resize
 - Crop
