@@ -68,6 +68,9 @@ static const int CFFPROBE_WAIT_INTERVAL = 300;
 static const int MAX_LOG_UNMODIFYING_ITERATIONS = 10;
 // Times cFfprobe will retry when log isn't modified for MAX_LOG_UNMODIFYING_ITERATIONS
 static const int CFFPROBE_RETRY_CALLS = 2;
+/* Min and Max luminance values the average preview pixel can have (0-255) */
+static const int MIN_PREVIEW_LUMINANCE = 20;
+static const int MAX_PREVIEW_LUMINANCE = 230;
 // cFfprobe retry counter
 int cFfprobeRetries = 0;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
@@ -496,7 +499,7 @@ int isFrameUnderExposed(AVFrame *frame) {
 
 	LOGI("Average frame luma is: %d", averageLuma);
 
-	if (averageLuma <= 20 || averageLuma >= 235) {
+	if (averageLuma <= MIN_PREVIEW_LUMINANCE || averageLuma >= MAX_PREVIEW_LUMINANCE) {
 		return 1;
 	} else {
 		return 0;
