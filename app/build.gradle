@@ -42,7 +42,7 @@ android {
 	}
 
 	// Debug tasks
-/*	// Disable implicit Android.mk creation for all app variants
+	// Disable implicit Android.mk creation for all app variants
 	// Custom tasks that compile libraries with ndk-build using the customized makefile
 	//noinspection GroovyAssignabilityCheck
 	task ndkBuildDebug(type: Exec) {
@@ -66,7 +66,6 @@ android {
 			task.dependsOn ndkBuildDebug
 		}
 	}
-*/
 
 	// Release tasks
 /*	//noinspection GroovyAssignabilityCheck

@@ -1,11 +1,28 @@
-// ToDo inlude a copyright notice and a license in c files
+/*
+ * Copyright (c) 2015. Simas Abramovas
+ *
+ * This file is part of VideoClipper.
+ *
+ * VideoClipper is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * VideoClipper is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 // FFmpeg includes
 #include <ffmpeg.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/pixfmt.h>
-
 // Android includes
 #include <android/log.h>
 #include <android/bitmap.h>
@@ -31,21 +48,28 @@
 /* Config */
 // Log tag
 #define TAG "VC.c"
-// Convenience log functions definitions
+// Convenience log functions
 #ifdef NDEBUG
     #define LOGV(...) __android_log_print(2, TAG, __VA_ARGS__);
     #define LOGI(...) __android_log_print(4, TAG, __VA_ARGS__);
+    #define LOGW(...) __android_log_print(5, TAG, __VA_ARGS__);
 #else
     // Do nothing on release builds
     #define LOGV(...) do { } while(0)
     #define LOGI(...) do { } while(0)
+    #define LOGW(...) do { } while(0)
 #endif
 #define LOGE(...) __android_log_print(6, TAG, __VA_ARGS__);
 
-// Time between checks if the child process has been closed
-static const int FFMPEG_WAIT_INTERVAL = 1000;
-static const int FFPROBE_WAIT_INTERVAL = 300;
+/* Time between checks if the child process has been closed */
+static const int CFFMPEG_WAIT_INTERVAL = 1000;
+static const int CFFPROBE_WAIT_INTERVAL = 300;
+// Fruitless (unmodified log file) iterations cFfprobe will endure before quitting
 static const int MAX_LOG_UNMODIFYING_ITERATIONS = 10;
+// Times cFfprobe will retry when log isn't modified for MAX_LOG_UNMODIFYING_ITERATIONS
+static const int CFFPROBE_RETRY_CALLS = 2;
+// cFfprobe retry counter
+int cFfprobeRetries = 0;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
 static const char* mFfprobeActivityPath = "com/simas/vc/background_tasks/Ffprobe";
 
@@ -62,10 +86,13 @@ typedef struct CArray {
 jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args);
 jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
 jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath);
+
 // Helper method prototypes
+int isFrameUnderExposed(AVFrame *frame);
 void sleep_ms(int milliseconds);
 time_t get_mtime(const char *path);
 CArray convertToCArray(JNIEnv *env, jobjectArray args);
+void freeCArray(JNIEnv *env, CArray *cArray);
 jobject createBitmap(JNIEnv *pEnv, int pWidth, int pHeight);
 
 // Method implementations
@@ -85,12 +112,12 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
         	// Start FFmpeg
             int result = ffmpeg(cArray.size, cArray.arr);
 
-		    freeCArray(cArray);
+		    freeCArray(env, &cArray);
 
             exit(result);
         default:
             LOGI("Parent listening to child: %d", childID);
-            // Check if child has finished every FFMPEG_WAIT_INTERVAL ms
+            // Check if child has finished every CFFMPEG_WAIT_INTERVAL ms
             int status;
             for(;;) {
                 pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
@@ -101,7 +128,7 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
                         return EXIT_FAILURE;
                     case 0:
                         LOGI("Parent waiting for child...");
-                        sleep_ms(FFMPEG_WAIT_INTERVAL);
+                        sleep_ms(CFFMPEG_WAIT_INTERVAL);
                         break;
                     default:
                         if (endID == childID) {
@@ -125,19 +152,19 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
     }
 }
 
+
+
 jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 #define TAG "cFfprobe"
 	const char *logPath = (*env)->GetStringUTFChars(env, jLogPath, 0);
-	int status;
 
     // Fork process
     pid_t childID = fork();
 
     switch (childID) {
         case -1:
-            LOGE("fork error");
-            status = EXIT_FAILURE;
-            break;
+            LOGE("Fork error");
+            return EXIT_FAILURE;
         case 0:
             LOGI("Child process started...");
 		    CArray cArray = convertToCArray(env, args);
@@ -145,17 +172,17 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 		    FILE *logFile;
 		    if (access(logPath, F_OK) != -1) {
 		        if ((logFile = fopen(logPath, "w")) == NULL) {
-		            LOGE("Couldn't open the file! %s", logPath);
+		            LOGE("Error: Couldn't open the log file! %s", logPath);
 		            exit(EXIT_FAILURE);
 		        }
 		    } else {
-		        LOGE("File not found!");
+		        LOGE("Error: Log file not found! %s", logPath);
 		        exit(EXIT_FAILURE);
 		    }
 
 		    // Redirect stdout to a file
 		    if (dup2(fileno(logFile), fileno(stdout)) == -1) {
-		        LOGE("Error redirecting stdout");
+		        LOGE("Error: Couldn't redirect stdout!");
 		        exit(EXIT_FAILURE);
 		    }
 		    // File descriptor duplicated, can now close the file
@@ -163,31 +190,29 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 
 		    // Start FFprobe
 		    int result = ffprobe(cArray.size, cArray.arr);
-
 		    // Flush FFprobe output
 			fflush(stdout);
 
 		    // Free log path string
 		    (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
-		    freeCArray(cArray);
+		    freeCArray(env, &cArray);
 
 			// Exit the child process and return the FFprobe result code
 			exit(result);
         default:
             LOGI("Parent listening to child: %d", childID);
-            int unmodifiedIterations = 0;
+            int unmodifiedIterations = 0, status;
             long logModificationTime = 0;
-            int loop = true;
-            while (loop) {
-                // Check if child has finished every FFPROBE_WAIT_INTERVAL ms
+            for (;;) {
+                // Check if child has finished every CFFPROBE_WAIT_INTERVAL ms
                 pid_t endID = waitpid(childID, &status, WNOHANG|WUNTRACED);
 
                 switch (endID) {
                     case -1:
                         LOGE("waitpid error!");
-                        status = EXIT_FAILURE;
-                        loop = false;
-                        break;
+                        // Free log path string
+                        (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
+                        return EXIT_FAILURE;
 	                case 0:
                         // Check the log modification time
                         if (logModificationTime != 0 && logModificationTime == get_mtime(logPath)) {
@@ -198,16 +223,32 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
                         }
 
                         if (unmodifiedIterations >= MAX_LOG_UNMODIFYING_ITERATIONS) {
-                            LOGE("Log file hasn't been modified for %d millis! Quitting.",
-                                    unmodifiedIterations * FFPROBE_WAIT_INTERVAL);
-                            status = EXIT_FAILURE;
-                            loop = false;
+                            LOGE("Log file hasn't been modified for %d millis!",
+                                    unmodifiedIterations * CFFPROBE_WAIT_INTERVAL);
+                            // Free log path string
+                            (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
+
+                            int result;
+                            // Retry CFFPROBE_RETRY_CALLS times
+                            if (++cFfprobeRetries < CFFPROBE_RETRY_CALLS) {
+                                LOGW("Retrying... %d retries out of %d",
+                                        cFfprobeRetries, CFFPROBE_RETRY_CALLS);
+                                // Invoke cFfprobe again if haven't yet reached the limit
+                                result = cFfprobe(env, obj, args, jLogPath);
+                            } else {
+                                LOGE("Already retried %d times... exiting!", CFFPROBE_RETRY_CALLS);
+                                result = EXIT_FAILURE;
+                            }
+
+                            // Reset retry counter
+                            cFfprobeRetries = 0;
+                            return result;
                         } else {
                             // Update time variable
 	                        logModificationTime = get_mtime(logPath);
 
 	                        LOGV("Parent waiting for child...");
-	                        sleep_ms(FFPROBE_WAIT_INTERVAL);
+	                        sleep_ms(CFFPROBE_WAIT_INTERVAL);
                         }
                         break;
                     default:
@@ -216,24 +257,26 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
                                 LOGI("Child ended normally.");
                                 if (status) {
                                     LOGE("However the return code is: %d", status);
-                                    status = EXIT_FAILURE;
+                                    // Free log path string
+                                    (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
+                                    return EXIT_FAILURE;
+                                } else {
+                                    return status;
                                 }
                             } else {
 	                            if (WIFSIGNALED(status)) {
-	                                LOGE("Child ended because of an uncaught signal.n");
+	                                LOGE("Child ended because of an uncaught signal.");
 	                            } else if (WIFSTOPPED(status)) {
 	                                LOGI("Child process has stopped.");
 	                            }
-	                            status = EXIT_FAILURE;
+                                // Free log path string
+                                (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
+                                return EXIT_FAILURE;
                             }
-                            loop = false;
                         }
                 }
             }
     }
-
-    // Free log path string
-    (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
 }
 
 jobject createBitmap(JNIEnv *pEnv, int pWidth, int pHeight) {
@@ -368,19 +411,43 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 	avpicture_fill((AVPicture *)frameRGBA, buffer, AV_PIX_FMT_RGBA,
 			codecCtx->width, codecCtx->height);
 
-	// ToDo seek parameter ?
-		// int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
+	// Seek functions
+		//int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
+		//int avformat_seek_file (AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 
-	// Read frames and save first five frames to disk
-	i = 0;
+	int underExposedRetries = 0, findKeyPacket = 0;
 	while (av_read_frame(formatCtx, &packet) >= 0) {
 		// Is this a packet from the video stream?
 		if (packet.stream_index == videoStream) {
+			// Check whether this packet contains a key frame
+			if (findKeyPacket && !(packet.flags & AV_PKT_FLAG_KEY)) {
+	        	av_free_packet(&packet);
+	            continue;
+			}
+
 			// Decode video frame
 			avcodec_decode_video2(codecCtx, frame, &frameFinished, &packet);
 
-			// Did we get a video frame?
+			// Check whether frame successfully decoded
 			if (frameFinished) {
+				if (isFrameUnderExposed(frame)) {
+					switch (++underExposedRetries) {
+						case 1:
+							seekTo(formatCtx, 0.25);
+							break;
+						case 2:
+							seekTo(formatCtx, 0.50);
+							break;
+						default:
+							LOGI("Looking for key frame packets. Retry %d.", underExposedRetries);
+							findKeyPacket = 1;
+							break;
+					}
+					avcodec_flush_buffers(codecCtx);
+					av_free_packet(&packet);
+					continue;
+				}
+
 				// Convert the image from its native format to RGBA
 				sws_scale
 				(
@@ -392,12 +459,11 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 					frameRGBA->data,
 					frameRGBA->linesize
 				);
-			}
-
-			if (++i == 5) {
-				break;
+                av_free_packet(&packet);
+                break;
 			}
 		}
+
 		// Free the packet that was allocated by av_read_frame
 		av_free_packet(&packet);
 	}
@@ -417,10 +483,41 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 	return bitmap;
 }
 
+// Check if frame is too dark or too bright
+int isFrameUnderExposed(AVFrame *frame) {
+	// Count average pixel luma (brightness)
+	unsigned long long totalLuma = 0;
+	for (int x=1; x<=frame->width; ++x) {
+		for (int y=1; y<=frame->height; ++y) {
+			totalLuma += frame->data[0][frame->linesize[0]*y + x];
+        }
+	}
+	unsigned char averageLuma = totalLuma / (frame->width * frame->height);
+
+	LOGI("Average frame luma is: %d", averageLuma);
+
+	if (averageLuma <= 20 || averageLuma >= 235) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+// Seek to position on movie. durationPart is specified with part of the total movie duration, e.g.
+// 0.15 is 15% or 15s in a 100s movie
+int seekTo(AVFormatContext *format, double durationPart) {
+	int64_t timestamp = format->duration * durationPart / AV_TIME_BASE;
+	LOGI("Seeking to %" PRId64 "s.", timestamp);
+
+	// AVSEEK_FLAG_ANY enables seeking to every frame and not just keyframes.
+	avformat_seek_file(format, -1, INT64_MIN, timestamp, INT64_MAX, AVSEEK_FLAG_ANY);
+}
+
 // Converts Java's String[] to C's char**
 CArray convertToCArray(JNIEnv *env, jobjectArray args) {
     CArray cArray;
-	cArray.size = (*env)->GetArrayLength(env, args);
+	jint size = (*env)->GetArrayLength(env, args);
+	cArray.size = size;
 	cArray.jstrings = (jstring *) malloc(sizeof(jstring) * cArray.size);
 	cArray.arr = (const char **) malloc(sizeof(const char *) * cArray.size);
 
@@ -432,19 +529,20 @@ CArray convertToCArray(JNIEnv *env, jobjectArray args) {
 	return cArray;
 }
 
-void freeCArray(JNIEnv *env, CArray cArray) {
-	for(int i=0; i<cArray.size; ++i) {
+void freeCArray(JNIEnv *env, CArray *cArray) {
+	CArray myArr = *cArray;
+	for(int i=0; i<cArray->size; ++i) {
 		// Free char*
-		(*env)->ReleaseStringUTFChars(env, cArray.jstrings[i], cArray.arr[i]);
+		(*env)->ReleaseStringUTFChars(env, cArray->jstrings[i], cArray->arr[i]);
 
-		// Free jstring
-		free(cArray.jstrings[i]);
+		// Delete jstring reference (unnecessary as these are freed after the native method returns)
+		(*env)->DeleteLocalRef(env, cArray->jstrings[i]);
 	}
 	// Free char**
-    free(cArray.arr);
+    free(cArray->arr);
 
 	// Free jstring[]
-	free(cArray.jstrings);
+	free(cArray->jstrings);
 }
 
 void sleep_ms(int milliseconds) {

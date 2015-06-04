@@ -72,7 +72,10 @@ public class Ffprobe {
 		// Create a temporary file to hold the stdout output
 		File tmpFile;
 		try {
-			tmpFile = File.createTempFile("vc-out", null);
+//			tmpFile = File.createTempFile("vc-out", null);
+			tmpFile = new File("/sdcard/Movies/test.txt");
+			tmpFile.delete();
+			tmpFile.createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new VCException("Temporary file couldn't be created! Please try again.");

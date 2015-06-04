@@ -272,16 +272,16 @@ public class Utils {
 		String output = "";
 		if (hours > 0) {
 			// If hours present, print minutes and seconds too
-			output = String.format("%2d%s %2d%s ",
+			output = String.format("%d%s %d%s ",
 					hours, VC.getStr(R.string.hour_short),
 					minutes, VC.getStr(R.string.minute_short));
 		} else if (minutes > 0) {
 			// If hours aren't present but minutes are, print them
-			output = String.format("%2d%s ", minutes, VC.getStr(R.string.minute_short));
+			output = String.format("%d%s ", minutes, VC.getStr(R.string.minute_short));
 		}
 		// When not 0, seconds are always printed
 		if (seconds > 0) {
-			output += String.format("%2d%s", seconds, VC.getStr(R.string.second_short));
+			output += String.format("%d%s", seconds, VC.getStr(R.string.second_short));
 		}
 
 		return output;
@@ -290,6 +290,15 @@ public class Utils {
 	public static Size getScreenSize() {
 		DisplayMetrics metrics = VC.getAppResources().getDisplayMetrics();
 		return new Size(metrics.widthPixels, metrics.heightPixels);
+	}
+
+	/**
+	 * Convert bytes to megabytes with 2 digits after the decimal point and output as a string
+	 */
+	public static String bytesToMb(Long bytes) {
+		if (bytes == null) bytes = 0L;
+		double mb = bytes / 1024.0 / 1024.0;
+		return String.format("%.2f %s", mb, VC.getStr(R.string.megabyte));
 	}
 
 	public static class Size {

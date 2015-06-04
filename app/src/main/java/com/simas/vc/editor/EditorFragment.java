@@ -222,8 +222,7 @@ public class EditorFragment extends Fragment {
 
 
 		// Prep strings
-		double mb = attributes.getSize() / 1024.0 / 1024.0;
-		final String sizeStr = String.format("%.2f mb", mb);
+		final String sizeStr = Utils.bytesToMb(attributes.getSize());
 		final String durationStr = Utils.secsToFullTime(attributes.getDuration().intValue());
 
 		final TreeParser slp = new TreeParser(getActivity(), attributes);

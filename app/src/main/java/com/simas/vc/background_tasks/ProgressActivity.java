@@ -190,9 +190,7 @@ public class ProgressActivity extends AppCompatActivity {
 					value = output.replaceAll(TOTAL_SIZE, "");
 					try {
 						long bytes = Long.parseLong(value);
-						double mb = bytes / 1024.0 / 1024.0;
-						mTextViews[1].setText(String.format("%.2f %s",
-								mb, getString(R.string.megabyte)));
+						mTextViews[1].setText(Utils.bytesToMb(bytes));
 					} catch (NumberFormatException e) {
 						e.printStackTrace();
 					}
