@@ -83,7 +83,7 @@ public class NavItem implements Parcelable, Cloneable {
 		FAIL_IMAGE = BitmapFactory.decodeResource(VC.getAppResources(), R.drawable.fail);
 	}
 
-	// ToDo extension list documentation
+	// ToDo document extension lists
 	private static final List<String> VALID_AUDIO_EXTENSIONS = new ArrayList<String>() { {
 //		add("mp3");
 	}};
@@ -92,6 +92,7 @@ public class NavItem implements Parcelable, Cloneable {
 		add("mp4");
 		add("mkv");
 		add("avi");
+		add("divx");
 	}};
 
 	private static final List<String> VALID_PICTURE_EXTENSIONS = new ArrayList<String>() { {

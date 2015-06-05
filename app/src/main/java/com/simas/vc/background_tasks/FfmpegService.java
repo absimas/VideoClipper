@@ -134,7 +134,7 @@ public class FfmpegService extends IntentService {
 
 			mDisplayIntent = new Intent(VC.getAppContext(), ProgressActivity.class);
 			// Remove any existing progress activities, so onCreate is called instead of onNewIntent
-			mDisplayIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//			mDisplayIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
 			mDisplayIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_OUTPUT_FILE, outputFile);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_TOTAL_DURATION, mDurationTime);
@@ -332,7 +332,7 @@ public class FfmpegService extends IntentService {
 			PendingIntent pendingIntent = PendingIntent.getActivity(VC.getAppContext(), 0,
 					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
-			// Show notification and a toast only if the progress for current file isn't shown
+			// Show notification and a toast only if the progress for the current file isn't shown
 			File progressingFile = ProgressActivity.getProgressingFile();
 			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(),R.raw.fail);
@@ -367,7 +367,7 @@ public class FfmpegService extends IntentService {
 			PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
 					intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-			// Show notification and a toast only if the progress for current file isn't shown
+			// Show notification and a toast only if the progress for the current file isn't shown
 			File progressingFile = ProgressActivity.getProgressingFile();
 			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);

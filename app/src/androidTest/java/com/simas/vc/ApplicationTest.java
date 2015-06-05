@@ -15,7 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
- */ckage com.simas.vc;
+ */
+package com.simas.vc;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

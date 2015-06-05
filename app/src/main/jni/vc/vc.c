@@ -70,7 +70,7 @@ static const int MAX_LOG_UNMODIFYING_ITERATIONS = 10;
 static const int CFFPROBE_RETRY_CALLS = 2;
 /* Min and Max luminance values the average preview pixel can have (0-255) */
 static const int MIN_PREVIEW_LUMINANCE = 20;
-static const int MAX_PREVIEW_LUMINANCE = 230;
+static const int MAX_PREVIEW_LUMINANCE = 235;
 // cFfprobe retry counter
 int cFfprobeRetries = 0;
 static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
@@ -226,7 +226,7 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
                         }
 
                         if (unmodifiedIterations >= MAX_LOG_UNMODIFYING_ITERATIONS) {
-                            LOGE("Log file hasn't been modified for %d millis!",
+                            LOGW("Log file hasn't been modified for %d millis!",
                                     unmodifiedIterations * CFFPROBE_WAIT_INTERVAL);
                             // Free log path string
                             (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
@@ -346,6 +346,11 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 		LOGE("Couldn't find stream info!");
 		return NULL;
 	}
+
+	for (int i =0; i<n; i++) {
+		String output = "";
+	}
+
 
 	// Dump information about file onto standard error
 	av_dump_format(formatCtx, 0, videoFilePath, 0);

@@ -24,19 +24,20 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 import java.io.File;
 
-// ToDo when locked, processes stop? >.> or perhaps broadcasts are not sent..
-// ToDo when switching layouts do a transition. Resize would be nice.
-
 /**
  * Displays the progress inside of an {@code Activity} that is customized to look like a dialog.
+ * Note that broadcasts aren't sent when the screen is locked so the activity fields aren't updated.
  */
 public class ProgressActivity extends AppCompatActivity {
 
@@ -56,17 +57,18 @@ public class ProgressActivity extends AppCompatActivity {
 	private static final String OUT_TIME = "out_time=";
 	private static final String TOTAL_SIZE = "total_size=";
 
-	private static boolean sActivityShown;
+	private static File sProgressingFile;
 	private final String TAG = getClass().getName();
 
 	public enum Type {
 		ERROR, PROGRESS, FINISHED
 	}
 
+	private TextView mMain, mInfo, mOutputName, mCurrentSize, mTotalDuration, mCurrentDuration,
+			mCurrentFrame, mFPS;
+	private View mOpenButton, mTableView;
 	private Type mType;
 	private File mOutputFile;
-	private String mCurrentDuration, mOutputDuration;
-	private TextView[] mTextViews;
 	private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
 
 		private final String TAG = getClass().getName();
@@ -85,13 +87,27 @@ public class ProgressActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.progress_dialog);
+
+		mMain = (TextView) findViewById(R.id.main);
+		mInfo = (TextView) findViewById(R.id.info);
+		mOutputName = (TextView) findViewById(R.id.output_name_value);
+		mCurrentSize = (TextView) findViewById(R.id.cur_size_value);
+		mTotalDuration = (TextView) findViewById(R.id.total_duration_value);
+		mCurrentDuration = (TextView) findViewById(R.id.current_duration_value);
+		mCurrentFrame = (TextView) findViewById(R.id.current_frame_value);
+		mFPS = (TextView) findViewById(R.id.fps_value);
+
+		mOpenButton = findViewById(R.id.open);
+		mTableView = findViewById(R.id.table);
+
 		// Restore state if set
 		if (savedInstanceState != null) {
 			// Fetch previous intent
 			Intent intent = savedInstanceState.getParcelable(KEY_PREVIOUS_INTENT);
 			setIntent(intent);
 			mOutputFile = (File) savedInstanceState.getSerializable(KEY_PREVIOUS_FILE);
-			mOutputDuration = savedInstanceState.getString(KEY_PREVIOUS_TOTAL_DURATION);
+			mTotalDuration.setText(savedInstanceState.getString(KEY_PREVIOUS_TOTAL_DURATION));
 		}
 
 		onNewIntent(getIntent());
@@ -100,25 +116,20 @@ public class ProgressActivity extends AppCompatActivity {
 	@Override
 	protected void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
+
+		Log.e(TAG, "new intent");
+
 		if (intent == null || intent.getSerializableExtra(ARG_TYPE) == null) {
 			return;
 		}
 
-		// Set fields if empty
-		if (mOutputFile == null) {
-			mOutputFile = (File) getIntent().getSerializableExtra(ARG_OUTPUT_FILE);
+		// Update layout if it type has changed
+		Type newType = (Type) intent.getSerializableExtra(ARG_TYPE);
+		if (newType != null && mType != newType) {
+			updateLayout(newType);
 		}
-		if (mOutputDuration == null) {
-			mOutputDuration = getIntent().getStringExtra(ARG_TOTAL_DURATION);
-		}
-		// Current duration should be re-set each time
-		mCurrentDuration = getIntent().getStringExtra(ARG_CUR_DURATION);
-
-		// Change layout if needed (method will decide)
-		updateLayout((Type) getIntent().getSerializableExtra(ARG_TYPE));
-		// Change fields if content is set
-		String content = getIntent().getStringExtra(ARG_CONTENT);
-		updateFields(content);
+		// Update fields
+		updateFields(intent);
 	}
 
 	@Override
@@ -126,59 +137,70 @@ public class ProgressActivity extends AppCompatActivity {
 		super.onSaveInstanceState(outState);
 		outState.putParcelable(KEY_PREVIOUS_INTENT, getIntent());
 		outState.putSerializable(KEY_PREVIOUS_FILE, mOutputFile);
-		outState.putString(KEY_PREVIOUS_TOTAL_DURATION, mOutputDuration);
+		outState.putString(KEY_PREVIOUS_TOTAL_DURATION, mTotalDuration.getText().toString());
 	}
 
 	/**
-	 * Update layout to the {@code newType}. If it's the same as before, do nothing.
+	 * Update layout to the {@code newType}.
 	 */
 	private void updateLayout(Type newType) {
-		if (mType == newType) return;
-
 		// Re-inflate for the specific type and find the views
 		switch (newType) {
 			case ERROR: case FINISHED:
-				if (mType != Type.ERROR && mType != Type.FINISHED) {
-					mTextViews = new TextView[2];
-					setContentView(R.layout.activity_progress_done_dialog);
-					mTextViews[0] = (TextView) findViewById(R.id.main);
-					mTextViews[1] = (TextView) findViewById(R.id.info);
-				}
-				// When switching from error to finished or vice-versa, no need to re-inflate,
-				// just hide or show the open button
+				// Finished type has an open button while others do not
 				if (newType == Type.FINISHED) {
 					setTitle(R.string.vc_finished);
-					findViewById(R.id.open).setVisibility(View.VISIBLE);
+					mOpenButton.setVisibility(View.VISIBLE);
 				} else {
 					setTitle(R.string.vc_failed);
-					findViewById(R.id.open).setVisibility(View.INVISIBLE);
+					mOpenButton.setVisibility(View.INVISIBLE);
 				}
+				// Main and info TVs visible
+				mMain.setVisibility(View.VISIBLE);
+				mInfo.setVisibility(View.VISIBLE);
+
+				// Table view only on progress type
+				mTableView.setVisibility(View.GONE);
 				break;
 			case PROGRESS:
 				setTitle(R.string.vc_working);
-				setContentView(R.layout.activity_progress_dialog);
-				mTextViews = new TextView[6];
-				mTextViews[0] = (TextView) findViewById(R.id.output_name_value);
-				mTextViews[1] = (TextView) findViewById(R.id.cur_size_value);
-				mTextViews[2] = (TextView) findViewById(R.id.total_duration_value);
-				mTextViews[3] = (TextView) findViewById(R.id.current_duration_value);
-				mTextViews[4] = (TextView) findViewById(R.id.current_frame_value);
-				mTextViews[5] = (TextView) findViewById(R.id.fps_value);
+				mTableView.setVisibility(View.VISIBLE);
+
+				// Main, info TVs and open button aren't visible on progress type
+				mMain.setVisibility(View.GONE);
+				mInfo.setVisibility(View.GONE);
+				mOpenButton.setVisibility(View.INVISIBLE);
 				break;
 		}
 
 		mType = newType;
 	}
 
-	private void updateFields(@Nullable String content) {
+	private void updateFields(@NonNull Intent intent) {
+		// Common fields
+		// Output file name (update if changed)
+		File outputFile = (File) intent.getSerializableExtra(ARG_OUTPUT_FILE);
+		if (outputFile != null && !outputFile.equals(mOutputFile)) {
+			mOutputFile = outputFile;
+		}
+
+		// Total duration (update if changed)
+		String outputDuration = intent.getStringExtra(ARG_TOTAL_DURATION);
+		if (outputDuration != null && !outputDuration.equals(mTotalDuration.getText())) {
+			mTotalDuration.setText(outputDuration);
+		}
+		// Current duration (always update)
+		mCurrentDuration.setText(intent.getStringExtra(ARG_CUR_DURATION));
+
 		switch (mType) {
 			case PROGRESS:
+				String content = intent.getStringExtra(ARG_CONTENT);
 				// Content mustn't be null for progress typed content
 				if (content == null) return;
 
 				// Output name
 				if (mOutputFile != null) {
-					mTextViews[0].setText(mOutputFile.getName());
+					mOutputName.setText(mOutputFile.getName());
 				}
 
 				// Current file size
@@ -190,17 +212,11 @@ public class ProgressActivity extends AppCompatActivity {
 					value = output.replaceAll(TOTAL_SIZE, "");
 					try {
 						long bytes = Long.parseLong(value);
-						mTextViews[1].setText(Utils.bytesToMb(bytes));
+						mCurrentSize.setText(Utils.bytesToMb(bytes));
 					} catch (NumberFormatException e) {
 						e.printStackTrace();
 					}
 				}
-
-				// Total duration
-				mTextViews[2].setText(mOutputDuration);
-
-				// Current duration
-				mTextViews[3].setText(mCurrentDuration);
 
 				// Current frame
 				startIndex = content.indexOf(FRAME);
@@ -208,7 +224,7 @@ public class ProgressActivity extends AppCompatActivity {
 				if (startIndex != -1 && endIndex != -1) {
 					output = content.substring(startIndex, endIndex);
 					value = output.replaceAll(FRAME, "");
-					mTextViews[4].setText(value);
+					mCurrentFrame.setText(value);
 				}
 
 				// FPS
@@ -217,31 +233,29 @@ public class ProgressActivity extends AppCompatActivity {
 				if (startIndex != -1 && endIndex != -1) {
 					output = content.substring(startIndex, endIndex);
 					value = output.replaceAll(FPS, "");
-					mTextViews[5].setText(value);
+					mFPS.setText(value);
 				}
 				break;
 			case FINISHED:
 				if (mOutputFile != null) {
-					mTextViews[0].setText(String.format(getString(R.string.format_clipping_succeeded),
+					mMain.setText(String.format(getString(R.string.format_clipping_succeeded),
 							mOutputFile.getName()));
 				}
-				mTextViews[1].setText(R.string.open_below);
+				mInfo.setText(R.string.open_below);
 				break;
 			case ERROR:
 				// Include file path in the error if it's available
 				if (mOutputFile != null) {
-					mTextViews[0].setText(String.format(getString(R.string.format_clipping_failed),
+					mMain.setText(String.format(getString(R.string.format_clipping_failed),
 							mOutputFile.getName()));
 				} else {
-					mTextViews[0].setText(String.format(getString(R.string.format_clipping_failed),
+					mMain.setText(String.format(getString(R.string.format_clipping_failed),
 							getString(R.string.the_file)));
 				}
-				mTextViews[1].setText(getString(R.string.try_again));
+				mInfo.setText(getString(R.string.try_again));
 				break;
 		}
 	}
-
-	private static File sProgressingFile;
 
 	@Override
 	protected void onResume() {

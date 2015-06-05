@@ -18,6 +18,7 @@
  */
 package com.simas.vc;
 
+import android.content.Intent;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -28,6 +29,8 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
+
+import com.simas.vc.background_tasks.ProgressActivity;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
@@ -68,6 +71,10 @@ public class MainActivity extends AppCompatActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
+		Intent intent =  new Intent(this, ProgressActivity.class);
+		intent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.PROGRESS);
+		startActivity(intent);
 
 		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.navigation_drawer);
