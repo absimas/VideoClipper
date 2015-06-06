@@ -38,6 +38,7 @@ import java.util.List;
 
 // ToDo rename concat to merge (including the action) or not?
 // ToDo VCException use res instead of hardcoded string
+// ToDo detect audio and video stream indexes and only then send them to the filters for processing
 
 /**
  * Contains the convenience methods that might call {@code FfmpegService} to do furhter work via
