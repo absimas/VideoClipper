@@ -134,7 +134,6 @@ public class FfmpegService extends IntentService {
 
 			mDisplayIntent = new Intent(VC.getAppContext(), ProgressActivity.class);
 			// Remove any existing progress activities, so onCreate is called instead of onNewIntent
-//			mDisplayIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
 			mDisplayIntent.setAction(ProgressActivity.ACTION_DIALOG_UPDATE);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_OUTPUT_FILE, outputFile);
 			mDisplayIntent.putExtra(ProgressActivity.ARG_TOTAL_DURATION, mDurationTime);

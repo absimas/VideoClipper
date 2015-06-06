@@ -22,6 +22,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
+import android.util.Log;
+
 import com.simas.vc.ArgumentBuilder;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
@@ -31,6 +33,7 @@ import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 // ToDo rename concat to merge (including the action) or not?
@@ -86,7 +89,10 @@ public class Ffmpeg {
 				if (stream == null) {
 					stream = videoStream;
 				} else {
-					if (!concatDemuxerFieldsMatch(stream, videoStream)) {
+					if (streamsNeedResizing(stream, videoStream)) {
+						concatFilterWithScaleAndPadding(outputFile, progressFile, items, duration);
+						return;
+					} else if (!streamsConcatenateableByDemuxing(stream, videoStream)) {
 						// VideoStreams have different fields, concat demuxer is not applicable
 						// Instead, use a filter
 						concatFilter(outputFile, progressFile, items, duration);
@@ -100,9 +106,6 @@ public class Ffmpeg {
 		concatDemuxer(outputFile, progressFile, items, duration);
 	}
 
-	/**
-	 * ToDo Each item's stream count must match or this method will fail.
-	 */
 	private static void concatDemuxer(@NonNull File outputFile, @NonNull File progressFile,
 	                                  @NonNull List<NavItem> items, int duration)
 			throws IOException {
@@ -147,6 +150,109 @@ public class Ffmpeg {
 		context.startService(intent);
 	}
 
+	private static void concatFilterWithScaleAndPadding(@NonNull File outputFile,
+	                                                    @NonNull File progressFile,
+	                                                    @NonNull List<NavItem> items, int duration)
+			throws IOException {
+		/* Command
+			./ffmpeg -y \
+			-progress progress \
+			-i 'nature/goose.mp4' \
+			-i 'nature/bee.mp4' \
+			-filter_complex '\
+			[0:0]scale=320:200[v1],[1:0]scale=320:200[v2],\
+			[v1]pad=320:200:0:0[v1],[v2]pad=320:200:0:0[v2],\
+			[v1][0:1][v2][1:1]concat=n=2:v=1:a=1[v][a]' \
+			-map '[v]' -map '[a]' \
+			'output.mp4'
+		 */
+		int itemCount = items.size();
+
+		/* Output dimensions */
+		int ow = 0;
+		int oh = 0;
+		// Use the biggest width and height from all items as output dimensions
+		for (int i=0; i<itemCount; ++i) {
+			NavItem item = items.get(i);
+			VideoStream vs = item.getAttributes().getVideoStreams().get(0);
+			if (vs.getWidth() > ow) ow = vs.getWidth();
+			if (vs.getHeight() > oh) oh = vs.getHeight();
+		}
+
+		String[] inputs = new String[itemCount*2];
+		String scaleFilters = "", padFilters = "", streams = "";
+		for (int i=0; i<itemCount; ++i) {
+			NavItem item = items.get(i);
+			VideoStream vs = item.getAttributes().getVideoStreams().get(0);
+			/* Input dimensions */
+			int iw = vs.getWidth();
+			int ih = vs.getHeight();
+
+			// Inputs
+			inputs[i*2] = "-i";
+			inputs[i*2 + 1] = item.getFile().getPath();
+
+			// If width and height already match the output's, then only set the SAR and save stream
+			if (iw == ow && ih == oh) {
+				// Streams // [i:video_stream] [i:audio_stream]
+				streams += String.format("[%d:%d][%d:%d]", i, 0, i, 1);
+			} else {
+				/* Scale */
+				// Use the bigger dimension and preserve the other
+				int scaleW = -1, scaleH = -1;
+				double modifier = ow / iw;
+				if (ih * modifier > oh) {
+					scaleH = oh;
+				} else {
+					scaleW = ow;
+				}
+				// (,)[i:streamID]scale=w:h[vi]
+				scaleFilters += String.format("%s[%d:%d]scale=%d:%d[v%d]",
+						(scaleFilters.isEmpty()) ? "" : ',', i, 0, scaleW, scaleH, i);
+
+				// Pad // (,)[vi]pad=w:h:topx:topy[vi]
+				padFilters += String.format("%s[v%d]pad=%d:%d:(%d-iw)/2:(%d-ih)/2[v%d]",
+						(padFilters.isEmpty()) ? "" : ',', i, ow, oh, ow, oh, i);
+
+				// Streams // [vi] [i:audio_stream]
+				streams += String.format("[v%d][%d:%d]", i, i, 1);
+			}
+		}
+
+		// Add a separator after each filter
+		if (!scaleFilters.isEmpty()) scaleFilters += ",";
+		if (!padFilters.isEmpty()) padFilters += ",";
+
+		// ToDo avoid experimental codecs by using external libs (libfdk_aac is one of them)
+		// Prepare arguments
+		String[] args = new ArgumentBuilder(TAG)
+				.add("-y")                                  // Overwrite output file if it exists
+				.add("-strict experimental")                // Use experimental decoders
+				/* Output progress to tmp file */
+				.add("-progress")
+				.addSpaced("%s", progressFile.getPath())
+				.addSpaced(inputs)                          // List of sources
+				/* Filters (scale,pad,setsar,concat) */
+				.add("-filter_complex")
+				.add("%s%s%sconcat=n=%d:v=1:a=1[v][a]",
+						scaleFilters, padFilters, streams, itemCount)
+				.add("-map [v] -map [a]")
+				.add("-strict experimental")                // Use experimental encoders
+				.addSpaced("%s", outputFile.getPath())      // Output file
+				.build();
+
+		Log.e(TAG, Arrays.toString(args));
+
+		// Call service
+		Context context = VC.getAppContext();
+		Intent intent = new Intent(context, FfmpegService.class);
+		intent.putExtra(FfmpegService.ARG_EXEC_ARGS, args);
+		intent.putExtra(FfmpegService.ARG_OUTPUT_FILE, outputFile);
+		intent.putExtra(FfmpegService.ARG_PROGRESS_FILE, progressFile);
+		intent.putExtra(FfmpegService.ARG_OUTPUT_DURATION, duration);
+		context.startService(intent);
+	}
+
 	/**
 	 * This method expects the first stream is the video and the second one is audio. Ignores
 	 * others.
@@ -163,16 +269,17 @@ public class Ffmpeg {
 			-map '[v]' -map '[a]' \
 			'output.mp4'
 		 */
+		// ToDo 0:0 0:1 fails if these streams don't match file's audio/video stream indexes
 
 		int itemCount = items.size();
-		String[] sourceList = new String[itemCount*2];
-		String streamList = "";
+		String[] inputs = new String[itemCount*2];
+		String streams = "";
 		for (int i=0; i<itemCount; ++i) {
 			NavItem item = items.get(i);
-			sourceList[i*2] = "-i";
-			sourceList[i*2 + 1] = item.getFile().getPath();
+			inputs[i*2] = "-i";
+			inputs[i*2 + 1] = item.getFile().getPath();
 
-			streamList += String.format("[%d:%d] [%d:%d] ", i, 0, i, 1);
+			streams += String.format("[%d:%d][%d:%d]", i, 0, i, 1);
 			// Loop item streams
 //			List<Stream> streams = item.getAttributes().getStreams();
 //			int streamCount = streams.size();
@@ -181,17 +288,17 @@ public class Ffmpeg {
 //			}
 		}
 
-		// ToDo avoid using experimental codecs by using external libs (libfdk_aac is one of them)
+		// ToDo avoid experimental codecs by using external libs (libfdk_aac is one of them)
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-y")                                  // Overwrite output file if it exists
 				.add("-strict experimental")                // Use experimental decoders
 				.add("-progress")                           // Output progress to tmp file
 				.addSpaced("%s", progressFile.getPath())
-				.addSpaced(sourceList)                      // List of sources
-				// Specific filter (concat)
+				.addSpaced(inputs)                          // List of sources
+				/* Concat filter */
 				.add("-filter_complex")
-				.addSpaced("%s concat=n=%d:v=1:a=1 [v] [a]", streamList, itemCount)
+				.add("%sconcat=n=%d:v=1:a=1[v][a]", streams, itemCount)
 				.add("-map [v] -map [a]")
 				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file
@@ -207,7 +314,9 @@ public class Ffmpeg {
 		context.startService(intent);
 	}
 
+
 	/**
+	 * Assumes that {@code streamsNeedResizing} returns false for these streams.
 	 * Check if the required fields match for both {@code VideoAttributes}. The required fields are:
 	 * <ul>
 	 *     <li>
@@ -231,13 +340,20 @@ public class Ffmpeg {
 	 * </ul>
 	 * @return true if the required field set matches
 	 */
-	public static boolean concatDemuxerFieldsMatch(VideoStream va1, VideoStream va2) {
-		return Utils.equals(va1.getWidth(), va2.getWidth()) &&
-				Utils.equals(va1.getHeight(), va2.getHeight()) &&
-				Utils.equals(va1.getCodecTag(), va2.getCodecTag()) &&
+	public static boolean streamsConcatenateableByDemuxing(VideoStream va1, VideoStream va2) {
+		return Utils.equals(va1.getCodecTag(), va2.getCodecTag()) &&
 				Utils.equals(va1.getTBN(), va2.getTBN()) &&
 				Utils.equals(va1.getTBC(), va2.getTBC()) &&
 				Utils.equals(va1.getTBR(), va2.getTBR());
+	}
+
+	/**
+	 * Checks whether 2 {@code VideoStream}s need resizing.
+	 * @return true if the 2 streams have different widths and/or heights
+	 */
+	public static boolean streamsNeedResizing(VideoStream va1, VideoStream va2) {
+		return !Utils.equals(va1.getWidth(), va2.getWidth()) ||
+				!Utils.equals(va1.getHeight(), va2.getHeight());
 	}
 
 }

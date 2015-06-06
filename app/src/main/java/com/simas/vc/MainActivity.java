@@ -72,10 +72,6 @@ public class MainActivity extends AppCompatActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		Intent intent =  new Intent(this, ProgressActivity.class);
-		intent.putExtra(ProgressActivity.ARG_TYPE, ProgressActivity.Type.PROGRESS);
-		startActivity(intent);
-
 		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.navigation_drawer);
 		mNavDrawerFragment.setOptionsMenuCreationListener(new OptionMenuCreationListener() {

@@ -117,8 +117,6 @@ public class ProgressActivity extends AppCompatActivity {
 	protected void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
 
-		Log.e(TAG, "new intent");
-
 		if (intent == null || intent.getSerializableExtra(ARG_TYPE) == null) {
 			return;
 		}

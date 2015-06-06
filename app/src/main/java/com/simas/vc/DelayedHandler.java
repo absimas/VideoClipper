@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 // ToDo each class that uses this, should specify when the delay ends.
+	// They should specify it for every method and the variable in question
 
 /**
  * Message Handler class that queues messages until {@code resume} is called.
