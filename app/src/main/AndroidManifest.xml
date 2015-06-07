@@ -23,6 +23,7 @@
     package="com.simas.vc">
 
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!--ToDo android:multiArch="true"-->
     <application
@@ -55,7 +56,7 @@
         </activity>
 
         <service
-            android:name="com.simas.vc.background_tasks.FfmpegService"
+            android:name=".background_tasks.FFmpegService"
             android:exported="false"/>
     </application>
 

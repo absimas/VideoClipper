@@ -49,7 +49,7 @@ import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.Utils;
-import com.simas.vc.background_tasks.Ffmpeg;
+import com.simas.vc.background_tasks.FFmpeg;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -503,7 +503,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				}
 				try {
 					// Concat videos
-					Ffmpeg.concat(output, adapter.getItems());
+					FFmpeg.concat(output, adapter.getItems());
 				} catch (IOException e) {
 					Log.e(TAG, "Error!", e);
 					new AlertDialog.Builder(getActivity())

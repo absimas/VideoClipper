@@ -26,16 +26,14 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import com.simas.vc.VCException;
 import com.simas.vc.attributes.FileAttributes;
-import com.simas.vc.background_tasks.VarRunnable;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.attributes.Stream;
-import com.simas.vc.background_tasks.Ffmpeg;
-import com.simas.vc.background_tasks.Ffprobe;
-import com.simas.vc.editor.EditorFragment;
+import com.simas.vc.background_tasks.FFmpeg;
+import com.simas.vc.background_tasks.FFprobe;
+
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -145,7 +143,7 @@ public class NavItem implements Parcelable, Cloneable {
 				// Attributes
 				FileAttributes attributes = null;
 				try {
-					attributes = Ffprobe.parseAttributes(getFile());
+					attributes = FFprobe.parseAttributes(getFile());
 				} catch (VCException e) {
 					e.printStackTrace();
 					// ToDo display to user
@@ -185,7 +183,7 @@ public class NavItem implements Parcelable, Cloneable {
 			}
 		}
 
-		Bitmap preview = Ffmpeg.createPreview(getFile().getPath());
+		Bitmap preview = FFmpeg.createPreview(getFile().getPath());
 		if (preview == null) {
 			Log.e(TAG, "Couldn't parse the preview!");
 			return null;

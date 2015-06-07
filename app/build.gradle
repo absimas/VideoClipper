@@ -37,14 +37,15 @@ android {
 		}
 	}
 
+	// Disable implicit Android.mk creation for all app variants
 	applicationVariants.all { variant ->
 		variant.getVariantData().ndkCompileTask.enabled = false
 	}
 
+	/* Custom tasks that compile libraries with ndk-build using the customized makefile */
+
 	// Debug tasks
-/*	// Disable implicit Android.mk creation for all app variants
-	// Custom tasks that compile libraries with ndk-build using the customized makefile
-	//noinspection GroovyAssignabilityCheck
+/*	//noinspection GroovyAssignabilityCheck
 	task ndkBuildDebug(type: Exec) {
 		// Fetch NDK directory from local.properties
 		Properties properties = new Properties()

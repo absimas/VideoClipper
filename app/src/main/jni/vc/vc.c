@@ -64,17 +64,17 @@
 /* Time between checks if the child process has been closed */
 static const int CFFMPEG_WAIT_INTERVAL = 1000;
 static const int CFFPROBE_WAIT_INTERVAL = 300;
-// Fruitless (unmodified log file) iterations cFfprobe will endure before quitting
+// Fruitless (unmodified log file) iterations cFFprobe will endure before quitting
 static const int MAX_LOG_UNMODIFYING_ITERATIONS = 10;
-// Times cFfprobe will retry when log isn't modified for MAX_LOG_UNMODIFYING_ITERATIONS
+// Times cFFprobe will retry when log isn't modified for MAX_LOG_UNMODIFYING_ITERATIONS
 static const int CFFPROBE_RETRY_CALLS = 2;
 /* Min and Max luminance values the average preview pixel can have (0-255) */
 static const int MIN_PREVIEW_LUMINANCE = 20;
 static const int MAX_PREVIEW_LUMINANCE = 235;
-// cFfprobe retry counter
-int cFfprobeRetries = 0;
-static const char* mFfmpegActivityPath = "com/simas/vc/background_tasks/Ffmpeg";
-static const char* mFfprobeActivityPath = "com/simas/vc/background_tasks/Ffprobe";
+// cFFprobe retry counter
+int cFFprobeRetries = 0;
+static const char* FFMPEG_ACTIVITY_PATH  = "com/simas/vc/background_tasks/FFmpeg";
+static const char* FFPROBE_ACTIVITY_PATH = "com/simas/vc/background_tasks/FFprobe";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -86,8 +86,8 @@ typedef struct CArray {
 } CArray;
 
 // Method prototypes
-jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args);
-jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
+jint cFFmpeg(JNIEnv *env, jobject obj, jobjectArray args);
+jint cFFprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring output);
 jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath);
 
 // Helper method prototypes
@@ -99,8 +99,8 @@ void freeCArray(JNIEnv *env, CArray *cArray);
 jobject createBitmap(JNIEnv *pEnv, int pWidth, int pHeight);
 
 // Method implementations
-jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
-#define TAG "cFfmpeg"
+jint cFFmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
+#define TAG "cFFmpeg"
 	// Fork process
     pid_t childID = fork();
 
@@ -127,7 +127,7 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
 
                 switch (endID) {
                     case -1:
-                        LOGE("waitpid error!");
+                        LOGE("Waitpid error!");
                         return EXIT_FAILURE;
                     case 0:
                         LOGI("Parent waiting for child...");
@@ -157,8 +157,8 @@ jint cFfmpeg(JNIEnv *env, jobject obj, jobjectArray args) {
 
 
 
-jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
-#define TAG "cFfprobe"
+jint cFFprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
+#define TAG "cFFprobe"
 	const char *logPath = (*env)->GetStringUTFChars(env, jLogPath, 0);
 
     // Fork process
@@ -212,7 +212,7 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 
                 switch (endID) {
                     case -1:
-                        LOGE("waitpid error!");
+                        LOGE("Waitpid error!");
                         // Free log path string
                         (*env)->ReleaseStringUTFChars(env, jLogPath, logPath);
                         return EXIT_FAILURE;
@@ -233,18 +233,18 @@ jint cFfprobe(JNIEnv *env, jobject obj, jobjectArray args, jstring jLogPath) {
 
                             int result;
                             // Retry CFFPROBE_RETRY_CALLS times
-                            if (++cFfprobeRetries < CFFPROBE_RETRY_CALLS) {
+                            if (++cFFprobeRetries < CFFPROBE_RETRY_CALLS) {
                                 LOGW("Retrying... %d retries out of %d",
-                                        cFfprobeRetries, CFFPROBE_RETRY_CALLS);
-                                // Invoke cFfprobe again if haven't yet reached the limit
-                                result = cFfprobe(env, obj, args, jLogPath);
+                                        cFFprobeRetries, CFFPROBE_RETRY_CALLS);
+                                // Invoke cFFprobe again if haven't yet reached the limit
+                                result = cFFprobe(env, obj, args, jLogPath);
                             } else {
                                 LOGE("Already retried %d times... exiting!", CFFPROBE_RETRY_CALLS);
                                 result = EXIT_FAILURE;
                             }
 
                             // Reset retry counter
-                            cFfprobeRetries = 0;
+                            cFFprobeRetries = 0;
                             return result;
                         } else {
                             // Update time variable
@@ -346,11 +346,6 @@ jobject createPreview(JNIEnv *pEnv, jobject pObj, jstring videoPath) {
 		LOGE("Couldn't find stream info!");
 		return NULL;
 	}
-
-	for (int i =0; i<n; i++) {
-		String output = "";
-	}
-
 
 	// Dump information about file onto standard error
 	av_dump_format(formatCtx, 0, videoFilePath, 0);
@@ -572,10 +567,10 @@ time_t get_mtime(const char *path) {
 
 // JNI Initialization
 static JNINativeMethod ffprobeMethodTable[] = {
-	{"cFfprobe", "([Ljava/lang/String;Ljava/lang/String;)I", (void *) cFfprobe}
+	{"cFFprobe", "([Ljava/lang/String;Ljava/lang/String;)I", (void *) cFFprobe}
 };
 static JNINativeMethod ffmpegMethodTable[] = {
-	{"cFfmpeg", "([Ljava/lang/String;)I", (void *) cFfmpeg},
+	{"cFFmpeg", "([Ljava/lang/String;)I", (void *) cFFmpeg},
 	{"createPreview", "(Ljava/lang/String;)Landroid/graphics/Bitmap;", (void *)createPreview}
 };
 
@@ -593,18 +588,18 @@ jint JNI_OnLoad(JavaVM *jvm, void *reserved) {
 	}
 
     // Register ffmpeg method(s)
-    jclass activityClass = (*env)->FindClass(env, mFfmpegActivityPath);
+    jclass activityClass = (*env)->FindClass(env, FFMPEG_ACTIVITY_PATH);
     if (!activityClass) {
-        LOGE("Failed to get %s class reference", mFfmpegActivityPath);
+        LOGE("Failed to get %s class reference", FFMPEG_ACTIVITY_PATH);
         return -1;
     }
 	(*env)->RegisterNatives(env, activityClass, ffmpegMethodTable,
 			sizeof(ffmpegMethodTable) / sizeof (ffmpegMethodTable[0]));
 
 	// Register ffprobe method(s)
-    activityClass = (*env)->FindClass(env, mFfprobeActivityPath);
+    activityClass = (*env)->FindClass(env, FFPROBE_ACTIVITY_PATH);
     if (!activityClass) {
-        LOGE("Failed to get %s class reference", mFfprobeActivityPath);
+        LOGE("Failed to get %s class reference", FFPROBE_ACTIVITY_PATH);
         return -1;
     }
     (*env)->RegisterNatives(env, activityClass, ffprobeMethodTable,
