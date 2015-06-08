@@ -50,6 +50,13 @@
 					android:layout_height="match_parent"
 					android:name="com.simas.vc.editor.EditorFragment"
 					tools:layout="@layout/fragment_editor"/>
+				<TextView
+					android:id="@+id/no_items_notifier"
+					android:gravity="center"
+					android:textSize="25sp"
+					android:text="Add some items!"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"/>
 			</RelativeLayout>
 
 		<!-- android:layout_gravity="start" tells DrawerLayout to treat

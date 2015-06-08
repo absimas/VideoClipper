@@ -18,6 +18,7 @@
  */
 package com.simas.vc.editor;
 
+import android.app.Activity;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
