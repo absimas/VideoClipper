@@ -82,7 +82,7 @@ public class EditorFragment extends Fragment {
 		final View black = new View(getActivity());
 		black.setBackgroundColor(Color.RED);
 
-		// Fragment won't be visible when HelperFragment is shown on top.
+		// ToDo // Fragment won't be visible when HelperFragment is shown on top.
 		// No need for a black view then.
 		final boolean visibleOnCreation = isVisible();
 		if (visibleOnCreation) {

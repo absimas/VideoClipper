@@ -54,5 +54,12 @@
 	<color name="teal_transparent_darker">#EE00695C</color>
 	<color name="lime_transparent_darker">#EE9E9D24</color>
 	<color name="amber_transparent_darker">#EEFF8F00</color>
+
+
 	<color name="player_container_bg">#000000</color>
+
+	<color name="primary">#607D8B</color>
+	<color name="primary_dark">#455A64</color>
+	<color name="nav_item_selected">#757575</color>
+	<color name="nav_item_checked">#616161</color>
 </resources>

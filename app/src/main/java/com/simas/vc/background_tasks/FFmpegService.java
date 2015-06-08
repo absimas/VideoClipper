@@ -49,10 +49,10 @@ public class FFmpegService extends IntentService {
 	private static int sIntentQueueSize;
 	private static final NotificationManager NOTIFICATION_MANAGER = (NotificationManager)
 			VC.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
-	private static final String WAKE_LOCK_TAG = "FFmpeg";
 	/**
 	 * Used to keep the CPU working while the screen is locked.
 	 */
+	private static final String WAKE_LOCK_TAG = "FFmpeg";
 	private final PowerManager.WakeLock mWakeLock =
 			((PowerManager) VC.getAppContext().getSystemService(POWER_SERVICE))
 					.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG);

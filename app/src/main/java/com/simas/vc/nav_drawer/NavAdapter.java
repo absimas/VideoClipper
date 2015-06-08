@@ -31,6 +31,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
+import com.simas.vc.VC;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -203,7 +205,14 @@ public class NavAdapter extends BaseAdapter {
 				@Override
 				public void onCheckedChanged(LinearLayout view, boolean checked) {
 					if (checked) {
-						view.setBackgroundColor(Color.DKGRAY);
+						if (getListView() != null && getListView()
+								.getChoiceMode() == ListView.CHOICE_MODE_MULTIPLE_MODAL) {
+							view.setBackgroundColor(VC.getAppResources()
+									.getColor(R.color.nav_item_checked));
+						} else {
+							view.setBackgroundColor(VC.getAppResources()
+									.getColor(R.color.nav_item_selected));
+						}
 					} else {
 						view.setBackgroundColor(Color.TRANSPARENT);
 					}
@@ -220,8 +229,15 @@ public class NavAdapter extends BaseAdapter {
 		}
 
 		// When calling via the ListView, item count needs to include the header count
+
 		if (getListView().isItemChecked(position + getListView().getHeaderViewsCount())) {
-			convertView.setBackgroundColor(Color.DKGRAY);
+			if (getListView().getChoiceMode() == ListView.CHOICE_MODE_MULTIPLE_MODAL) {
+				convertView.setBackgroundColor(VC.getAppResources()
+						.getColor(R.color.nav_item_checked));
+			} else {
+				convertView.setBackgroundColor(VC.getAppResources()
+						.getColor(R.color.nav_item_selected));
+			}
 		} else {
 			convertView.setBackgroundColor(Color.TRANSPARENT);
 		}

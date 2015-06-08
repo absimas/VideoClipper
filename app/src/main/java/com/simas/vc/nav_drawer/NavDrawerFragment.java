@@ -33,6 +33,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,6 +60,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
+// ToDo this shouldn't contain methods like isConcatenatable. It's only a drawer.
 
 /**
  * Navigation drawer fragment that contains all added items. Also manages the CAB.
@@ -97,12 +99,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 */
 	private CopyOnWriteArrayList<DrawerLayout.DrawerListener>
 			mDrawerStateListeners = new CopyOnWriteArrayList<>();
-	/**
-	 * First initialized when the drawer is opened, so outside of {@code NavDrawerFragment} need
-	 * to check if it's not {@code null}.
-	 */
-	public View mConcatAction;
-	private MainActivity.OptionMenuCreationListener mOptionsMenuListener;
 
 	// States
 	private int mCurrentSelectedPosition = ListView.INVALID_POSITION;
@@ -134,8 +130,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-		// Indicate that this fragment would like to influence the set of actions in the action bar.
-		setHasOptionsMenu(true);
 
 		// Set the previewListener for the FileChooser (if it's shown, i.e. recreated by the activity)
 		FileChooser fileChooser = (FileChooser) getActivity()
@@ -231,6 +225,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		// Unlock the drawer
 		mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
+		// Enable drawer arrow
 		ActionBar actionBar = getActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		actionBar.setHomeButtonEnabled(true);
@@ -312,9 +307,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onChanged() {
 				super.onChanged();
-				if (mConcatAction != null) {
-					mConcatAction.setEnabled(isConcatenatable());
-				}
+				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
 			}
 		});
 
@@ -394,7 +387,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		});
 	}
 
-	private boolean isConcatenatable() {
+	// ToDo move outside this fragment
+	public boolean isConcatenatable() {
 		if (adapter == null) {
 			// Adapter not available yet
 			return false;
@@ -457,84 +451,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		mDrawerToggle.onConfigurationChanged(newConfig);
 	}
 
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		// If the drawer is open, show the global app actions in the action bar. See also
-		// showGlobalContextActionBar, which controls the top-left area of the action bar.
-		if (mDrawerLayout != null && isDrawerOpen()) {
-			inflater.inflate(R.menu.drawer_menu, menu);
-			final MenuItem concatItem = menu.findItem(R.id.action_concat);
-			mConcatAction = concatItem.getActionView();
-			// actionLayout click listener imitates default OptionsItemSelected behaviour
-			mConcatAction.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					onOptionsItemSelected(concatItem);
-				}
-			});
-			mConcatAction.setEnabled(isConcatenatable());
-			showGlobalContextActionBar();
-
-			// Call listener
-			if (mOptionsMenuListener != null) {
-				mOptionsMenuListener.onOptionsMenuCreated(menu);
-			}
-		}
-
-		super.onCreateOptionsMenu(menu, inflater);
-	}
-
-	private static int num = 0; // ToDo remove after destination is available
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem menuItem) {
-		if (mDrawerToggle.onOptionsItemSelected(menuItem)) {
-			return true;
-		}
-
-		switch (menuItem.getItemId()) {
-			case R.id.action_concat:
-				// ToDo ask user for a destination
-				String destination = Environment
-						.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getPath();
-				File output = new File(destination + File.separator + "output" + (++num) + ".mp4");
-				if (output.exists()) {
-					output.delete();
-				}
-				try {
-					// Concat videos
-					FFmpeg.concat(output, adapter.getItems());
-				} catch (IOException e) {
-					Log.e(TAG, "Error!", e);
-					new AlertDialog.Builder(getActivity())
-							.setTitle(getString(R.string.error))
-							.setMessage("Unrecoverable error! Please try again.")
-							.setPositiveButton("OK...", null)
-							.show();
-				} catch (VCException e) {
-					Log.e(TAG, "Error with " + e.getExtra(), e);
-					new AlertDialog.Builder(getActivity())
-							.setTitle(getString(R.string.error))
-							.setMessage(e.getMessage())
-							.setPositiveButton("OK", null)
-							.show();
-				}
-				break;
-			case R.id.action_add_item:
-				// Make sure it's a new instance
-				FileChooser fileChooser = (FileChooser) getActivity()
-						.getSupportFragmentManager().findFragmentByTag(FileChooser.TAG);
-
-				if (fileChooser == null) {
-					fileChooser = FileChooser.getInstance();
-					fileChooser.setOnFileChosenListener(this);
-					fileChooser.show(getActivity().getSupportFragmentManager(), FileChooser.TAG);
-				}
-				return true;
-		}
-
-		return super.onOptionsItemSelected(menuItem);
-	}
+	public static int num = 0; // ToDo remove after destination is available
 
 	/**
 	 * Per the navigation drawer design guidelines, updates the action bar to show the global app
@@ -550,6 +467,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		return ((AppCompatActivity) getActivity()).getSupportActionBar();
 	}
 
+	private Toolbar getToolbar() {
+		return ((MainActivity) getActivity()).getToolbar();
+	}
+
 	@Override
 	public void onChosen(File file) {
 		final NavItem item = new NavItem(adapter, file);
@@ -562,9 +483,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					@Override
 					public void run() {
 						// Make sure the concat action button is initialized (drawer was opened)
-						if (mConcatAction != null) {
-							mConcatAction.setEnabled(isConcatenatable());
-						}
+						getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
 
 						if (newValue == NavItem.State.INVALID) {
 							// Display a toast notifying of the error if item parsing failed
@@ -609,10 +528,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	public int getCurrentlySelectedPosition() {
 		return mCurrentSelectedPosition;
-	}
-
-	public void setOptionsMenuCreationListener(MainActivity.OptionMenuCreationListener listener) {
-		mOptionsMenuListener = listener;
 	}
 
 	public void addDrawerStateListener(DrawerLayout.DrawerListener listener) {
