@@ -28,6 +28,10 @@ import android.view.Window;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+// ToDo removal
+// ToDo timeout
+// ToDo oval (def tooltip) bg
+
 @SuppressLint("ViewConstructor")
 public class Tooltip extends RelativeLayout {
 

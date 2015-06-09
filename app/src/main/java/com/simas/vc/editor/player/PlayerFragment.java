@@ -292,7 +292,7 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 		final NavDrawerFragment drawerFragment = (NavDrawerFragment) getActivity()
 				.getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 		// If drawer is closing, wait for it to be closed, then change the player's video path
-		if (drawerFragment.isDrawerClosing()) {
+		if (drawerFragment.getDrawerState() == NavDrawerFragment.DrawerState.CLOSING) {
 			drawerFragment.addDrawerStateListener(new DrawerLayout.DrawerListener() {
 				@Override
 				public void onDrawerClosed(View drawerView) {
@@ -307,7 +307,15 @@ public class PlayerFragment extends Fragment implements View.OnKeyListener {
 				public void onDrawerOpened(View drawerView) {}
 
 				@Override
-				public void onDrawerStateChanged(int newState) {}
+				public void onDrawerStateChanged(int newState) {
+					// If user took control of the drag or cancelled it in any way,
+						// load the video right away
+					if (newState == DrawerLayout.STATE_DRAGGING ||
+							newState == DrawerLayout.STATE_IDLE) {
+						drawerFragment.removeDrawerStateListener(this);
+						mPlayer.setVideoPath(path);
+					}
+				}
 			});
 		} else {
 			mPlayer.setVideoPath(path);

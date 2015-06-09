@@ -24,7 +24,9 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.Gravity;
@@ -44,7 +46,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-// ToDo replace with native file chooser?
 // ToDo save scroll position when going deeper
 // ToDo on-click-outside doesn't dismiss on Galaxy S2
 
@@ -69,6 +70,8 @@ public class FileChooser extends DialogFragment
 		return sInstance;
 	}
 
+	public FileChooser() {}
+
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
@@ -84,7 +87,6 @@ public class FileChooser extends DialogFragment
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		mAdapter = new FileChooserAdapter();
 		AlertDialog dialog = new AlertDialog.Builder(getActivity())
-				.setTitle("File chooser")
 				.setAdapter(mAdapter, null)
 				.create();
 
@@ -125,12 +127,20 @@ public class FileChooser extends DialogFragment
 	}
 
 	private View createHeader(ViewGroup parent) {
-		final String up = VC.getAppContext().getString(R.string.file_chooser_up);
-		View header = mInflater.inflate(R.layout.file_chooser_item, parent, false);
-		TextView tv = (TextView) header.findViewById(R.id.file_item);
-		tv.setCompoundDrawables(mAdapter.mDirectoryDrawable, null, null, null);
-		tv.setText(up);
-
+		View header = mInflater.inflate(R.layout.file_chooser_header, parent, false);
+		header.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				navigateUp();
+			}
+		});
+		header.setOnLongClickListener(new View.OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View v) {
+				dismiss();
+				return true;
+			}
+		});
 		return header;
 	}
 
@@ -138,10 +148,7 @@ public class FileChooser extends DialogFragment
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		parent.setSelected(false);
 		view.setSelected(false);
-		if (position == 0) {
-			// Header (up nav)
-			navigateUp();
-		} else {
+		if (position != 0) {
 			File file = mAdapter.getItem(position-1);
 
 			if (file.isDirectory()) {
@@ -156,16 +163,14 @@ public class FileChooser extends DialogFragment
 	}
 
 	/**
-	 * Will go up by a level if possible, otherwise will do nothing
-	 * @return true if navigation up was successful
+	 * Will go up by a level if possible, otherwise will dismiss the dialog.
 	 */
-	private boolean navigateUp() {
+	private void navigateUp() {
 		File parent = sCurrentPath.getParentFile();
 		if (parent != null) {
 			navigateTo(parent);
-			return true;
 		} else {
-			return false;
+			dismiss();
 		}
 	}
 
@@ -200,36 +205,45 @@ public class FileChooser extends DialogFragment
 
 	@Override
 	public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-		// Override the back key only if not at the root yet
-		if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
-			return navigateUp();
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.isLongPress()) {
+			dismiss();
+			return true;
+		} else if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
+			navigateUp();
+			return true;
 		} else {
 			return false;
+		}
+	}
+
+	private static final Drawable DIRECTORY_DRAWABLE, VIDEO_DRAWABLE, PICTURE_DRAWABLE;
+
+	static {
+		// Load drawables
+		if (android.os.Build.VERSION.SDK_INT >= 21) {
+			DIRECTORY_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_menu_archive, null);
+			VIDEO_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_media_video_poster, null);
+			PICTURE_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_menu_gallery, null);
+		} else {
+			DIRECTORY_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_menu_archive);
+			VIDEO_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_media_video_poster);
+			PICTURE_DRAWABLE = VC.getAppResources().getDrawable(R.drawable.ic_menu_gallery);
+		}
+
+		int pixels = (int) Utils.dpToPx(30);
+		if (DIRECTORY_DRAWABLE != null && VIDEO_DRAWABLE != null && PICTURE_DRAWABLE != null) {
+			DIRECTORY_DRAWABLE.setBounds(0, 0, pixels, pixels);
+			VIDEO_DRAWABLE.setBounds(0, 0, pixels, pixels);
+			PICTURE_DRAWABLE.setBounds(0, 0, pixels, pixels);
 		}
 	}
 
 	private class FileChooserAdapter extends BaseAdapter {
 
 		private List<File> mFiles;
-		private Drawable mDirectoryDrawable;
-		private Drawable mVideoDrawable;
-		private Drawable mPictureDrawable;
 
 		private class ViewHolder {
 			TextView textView;
-		}
-
-		public FileChooserAdapter() {
-			// ToDo do not hardcode (30)
-			// ToDo audio drawable
-			// ToDo init drawables elsewhere?  // mby not
-			int pixels = (int) Utils.dpToPx(30);
-			mDirectoryDrawable = VC.getAppResources().getDrawable(R.drawable.ic_menu_archive);
-			mDirectoryDrawable.setBounds(0, 0, pixels, pixels);
-			mVideoDrawable = VC.getAppResources().getDrawable(R.drawable.ic_media_video_poster);
-			mVideoDrawable.setBounds(0, 0, pixels, pixels);
-			mPictureDrawable = VC.getAppResources().getDrawable(R.drawable.ic_menu_gallery);
-			mPictureDrawable.setBounds(0, 0, pixels, pixels);
 		}
 
 		public void setFiles(List<File> files) {
@@ -268,15 +282,15 @@ public class FileChooser extends DialogFragment
 			}
 
 			if (getItem(position).isDirectory()) {
-				holder.textView.setCompoundDrawables(mDirectoryDrawable, null, null, null);
+				holder.textView.setCompoundDrawables(DIRECTORY_DRAWABLE, null, null, null);
 			} else {
 				// Drawable based on the extension
 				switch (NavItem.determineExtensionType(getItem(position))) {
 					case VIDEO:
-						holder.textView.setCompoundDrawables(mVideoDrawable, null, null, null);
+						holder.textView.setCompoundDrawables(VIDEO_DRAWABLE, null, null, null);
 						break;
 					case PICTURE:
-						holder.textView.setCompoundDrawables(mPictureDrawable, null, null, null);
+						holder.textView.setCompoundDrawables(PICTURE_DRAWABLE, null, null, null);
 						break;
 					case AUDIO:
 						// ToDo audio drawable

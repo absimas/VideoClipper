@@ -78,6 +78,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
 	private static final String TAG = "NavDrawerFragment";
 
+	public static int sPreviewSize;
 	public NavAdapter adapter;
 
 	/**
@@ -90,11 +91,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private ListView mDrawerList;
 	private View mFragmentContainerView;
 	/**
-	 * {@code isDrawerOpen} does not provide consistent data on the drawer state:
-	 * (closing/opening/closed/opened). The state is saved manually via {@code setDrawerOpen}.
-	 */
-	private boolean mIsDrawerClosing;
-	/**
 	 * Specific group of listeners that are notified about the open and close states of the drawer.
 	 */
 	private CopyOnWriteArrayList<DrawerLayout.DrawerListener>
@@ -105,6 +101,10 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private boolean mFromSavedInstanceState;
 	private boolean mUserLearnedDrawer;
 	private List<NavItem> mPreviousAdapterItems;
+	public enum DrawerState {
+		OPEN, OPENING, CLOSED, CLOSING
+	}
+	private DrawerState mDrawerState = DrawerState.CLOSED;
 
 	public NavDrawerFragment() {}
 
@@ -145,15 +145,13 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		}
 	}
 
-	public static int sPreviewSize;
-
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 	                         Bundle savedInstanceState) {
 		mDrawerList = (ListView) inflater
 				.inflate(R.layout.fragment_navigation_drawer, container, false);
 
-		final View header = createHeader(inflater);
+		final View header = createHeader(inflater, mDrawerList);
 		// When available, fetch the item width and height
 		header.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
 			@Override
@@ -173,15 +171,15 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		return getList();
 	}
 
-	private View createHeader(LayoutInflater inflater) {
-		return inflater.inflate(R.layout.nav_header, null);
+	private View createHeader(LayoutInflater inflater, ViewGroup parent) {
+		return inflater.inflate(R.layout.nav_header, parent, false);
 	}
 
 	/**
-	 * Specifies if the drawer is in the open state (closing should considered as open).
+	 * Specifies if the drawer is in the open state.
 	 */
 	public boolean isDrawerOpen() {
-		return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(mFragmentContainerView);
+		return getDrawerLayout().isDrawerOpen(mFragmentContainerView);
 	}
 
 	/**
@@ -190,16 +188,12 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 * @param open    true if the drawer should be opened, false if closed
 	 */
 	public void setDrawerOpen(boolean open) {
-		if (mDrawerLayout == null) {
-			return;
-		}
 		if (open) {
-			mDrawerLayout.openDrawer(mFragmentContainerView);
+			if (!isDrawerOpen()) mDrawerState = DrawerState.OPENING;
+			getDrawerLayout().openDrawer(mFragmentContainerView);
 		} else {
-			// If drawer is open and has been said to close, it's in the closing state
-			if (isDrawerOpen()) mIsDrawerClosing = true;
-
-			mDrawerLayout.closeDrawer(mFragmentContainerView);
+			if (isDrawerOpen()) mDrawerState = DrawerState.CLOSING;
+			getDrawerLayout().closeDrawer(mFragmentContainerView);
 		}
 	}
 
@@ -207,8 +201,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 * Checks if the drawer is closing. This state is determined by the {@code setDrawerOpen}
 	 * method invocations.
 	 */
-	public boolean isDrawerClosing() {
-		return mIsDrawerClosing;
+	public DrawerState getDrawerState() {
+		return mDrawerState;
 	}
 
 	/**
@@ -221,9 +215,9 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		mDrawerLayout = drawerLayout;
 
 		// Set a custom shadow that overlays the main content when the drawer opens
-		mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+		getDrawerLayout().setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
 		// Unlock the drawer
-		mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+		getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
 		// Enable drawer arrow
 		ActionBar actionBar = getActionBar();
@@ -232,20 +226,17 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 		// ActionBarDrawerToggle ties together the the proper interactions
 		// between the navigation drawer and the action bar app icon.
-		mDrawerToggle = new ActionBarDrawerToggle(
-				getActivity(),                      // Host Activity
-				mDrawerLayout,                      // DrawerLayout object
-				R.string.navigation_drawer_open,    // "open drawer" description for accessibility
-				R.string.navigation_drawer_close    // "close drawer" description for accessibility
-		) {
+		mDrawerToggle = new ActionBarDrawerToggle(getActivity(), getDrawerLayout(), getToolbar(),
+				R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
 			@Override
 			public void onDrawerClosed(View drawerView) {
 				super.onDrawerClosed(drawerView);
-				mIsDrawerClosing = false;
+				mDrawerState = DrawerState.CLOSED;
+
 				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
 					listener.onDrawerClosed(drawerView);
 				}
-				mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+				getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 				// Set the choice mode ONLY IF IT'S NOT SINGLE
 				// Otherwise, will cause the AbsListView to reset its mCheckState array!!!
 				if (getList().getChoiceMode() != ListView.CHOICE_MODE_SINGLE) {
@@ -261,6 +252,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			@Override
 			public void onDrawerOpened(View drawerView) {
 				super.onDrawerOpened(drawerView);
+				mDrawerState = DrawerState.OPEN;
+
 				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
 					listener.onDrawerOpened(drawerView);
 				}
@@ -279,23 +272,39 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 				getActivity().supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
 			}
+
+			@Override
+			public void onDrawerSlide(View drawerView, float slideOffset) {
+				super.onDrawerSlide(drawerView, slideOffset);
+				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
+					listener.onDrawerSlide(drawerView, slideOffset);
+				}
+			}
+
+			@Override
+			public void onDrawerStateChanged(int newState) {
+				super.onDrawerStateChanged(newState);
+				for (DrawerLayout.DrawerListener listener : mDrawerStateListeners) {
+					listener.onDrawerStateChanged(newState);
+				}
+			}
 		};
 
 		// If the user hasn't 'learned' about the drawer, open it to introduce them to the drawer,
 		// per the navigation drawer design guidelines.
 		if (!mUserLearnedDrawer && !mFromSavedInstanceState) {
-			mDrawerLayout.openDrawer(mFragmentContainerView);
+			setDrawerOpen(true);
 		}
 
 		// Defer code dependent on restoration of previous instance state.
-		mDrawerLayout.post(new Runnable() {
+		getDrawerLayout().post(new Runnable() {
 			@Override
 			public void run() {
 				mDrawerToggle.syncState();
 			}
 		});
 
-		mDrawerLayout.setDrawerListener(mDrawerToggle);
+		getDrawerLayout().setDrawerListener(mDrawerToggle);
 
 		// The adapter needs a reference to the list its connected to
 		adapter = new NavAdapter(getActivity());

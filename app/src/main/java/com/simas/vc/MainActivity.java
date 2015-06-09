@@ -154,6 +154,8 @@ public class MainActivity extends AppCompatActivity
 
 			// Hide/Show the Editor/Helper
 			if (item == null && mEditorFragment.isVisible()) {
+				setTitle(getString(R.string.app_name));
+
 				// Hide if visible
 				getSupportFragmentManager().beginTransaction()
 						.setCustomAnimations(android.R.anim.fade_in, android.R.anim.slide_out_right)
@@ -221,7 +223,7 @@ public class MainActivity extends AppCompatActivity
 							.setPositiveButton("OK", null)
 							.show();
 				}
-				break;
+				return true;
 			case R.id.action_add_item:
 				showFileChooser();
 				return true;
