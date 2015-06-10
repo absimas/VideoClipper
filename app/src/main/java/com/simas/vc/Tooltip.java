@@ -67,7 +67,6 @@ public class Tooltip extends RelativeLayout {
 
 		// tooltip.width = anchor.width
 		final View anchor = getAnchor();
-		Log.e(TAG, "anchor width: " + anchor.getWidth());
 		if (anchor.getWidth() > 0) {
 			ViewGroup.LayoutParams params = getLayoutParams();
 			params.width = anchor.getWidth() - anchor.getPaddingLeft() - anchor.getPaddingRight();

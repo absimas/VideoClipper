@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 
 // ToDo use dimensions in xml instead of hard-coded values
+// ToDo "add items" TextView is visibile for a brief moment on screen rotation
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -171,6 +172,7 @@ public class MainActivity extends AppCompatActivity
 						.setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.fade_out)
 						.show(mEditorFragment)
 						.commit();
+
 				View view = findViewById(R.id.no_items_notifier);
 				Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
 				fadeOut.setFillAfter(true);

@@ -31,6 +31,8 @@ import android.util.Log;
 import android.widget.LinearLayout;
 import com.simas.vc.Utils;
 
+import org.w3c.dom.Node;
+
 // ToDo abstractize with an adapter?
 // ToDo abstract click listener in TreeParser
 // ToDo save expanded nodes views in onSaveInstanceStance
@@ -91,6 +93,10 @@ public class TreeLinearLayout extends LinearLayout {
 		setPadding(0,0,0,0);
 		// Re-draw
 		invalidate();
+	}
+
+	public TreeParser.Node getNode() {
+		return mNode;
 	}
 
 	@Override

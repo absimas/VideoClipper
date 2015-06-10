@@ -21,7 +21,6 @@ package com.simas.vc.editor.tree_view;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.util.Pair;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -102,15 +101,19 @@ public class TreeParser {
 
 		// Stream button
 		// View
-		TextView rootView = (TextView) mInflater.inflate(R.layout.stream_button, mContainer, false);
+		TreeLinearLayout rootView = (TreeLinearLayout) mInflater
+				.inflate(R.layout.stream_root, mContainer, false);
 		root.view = rootView;
+		rootView.setNode(root);
 		mContainer.addView(rootView);
 
 		// Values
-		rootView.setText(rootName);
+		// Values
+		TextView rootText = (TextView) rootView.findViewById(R.id.root_title);
+		rootText.setText(rootName);
 
 		// Expansion listener
-		rootView.setOnClickListener(new View.OnClickListener() {
+		rootText.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				// Set expanded flag
@@ -122,7 +125,7 @@ public class TreeParser {
 		});
 
 		// Groups (streams)
-		int rootLeftPadding = rootView.getPaddingLeft();
+		int rootLeftPadding = rootText.getPaddingLeft() + rootView.getPaddingLeft();
 		int groupCount = streams.size();
 		for (int i=0; i<groupCount; ++i) {
 			final Node group = new Node(1);
@@ -193,10 +196,12 @@ public class TreeParser {
 		if (mContainer == null) return null;
 
 		for (int i=0; i<mContainer.getChildCount(); ++i) {
-			View view = mContainer.getChildAt(i);
-			Node node = getNodeForView(view);
-			if (node.expanded) {
-				visibleChildren.add(i);
+			View child = mContainer.getChildAt(i);
+			if (child instanceof TreeLinearLayout) {
+				Node node = ((TreeLinearLayout) child).getNode();
+				if (node != null && node.expanded) {
+					visibleChildren.add(i);
+				}
 			}
 		}
 
@@ -218,7 +223,10 @@ public class TreeParser {
 		boolean success = true;
 		for (int childIndex : visibleChildren) {
 			View child = mContainer.getChildAt(childIndex);
-			Node node = getNodeForView(child);
+			Node node = null;
+			if (child instanceof TreeLinearLayout) {
+				node = ((TreeLinearLayout) child).getNode();
+			}
 			if (child == null || node == null) {
 				success = false;
 			} else {
@@ -233,38 +241,6 @@ public class TreeParser {
 		}
 
 		return success;
-	}
-
-	/**
-	 * Find a node that is responsible for the given view.
-	 * @return null if the node isn't found, otherwise the node
-	 */
-	private Node getNodeForView(View view) {
-		Node node = null;
-
-		for (int i=0; i<mRoots.size(); ++i) {
-			node = findNode(mRoots.get(i), view);
-			if (node != null) break;
-		}
-		return node;
-	}
-
-	/**
-	 * Loop this node and all of its children. If a node is found that holds the given view, it
-	 * will be returned.
-	 * @return node that is responsible for the given view or null if such node wasn't found on
-	 * this hierarchy.
-	 */
-	private Node findNode(Node node, View view) {
-		if (node.view == view) return node;
-
-		Node found = null;
-		for (int i=0; i<node.children.size(); ++i) {
-			found = findNode(node.children.get(i), view);
-			if (found != null) break;
-		}
-
-		return found;
 	}
 
 }
