@@ -73,7 +73,7 @@ public class Tooltip extends RelativeLayout {
 			params.width = anchor.getWidth() - anchor.getPaddingLeft() - anchor.getPaddingRight();
 			params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
 			setVisibility(VISIBLE);
-			requestLayout();
+			invalidate();
 		} else {
 			// If anchor width is 0, consider it not drawn yet, and try to redraw it
 			anchor.addOnLayoutChangeListener(new OnLayoutChangeListener() {
@@ -90,7 +90,7 @@ public class Tooltip extends RelativeLayout {
 					}
 					params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
 					setVisibility(VISIBLE);
-					requestLayout();
+					invalidate();
 				}
 			});
 			// Force anchor re-draw (to invoke LayoutChangeListener)

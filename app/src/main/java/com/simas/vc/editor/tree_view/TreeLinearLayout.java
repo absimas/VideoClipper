@@ -23,8 +23,11 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.LinearLayout;
 import com.simas.vc.Utils;
 
@@ -39,6 +42,7 @@ import com.simas.vc.Utils;
  */
 public class TreeLinearLayout extends LinearLayout {
 
+	private final String TAG = getClass().getName();
 	private static final int DEFAULT_PADDING = (int) Utils.dpToPx(4);
 	private static final int LEFT_PADDING_PER_LEVEL = (int) Utils.dpToPx(30);
 	private static final int LEFT_SPACE = 7;

@@ -146,6 +146,7 @@ public class NavItem implements Parcelable, Cloneable {
 					attributes = FFprobe.parseAttributes(getFile());
 				} catch (VCException e) {
 					e.printStackTrace();
+					// ToDo VCException's should create a log of error messages not single errors
 					// ToDo display to user
 				}
 				if (attributes == null) {
@@ -302,7 +303,6 @@ public class NavItem implements Parcelable, Cloneable {
 
 	/* Parcelable */
 	public void writeToParcel(Parcel out, int flags) {
-		Log.e(TAG, "Write to parcel: " + toString());
 		out.writeString(mFile.getAbsolutePath());
 		out.writeSerializable(mType);
 		out.writeParcelable(mAttributes, flags);
@@ -324,7 +324,7 @@ public class NavItem implements Parcelable, Cloneable {
 		mType = (Type) in.readSerializable();
 		mAttributes = in.readParcelable(Stream.class.getClassLoader());
 		mState = (State) in.readSerializable();
-		// Parse preview
+		// Re-Parse the preview
 		mPreview = parsePreview();
 	}
 

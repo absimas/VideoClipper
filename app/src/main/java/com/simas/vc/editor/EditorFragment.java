@@ -36,7 +36,10 @@ import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,7 +48,11 @@ import java.util.Map;
  */
 public class EditorFragment extends Fragment {
 
+	private static final String STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN = "previous_tree_visibility";
 	private final String TAG = getClass().getName();
+
+	private TreeParser mTreeParser;
+	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
 	public NavItem currentItem;
 	private PlayerFragment mPlayerFragment;
@@ -61,6 +68,15 @@ public class EditorFragment extends Fragment {
 	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
 
 	public EditorFragment() {}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		if (savedInstanceState != null) {
+			mPreviouslyVisibleTreeChildren = savedInstanceState
+					.getIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN);
+		}
+	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedState) {
@@ -197,7 +213,7 @@ public class EditorFragment extends Fragment {
 			return;
 		}
 
-		// Present the new item if it's ready, otherwise
+		// Present the new item if it's ready, otherwise wait for it
 		switch (newItem.getState()) {
 			case VALID:
 				updateEditorToCurrentItem();
@@ -211,8 +227,18 @@ public class EditorFragment extends Fragment {
 		newItem.registerUpdateListener(mItemUpdateListener);
 	}
 
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if (mTreeParser != null) {
+			outState.putIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN,
+					mTreeParser.getVisibleChildren());
+		}
+	}
+
 	private void updateEditorToCurrentItem() {
 		if (getActivity() == null) return;
+
 		final NavItem curItem = currentItem;
 		final FileAttributes attributes = curItem.getAttributes();
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
@@ -221,12 +247,12 @@ public class EditorFragment extends Fragment {
 		final ViewGroup streams = (ViewGroup) mDataMap.get(Data.STREAMS);
 		final View actions = mDataMap.get(Data.ACTIONS);
 
-
 		// Prep strings
 		final String sizeStr = Utils.bytesToMb(attributes.getSize());
 		final String durationStr = Utils.secsToFullTime(attributes.getDuration().intValue());
 
-		final TreeParser slp = new TreeParser(getActivity(), attributes);
+		mTreeParser = new TreeParser(getActivity(), attributes);
+		mTreeParser.setVisibleChildren(mPreviouslyVisibleTreeChildren);
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
@@ -242,7 +268,7 @@ public class EditorFragment extends Fragment {
 				size.setText(sizeStr);
 				duration.setText(durationStr);
 				streams.removeAllViews();
-				streams.addView(slp.layout);
+				streams.addView(mTreeParser.layout);
 				actions.setVisibility(View.VISIBLE);
 			}
 		});

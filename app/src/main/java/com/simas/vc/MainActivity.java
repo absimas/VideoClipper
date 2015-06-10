@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 
 // ToDo use dimensions in xml instead of hard-coded values
-// ToDo should display a message to user if there are no items added. Editor should be hidden at that time
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -63,6 +62,7 @@ public class MainActivity extends AppCompatActivity
 		setContentView(R.layout.activity_main);
 
 		mToolbar = (Toolbar) findViewById(R.id.toolbar);
+
 		addTooltips();
 		setSupportActionBar(mToolbar);
 
@@ -161,6 +161,7 @@ public class MainActivity extends AppCompatActivity
 						.setCustomAnimations(android.R.anim.fade_in, android.R.anim.slide_out_right)
 						.hide(mEditorFragment)
 						.commit();
+
 				View view = findViewById(R.id.no_items_notifier);
 				Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
 				fadeOut.setFillAfter(true);

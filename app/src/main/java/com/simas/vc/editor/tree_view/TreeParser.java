@@ -20,6 +20,9 @@ package com.simas.vc.editor.tree_view;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.util.Pair;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -38,10 +41,11 @@ public class TreeParser {
 	private final LinearLayout mContainer;
 	private final TreeOverlay mOverlay;
 	public final FrameLayout layout;
+	private final List<Node> mRoots = new ArrayList<>();
 
-	public class Node {
+	class Node {
 
-		public List<Node> children = new ArrayList<>();
+		public final List<Node> children = new ArrayList<>();
 		public View view;
 		public boolean expanded;
 		public int parentLeftPadding;
@@ -51,7 +55,7 @@ public class TreeParser {
 			this.level = level;
 		}
 
-		public void setChildrenVisibility(boolean visible) {
+		public void setChildrenVisibility(boolean visible, boolean openSingles) {
 			expanded = visible;
 			if (visible) {
 				// Remove/add line
@@ -61,9 +65,11 @@ public class TreeParser {
 				for (Node child : children) {
 					child.view.setVisibility(View.VISIBLE);
 
-					// Show children's children too if there's only 1 direct child
-					if (children.size() == 1) {
-						child.setChildrenVisibility(true);
+					if (openSingles) {
+						// Show children's children too if there's only 1 direct child
+						if (children.size() == 1) {
+							child.setChildrenVisibility(true, true);
+						}
 					}
 				}
 			} else {
@@ -72,7 +78,7 @@ public class TreeParser {
 
 				// Hide the children and their children too
 				for (Node child : children) {
-					child.setChildrenVisibility(false);
+					child.setChildrenVisibility(false, openSingles);
 					child.view.setVisibility(View.GONE);
 				}
 			}
@@ -92,6 +98,7 @@ public class TreeParser {
 
 	private void createStreamList(List<? extends Stream> streams, String rootName) {
 		final Node root = new Node(0);
+		mRoots.add(root);
 
 		// Stream button
 		// View
@@ -110,7 +117,7 @@ public class TreeParser {
 				root.expanded = !root.expanded;
 
 				// Update children visibility
-				root.setChildrenVisibility(root.expanded);
+				root.setChildrenVisibility(root.expanded, true);
 			}
 		});
 
@@ -142,7 +149,7 @@ public class TreeParser {
 					group.expanded = !group.expanded;
 
 					// Update children visibility
-					group.setChildrenVisibility(group.expanded);
+					group.setChildrenVisibility(group.expanded, true);
 				}
 			});
 
@@ -173,6 +180,91 @@ public class TreeParser {
 				valueView.setText(String.valueOf(value));
 			}
 		}
+	}
+
+	/**
+	 * Parse the layout and save the positions of visible children.
+	 * @return null if no visible children found or the layout hasn't been inflated yet
+	 */
+	public ArrayList<Integer> getVisibleChildren() {
+		ArrayList<Integer> visibleChildren = new ArrayList<>();
+
+		// Return null if the layout hasn't yet been inflated
+		if (mContainer == null) return null;
+
+		for (int i=0; i<mContainer.getChildCount(); ++i) {
+			View view = mContainer.getChildAt(i);
+			Node node = getNodeForView(view);
+			if (node.expanded) {
+				visibleChildren.add(i);
+			}
+		}
+
+		return (visibleChildren.size() > 0) ? visibleChildren : null;
+	}
+
+	/**
+	 * Sets the visiblity of the children.
+	 * @return true if all children's visibility has been set successfully, false otherwise
+	 */
+	public boolean setVisibleChildren(@Nullable ArrayList<Integer> visibleChildren) {
+		if (visibleChildren == null) {
+			return false;
+		} else if (mContainer == null) {
+			Log.w(TAG, "None children could be shown because the layout is not yet inflated.");
+			return false;
+		}
+
+		boolean success = true;
+		for (int childIndex : visibleChildren) {
+			View child = mContainer.getChildAt(childIndex);
+			Node node = getNodeForView(child);
+			if (child == null || node == null) {
+				success = false;
+			} else {
+				// If the node is expanded only make sure that its view is visible
+				if (node.expanded) {
+					node.view.setVisibility(View.VISIBLE);
+				} else {
+					// Perform a click on the node
+					node.setChildrenVisibility(true, false);
+				}
+			}
+		}
+
+		return success;
+	}
+
+	/**
+	 * Find a node that is responsible for the given view.
+	 * @return null if the node isn't found, otherwise the node
+	 */
+	private Node getNodeForView(View view) {
+		Node node = null;
+
+		for (int i=0; i<mRoots.size(); ++i) {
+			node = findNode(mRoots.get(i), view);
+			if (node != null) break;
+		}
+		return node;
+	}
+
+	/**
+	 * Loop this node and all of its children. If a node is found that holds the given view, it
+	 * will be returned.
+	 * @return node that is responsible for the given view or null if such node wasn't found on
+	 * this hierarchy.
+	 */
+	private Node findNode(Node node, View view) {
+		if (node.view == view) return node;
+
+		Node found = null;
+		for (int i=0; i<node.children.size(); ++i) {
+			found = findNode(node.children.get(i), view);
+			if (found != null) break;
+		}
+
+		return found;
 	}
 
 }
