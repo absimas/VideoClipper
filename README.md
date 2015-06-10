@@ -3,7 +3,7 @@ Android video manipulation app
 
 ## Support
 I am very open to receiving help for this open source project.
-If you have any suggestions, critic or questions feel free to contact me!
+If you have any suggestions, critique or questions feel free to contact me!
 
 ## License
 This project is GNU GPL software. See [COPYING](COPYING) for the complete license.
@@ -46,12 +46,12 @@ When first compiling this library you need to complete a few steps:
         
 **Note:** Code in step 3 needs to be uncommented only when:
 - You're compiling for the first time (and lib still doesn't exist)
-- You change native source code, i.e. `vc.c`
+- You've made changes in the native source code, e.g. `vc.c`
 
 ## Functionality
 Currently the app can accomplish the following:
 - Parse a chosen video file and determine its *Attributes*
-- Concatenate multiple videos (at the moment possible only with same resolution videos)
+- Concatenate multiple videos
 - Re-encode streams to a common codec while concatenating (based on the output chosen)
 
 ## Expansion
