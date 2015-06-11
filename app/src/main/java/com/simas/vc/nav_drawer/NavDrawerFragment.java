@@ -54,7 +54,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 // ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
 // ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
 // ToDo remove probe/mpeg process when item is removed!
-// ToDo this shouldn't contain methods like isConcatenatable. It's only a drawer.
+// ToDo this shouldn't contain methods like isConcatenatable. It's only a drawer. The items should also be moved outside the adapter.
 
 /**
  * Navigation drawer fragment that contains all added items. Also manages the CAB.
@@ -454,18 +454,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		mDrawerToggle.onConfigurationChanged(newConfig);
 	}
 
-	public static int num = 0; // ToDo remove after destination is available
-
-	/**
-	 * Per the navigation drawer design guidelines, updates the action bar to show the global app
-	 * 'context', rather than just what's in the current screen.
-	 */
-	private void showGlobalContextActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setTitle(R.string.app_name);
-	}
-
 	private ActionBar getActionBar() {
 		return ((AppCompatActivity) getActivity()).getSupportActionBar();
 	}
@@ -473,6 +461,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private Toolbar getToolbar() {
 		return ((MainActivity) getActivity()).getToolbar();
 	}
+
+	public static int num = 0; // ToDo remove after destination is available
 
 	@Override
 	public void onChosen(File file) {

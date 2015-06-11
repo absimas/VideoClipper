@@ -18,7 +18,6 @@
  */
 package com.simas.vc.editor;
 
-import android.app.Activity;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -39,12 +38,12 @@ import com.simas.vc.R;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Fragment containing the information about the opened NavItem, as well as actions that can be
- * invoked.
+ * invoked. The fragment doesn't save its state because {@link #mCurrentItem} is a <b>shared</b>
+ * object that's assigned by {@link com.simas.vc.MainActivity}.
  */
 public class EditorFragment extends Fragment {
 
@@ -54,7 +53,7 @@ public class EditorFragment extends Fragment {
 	private TreeParser mTreeParser;
 	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
-	public NavItem currentItem;
+	private NavItem mCurrentItem;
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
@@ -178,7 +177,7 @@ public class EditorFragment extends Fragment {
 		return rootView;
 	}
 
-	private NavItem.OnUpdatedListener mItemUpdateListener = new NavItem.OnUpdatedListener() {
+	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {
 		@Override
 		public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
 		                      final Object newValue) {
@@ -190,7 +189,7 @@ public class EditorFragment extends Fragment {
 							// Full update if changed to valid from in-progress
 							if (newValue == NavItem.State.VALID &&
 									oldValue == NavItem.State.INPROGRESS) {
-								updateEditorToCurrentItem();
+								updateFields();
 							}
 							break;
 					}
@@ -199,32 +198,41 @@ public class EditorFragment extends Fragment {
 		}
 	};
 
-	public void setCurrentItem(final NavItem newItem) {
-		// Change item
-		final NavItem previousItem = currentItem;
-		currentItem = newItem;
-
-		// Clear previous item listener
-		if (previousItem != null && previousItem != newItem) {
-			previousItem.unregisterUpdateListener(mItemUpdateListener);
+	/**
+	 * Set the editor's currently active item. It will change the editor's fields immediately if
+	 * the item has finished loading otherwise it will wait and set it then.
+	 * @return true if the item was changed, false otherwise
+	 */
+	public boolean setCurrentItem(final NavItem newItem) {
+		if (getCurrentItem() == newItem) {
+			return false;
 		}
 
-		if (newItem == null) {
-			return;
+		// Clear listener from the previous item (if it's set)
+		if (getCurrentItem() != null) {
+			getCurrentItem().unregisterUpdateListener(mItemValidationListener);
 		}
 
-		// Present the new item if it's ready, otherwise wait for it
-		switch (newItem.getState()) {
-			case VALID:
-				updateEditorToCurrentItem();
-				break;
-			case INPROGRESS:
-				mPlayerFragment.setProgressVisible(true);
-				break;
+		// Set the new item as current one
+		mCurrentItem = newItem;
+
+		// Update fields and add listeners if the new item is not null
+		if (getCurrentItem() != null) {
+			// Present the new item if it's ready, otherwise wait for it
+			switch (getCurrentItem().getState()) {
+				case VALID:
+					updateFields();
+					break;
+				case INPROGRESS:
+					mPlayerFragment.setProgressVisible(true);
+					break;
+			}
+
+			// Add an update listener
+			getCurrentItem().registerUpdateListener(mItemValidationListener);
 		}
 
-		// Add an update listener
-		newItem.registerUpdateListener(mItemUpdateListener);
+		return true;
 	}
 
 	@Override
@@ -236,10 +244,13 @@ public class EditorFragment extends Fragment {
 		}
 	}
 
-	private void updateEditorToCurrentItem() {
+	/**
+	 * Update fields to match {@link #mCurrentItem}.
+	 */
+	private void updateFields() {
 		if (getActivity() == null) return;
 
-		final NavItem curItem = currentItem;
+		final NavItem curItem = getCurrentItem();
 		final FileAttributes attributes = curItem.getAttributes();
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView size = (TextView) mDataMap.get(Data.SIZE);
@@ -275,7 +286,7 @@ public class EditorFragment extends Fragment {
 	}
 
 	public NavItem getCurrentItem() {
-		return currentItem;
+		return mCurrentItem;
 	}
 
 	/**

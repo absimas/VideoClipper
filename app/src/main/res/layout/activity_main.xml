@@ -31,7 +31,7 @@
 		android:layout_height="wrap_content"
 		android:minHeight="?attr/actionBarSize"
 		android:background="?attr/colorPrimary"
-		app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+		android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
 		app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
 	<!-- A DrawerLayout is intended to be used as the top-level content view using match_parent for

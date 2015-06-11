@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity
 				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
 					// Make sure the editor's item is the same as the currently checked one
 					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
-					if (mEditorFragment.currentItem != checkedItem) {
+					if (mEditorFragment.getCurrentItem() != checkedItem) {
 						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
 					}
 				}
@@ -128,7 +128,11 @@ public class MainActivity extends AppCompatActivity
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
 		ListView lv = mNavDrawerFragment.getList();
+
+		// Fetch the NavItem corresponding to the given position. null if the position is invalid
+		// or if it belongs to a header/footer
 		NavItem item = null;
+		//noinspection StatementWithEmptyBody
 		if (position == ListView.INVALID_POSITION) {
 			// Invalidate editor fragment on an invalid position
 		} else if (position < lv.getHeaderViewsCount() ||
@@ -144,14 +148,10 @@ public class MainActivity extends AppCompatActivity
 			lv.setItemChecked(position, true);
 		}
 
-		// Re-open this item in the editor fragment, only if it's new
-		if (mEditorFragment.getCurrentItem() != item) {
-			// Removing currently selected item, doesn't closet
-			if (item != null) {
-				mNavDrawerFragment.setDrawerOpen(false);
-			}
-
-			mEditorFragment.setCurrentItem(item);
+		// If editor's item was updated show/hide the editor and the drawer
+		if (mEditorFragment.setCurrentItem(item)) {
+			// Close drawer if a new and non-null item is selected
+			if (item != null) mNavDrawerFragment.setDrawerOpen(false);
 
 			// Hide/Show the Editor/Helper
 			if (item == null && mEditorFragment.isVisible()) {
@@ -206,6 +206,7 @@ public class MainActivity extends AppCompatActivity
 				File output = new File(destination + File.separator +
 						"output" + (++NavDrawerFragment.num) + ".mp4");
 				if (output.exists()) {
+					//noinspection ResultOfMethodCallIgnored
 					output.delete();
 				}
 				try {
