@@ -18,152 +18,215 @@
  */
 package com.simas.vc.editor.player;
 
-import android.annotation.TargetApi;
-import android.content.Context;
 import android.media.MediaPlayer;
-import android.os.Build;
-import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.util.AttributeSet;
-import android.view.GestureDetector;
+import android.os.Handler;
 import android.view.MotionEvent;
-import android.widget.VideoView;
-import java.util.concurrent.CopyOnWriteArrayList;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
-// ToDo "no preview available for this file" message!
+import com.simas.vc.R;
+import com.simas.vc.Utils;
+
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * Wrapper class for VideoView. Allows the use of multiple {@code OnPreparedListener}s. Also
- * limits the use of video setting to local strings. Allows checking if it's prepared.
+ * Notes:
+ * - Do not call {@link #setOnPreparedListener(OnPreparedListener)} for this Player.
+ * Instead use {@link #addOnPreparedListener(OnPreparedListener)}. This allows the use of
+ * multiple {@link android.media.MediaPlayer.OnPreparedListener}.
  */
-public final class Player extends VideoView implements MediaPlayer.OnPreparedListener {
+public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListener,
+		MediaPlayer.OnCompletionListener {
 
-	private static final String CURRENT_POSITION = "video_player_position";
-	private static final String IS_PLAYING = "video_player_playing";
 	private final String TAG = getClass().getName();
-	/**
-	 * Default timeout in seconds
-	 */
-	private final CopyOnWriteArrayList<MediaPlayer.OnPreparedListener>
-			mPreparedListeners = new CopyOnWriteArrayList<>();
-	private boolean mPrepared;
-	private GestureDetector mGestureDetector;
+	private final CopyOnWriteArraySet<OnPreparedListener> mPrepareListeners =
+			new CopyOnWriteArraySet<>();
+	private Controls mControls;
 
-	public Player(Context context) {
-		super(context);
-		init();
-	}
-
-	public Player(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		init();
-	}
-
-	public Player(Context context, AttributeSet attrs, int defStyleAttr) {
-		super(context, attrs, defStyleAttr);
-		init();
-	}
-
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
-	public Player(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-		super(context, attrs, defStyleAttr, defStyleRes);
-		init();
-	}
-
-	private void init() {
-		mPrepared = false;
-		// Multiple prepared listener implementation
-		setOnPreparedListener(this);
+	public Player(View container) {
+		super.setOnPreparedListener(this);
+		setOnCompletionListener(this);
+		mControls = new Controls(container);
 	}
 
 	@Override
-	public void setVideoPath(final String path) {
-		mPrepared = false;
-		super.setVideoPath(path);
-	}
-
-	public Bundle getSavedState() {
-		Bundle bundle = new Bundle();
-		bundle.putInt(CURRENT_POSITION, getCurrentPosition());
-		bundle.putBoolean(IS_PLAYING, isPlaying());
-		return bundle;
-	}
-
-	public void restoreToState(@NonNull Bundle bundle) {
-		final int position = bundle.getInt(CURRENT_POSITION);
-		final boolean isPlaying = bundle.getBoolean(IS_PLAYING);
-
-		// Runnable to do the job
-		final Runnable runnable = new Runnable() {
-			@Override
-			public void run() {
-				seekTo(position);
-				if (isPlaying) {
-					start();
-				} else {
-					pause();
-				}
-			}
-		};
-
-		// Do the job when VideoView has been prepared
-		if (isPrepared()) {
-			runnable.run();
-		} else {
-			addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-				@Override
-				public void onPrepared(MediaPlayer mp) {
-					removeOnPreparedListener(this);
-					runnable.run();
-				}
-			});
-		}
-	}
-
-	/* Prepared listener re-implementation */
-	public boolean isPrepared() {
-		return mPrepared;
-	}
-
-	public void addOnPreparedListener(MediaPlayer.OnPreparedListener listener) {
-		mPreparedListeners.add(listener);
-	}
-
-	public void removeOnPreparedListener(MediaPlayer.OnPreparedListener listener) {
-		mPreparedListeners.remove(listener);
-	}
-
-	public void removeAllOnPreparedListeners() {
-		mPreparedListeners.clear();
+	public void start() throws IllegalStateException {
+		super.start();
+		getControls().setPlaying(true);
 	}
 
 	@Override
-	public void setOnPreparedListener(MediaPlayer.OnPreparedListener l) {
-		if (l != this) {
-			throw new IllegalArgumentException("Use addOnPreparedListener instead!");
-		}
-		super.setOnPreparedListener(l);
+	public void stop() throws IllegalStateException {
+		super.stop();
+		getControls().setPlaying(false);
+	}
+
+	@Override
+	public void pause() throws IllegalStateException {
+		super.pause();
+		getControls().setPlaying(false);
+	}
+
+	@Override
+	public void seekTo(int msec) throws IllegalStateException {
+		super.seekTo(msec);
+		getControls().setCurrent(msec);
 	}
 
 	@Override
 	public void onPrepared(MediaPlayer mp) {
-		mPrepared = true;
-		for (MediaPlayer.OnPreparedListener listener : mPreparedListeners) {
+		getControls().setCurrent(0);
+		getControls().setTotal(mp.getDuration());
+		getControls().setPlaying(false);
+		getControls().show();
+
+		for (OnPreparedListener listener : mPrepareListeners) {
 			listener.onPrepared(mp);
 		}
 	}
 
 	@Override
-	public boolean onTouchEvent(MotionEvent ev) {
-		if (mGestureDetector != null) {
-			return mGestureDetector.onTouchEvent(ev);
-		} else {
-			return super.onTouchEvent(ev);
-		}
+	public void onCompletion(MediaPlayer mp) {
+		getControls().setPlaying(false);
+		// ToDo after this, when setPlaying(true) is called, the video should be seeked to start manually
 	}
 
-	public void setGestureDetector(GestureDetector gestureDetector) {
-		mGestureDetector = gestureDetector;
+	public Controls getControls() {
+		return mControls;
+	}
+
+	public void addOnPreparedListener(OnPreparedListener listener) {
+		mPrepareListeners.add(listener);
+	}
+
+	public void removeOnPreparedListener(OnPreparedListener listener) {
+		mPrepareListeners.remove(listener);
+	}
+
+	@Override
+	public void setOnPreparedListener(OnPreparedListener listener) {
+		throw new IllegalStateException("Player cannot have its prepared listener set! Use " +
+				"addOnPreparedListener instead.");
+	}
+
+	public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickListener,
+			View.OnTouchListener {
+
+		private static final int SHOW_DURATION = 3000;
+		private static final int CURRENT_TIME_RECHECK_INTERVAL = 1000;
+		private final String TAG = getClass().getName();
+
+		private RelativeLayout mContainer;
+		private SeekBar mSeekBar;
+		private ImageView mPlayButton;
+		private TextView mCurrentTime, mTotalTime;
+		private Handler mVisibilityHandler = new Handler();
+		private Handler mSeekHandler = new Handler();
+
+		public Controls(View container) {
+			mContainer = (RelativeLayout) container.findViewById(R.id.player_controls);
+			mSeekBar = (SeekBar) mContainer.findViewById(R.id.seek_bar);
+			mSeekBar.setOnSeekBarChangeListener(this);
+			mPlayButton = (ImageView) mContainer.findViewById(R.id.play_button);
+			mPlayButton.setOnClickListener(this);
+			mCurrentTime = (TextView) mContainer.findViewById(R.id.current_time);
+			mTotalTime = (TextView) mContainer.findViewById(R.id.total_time);
+		}
+
+		public void setTotal(int msec) {
+			int secs = msec / 1000;
+			mTotalTime.setText(Utils.secsToTime(secs));
+			mSeekBar.setMax(msec);
+		}
+
+		public void setCurrent(int msec) {
+			int secs = msec / 1000;
+			mCurrentTime.setText(Utils.secsToTime(secs));
+			mSeekBar.setProgress(msec);
+		}
+
+		public void setPlaying(boolean isPlaying) {
+			mSeekHandler.removeCallbacksAndMessages(null);
+			if (isPlaying) {
+				mSeekHandler.postDelayed(new Runnable(){
+					public void run(){
+						mSeekHandler.postDelayed(this, CURRENT_TIME_RECHECK_INTERVAL);
+						setCurrent(getCurrentPosition());
+					}
+				}, CURRENT_TIME_RECHECK_INTERVAL);
+
+				mPlayButton.setImageResource(R.drawable.ic_action_error);
+			} else {
+				mPlayButton.setImageResource(R.drawable.ic_action_play_dark);
+			}
+		}
+
+		/**
+		 * Show controls and dismisses them in {@link #SHOW_DURATION}. If the container is
+		 * disabled, do nothing.
+		 */
+		public void show() {
+			mVisibilityHandler.removeCallbacksAndMessages(null);
+			// When controls are shown, touching children will just reset the visibility timer
+			setChildrenTouchListener(this);
+			mContainer.setVisibility(View.VISIBLE);
+			mVisibilityHandler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					hide();
+				}
+			}, SHOW_DURATION);
+		}
+
+		/**
+		 * If container is disabled, do nothing.
+		 */
+		public void hide() {
+			mContainer.setVisibility(View.INVISIBLE);
+			// When controls are hidden, children can't receive any touch events
+			setChildrenTouchListener(null);
+		}
+
+		private void setChildrenTouchListener(View.OnTouchListener listener) {
+			mContainer.setOnTouchListener(listener);
+			mPlayButton.setOnTouchListener(listener);
+			mCurrentTime.setOnTouchListener(listener);
+			mSeekBar.setOnTouchListener(listener);
+			mTotalTime.setOnTouchListener(listener);
+		}
+
+		public boolean isVisible() {
+			return mContainer.getVisibility() == View.VISIBLE;
+		}
+
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+			seekTo(progress);
+		}
+
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {}
+
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) {}
+
+		@Override
+		public void onClick(View v) {
+			if (isPlaying()) {
+				pause();
+			} else {
+				start();
+			}
+		}
+
+		@Override
+		public boolean onTouch(View v, MotionEvent event) {
+			show();
+			return false;
+		}
 	}
 
 }

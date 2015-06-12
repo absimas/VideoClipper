@@ -110,4 +110,5 @@
 	<string name="hour_short">h</string>
 	<string name="minute_short">m</string>
 	<string name="second_short">s</string>
+	<string name="player_play_button">Player\'s play button</string>
 </resources>

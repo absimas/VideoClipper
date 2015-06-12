@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.simas.vc.editor.player;
+package com.simas.vc.editor.player_old;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

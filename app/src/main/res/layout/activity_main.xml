@@ -41,23 +41,31 @@
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
 			<!--Editor and helper are on top of each other-->
-			<RelativeLayout
-				android:layout_width="match_parent"
-				android:layout_height="match_parent">
-				<fragment
-					android:id="@+id/editor_fragment"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"
-					android:name="com.simas.vc.editor.EditorFragment"
-					tools:layout="@layout/fragment_editor"/>
-				<TextView
-					android:id="@+id/no_items_notifier"
-					android:gravity="center"
-					android:textSize="25sp"
-					android:text="Add some items!"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"/>
-			</RelativeLayout>
+			<!--<RelativeLayout-->
+				<!--android:layout_width="match_parent"-->
+				<!--android:layout_height="match_parent">-->
+				<!--<fragment-->
+					<!--android:id="@+id/editor_fragment"-->
+					<!--android:layout_width="match_parent"-->
+					<!--android:layout_height="match_parent"-->
+					<!--android:name="com.simas.vc.editor.EditorFragment"-->
+					<!--tools:layout="@layout/fragment_editor"/>-->
+				<!--<TextView-->
+					<!--android:id="@+id/no_items_notifier"-->
+					<!--android:gravity="center"-->
+					<!--android:textSize="25sp"-->
+					<!--android:text="Add some items!"-->
+					<!--android:layout_width="match_parent"-->
+					<!--android:layout_height="match_parent"/>-->
+			<!--</RelativeLayout>-->
+		<RelativeLayout
+			android:id="@+id/test"
+			android:layout_width="200dp"
+			android:layout_height="200dp"/>
+		<android.support.v4.view.ViewPager
+			android:id="@+id/view_pager"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"/>
 
 		<!-- android:layout_gravity="start" tells DrawerLayout to treat
 	         this as a sliding drawer on the left side for left-to-right

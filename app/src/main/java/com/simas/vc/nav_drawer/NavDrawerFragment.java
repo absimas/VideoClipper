@@ -18,6 +18,7 @@
  */
 package com.simas.vc.nav_drawer;
 
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.database.DataSetObserver;
 import android.graphics.Color;
@@ -162,7 +163,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		});
 		getList().addHeaderView(header);
 
-		return getList();
+		return mDrawerList;
 	}
 
 	private View createHeader(LayoutInflater inflater, ViewGroup parent) {

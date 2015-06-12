@@ -16,7 +16,7 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
   -->
-<com.simas.vc.editor.player.PlayerContainer
+<com.simas.vc.editor.player_old.PlayerContainer
     android:id="@+id/player_container"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:background="@color/player_container_bg"
@@ -24,7 +24,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <com.simas.vc.editor.player.Player
+    <com.simas.vc.editor.player_old.Player
         android:id="@+id/player"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -44,4 +44,4 @@
         <!--android:layout_height="wrap_content"-->
         <!--android:layout_alignParentBottom="true"-->
         <!--android:layout_centerHorizontal="true"/>-->
-</com.simas.vc.editor.player.PlayerContainer>
+</com.simas.vc.editor.player_old.PlayerContainer>

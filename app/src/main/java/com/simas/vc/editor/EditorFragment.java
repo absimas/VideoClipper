@@ -31,11 +31,10 @@ import android.widget.TextView;
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.Utils;
 import com.simas.vc.attributes.FileAttributes;
-import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.editor.player.PlayerFragment;
+import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -96,7 +95,7 @@ public class EditorFragment extends Fragment {
 		// Display a black window while working
 		final ViewGroup root = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
 		final View black = new View(getActivity());
-		black.setBackgroundColor(Color.RED);
+		black.setBackgroundColor(Color.RED); // ToDo dafuq red? xD
 
 		// ToDo // Fragment won't be visible when HelperFragment is shown on top.
 		// No need for a black view then.
@@ -224,7 +223,7 @@ public class EditorFragment extends Fragment {
 					updateFields();
 					break;
 				case INPROGRESS:
-					mPlayerFragment.setProgressVisible(true);
+//					mPlayerFragment.setProgressVisible(true);
 					break;
 			}
 
@@ -268,10 +267,20 @@ public class EditorFragment extends Fragment {
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
+				// ToDo either delay setting the video or
+				// ToDo start using your own video player, FFplay => more customization no lag etc.
+				// ToDo Possibly just use android https://github.com/commonsguy/vidtry
+//				mPlayerFragment.post(new Runnable() {
+//					@Override
+//					public void run() {
+//						mPlayerFragment.setVideoPath(curItem.getFile().getPath());
+//					}
+//				});
+
 				mPlayerFragment.post(new Runnable() {
 					@Override
 					public void run() {
-						mPlayerFragment.setVideoPath(curItem.getFile().getPath());
+						mPlayerFragment.setVideo(curItem.getFile().getPath());
 					}
 				});
 
