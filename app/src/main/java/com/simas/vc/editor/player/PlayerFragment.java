@@ -18,52 +18,65 @@
  */
 package com.simas.vc.editor.player;
 
+import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.R;
+import com.simas.vc.Utils;
 
 import java.io.IOException;
 
+// ToDo onSaveInstanceState: FS, seekPos, playing, controls visibility
+
 public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
-		View.OnTouchListener, MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener {
+		View.OnTouchListener, MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener {
 
 	private final String TAG = getClass().getName();
 	private Player mPlayer;
 	private RelativeLayout mContainer;
+	private SurfaceView mSurfaceView;
 	private SurfaceHolder mHolder;
 	private ImageView mDeadSmiley;
 	private GestureDetector mGestureDetector;
 	/**
 	 * Handler that runs the queued messages at the end of
-	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
+	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} and through the post method of
+	 * {@link #mContainer}.
 	 */
-	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
+	private DelayedHandler mDelayedHandler = new DelayedHandler();
 
 	@Nullable
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater, final ViewGroup container,
+	                         Bundle savedInstanceState) {
 		mContainer = (RelativeLayout) inflater.inflate(R.layout.fragment_player, container, false);
+
 		getContainer().setOnTouchListener(this);
+		getContainer().setOnKeyListener(this);
 
 		mDeadSmiley = (ImageView) getContainer().findViewById(R.id.dead_smiley);
-		SurfaceView surfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
+		mSurfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
 
-		// Player references controls, so create them in order
 		mPlayer = new Player(getContainer());
 
 		// Custom listeners to show and hide the dead smiley overlay
@@ -94,17 +107,131 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 						return true;
 					}
 				});
-
-		mHolder = surfaceView.getHolder();
+		mHolder = mSurfaceView.getHolder();
 		mHolder.addCallback(this);
 
-		mDelayedHandler.resume();
 
-		return getContainer();
+		mContainer.post(new Runnable() {
+			@Override
+			public void run() {
+				mDelayedHandler.resume();
+			}
+		});
+
+		return mContainer;
 	}
 
-	private void toggleFullscreen() {
-		// ToDo Move mContainer to decor or back to def parent
+	private boolean mFullscreen;
+	private LinearLayout.LayoutParams mDefaultContainerParams;
+	private ViewGroup mDefaultContainerParent;
+	private int mDefaultContainerBottomPadding;
+
+	void toggleFullscreen() {
+		// Toggle state
+		setFullscreen(!isFullscreen());
+
+		// Expand or collapse the PlayerView
+		if (isFullscreen()) {
+			if (Build.VERSION.SDK_INT >= 14) {
+				// For higher APIs go into the low profile mode
+				getActivity().getWindow().getDecorView()
+						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_LOW_PROFILE);
+			} else {
+				// For lower APIs just go for fullscreen flag
+				getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			}
+
+			// Save current params
+			mDefaultContainerParams = new LinearLayout.LayoutParams(getContainer().getLayoutParams());
+
+			// Save current bottom padding
+			mDefaultContainerBottomPadding = getContainer().getPaddingBottom();
+
+			// Set bottom padding, so controls don't appear underneath the nav bar
+			getContainer()
+					.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+							getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
+
+			// Set new params
+			ViewGroup.LayoutParams params = getContainer().getLayoutParams();
+			params.width = LinearLayout.LayoutParams.MATCH_PARENT;
+			params.height = LinearLayout.LayoutParams.MATCH_PARENT;
+			getContainer().setLayoutParams(params);
+
+			// Remove from current parent
+			mDefaultContainerParent = (ViewGroup) getContainer().getParent();
+			mDefaultContainerParent.removeView(getContainer());
+
+			// Re-measure the SurfaceView
+			getContainer().setRight(0);
+			getContainer().setLeft(0);
+			invalidateSurface();
+
+			// Add to the root view
+			ViewGroup rootView = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
+			rootView.addView(getContainer()); // Add as last view, so it's on top of everything else
+			mContainer.requestFocus();
+		} else {
+			if (Build.VERSION.SDK_INT >= 14) {
+				// For higher APIs remove the low profile mode
+				getActivity().getWindow().getDecorView()
+						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_VISIBLE);
+			} else {
+				// For lower APIs just remove the fullscreen flag
+				getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			}
+
+			if (mDefaultContainerParams != null && mDefaultContainerParent != null) {
+				// Restore params
+				getContainer().setLayoutParams(mDefaultContainerParams);
+
+				// Remove bottom padding
+				getContainer()
+						.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+								getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
+
+				// Remove from current parent
+				((ViewGroup)getContainer().getParent()).removeView(getContainer());
+
+				// Re-measure the SurfaceView
+				getContainer().setRight(0);
+				getContainer().setLeft(0);
+				invalidateSurface();
+
+				// Add as the first child to the default parent
+				mDefaultContainerParent.addView(getContainer(), 0);
+			}
+		}
+
+		// Parse a preview
+		if (!getPlayer().isPlaying()) {
+			getContainer().post(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						getPlayer().setOnSeekCompleteListener(new MediaPlayer
+								.OnSeekCompleteListener() {
+							@Override
+							public void onSeekComplete(MediaPlayer mp) {
+								getPlayer().setOnSeekCompleteListener(null);
+								getPlayer().start();
+								getPlayer().pause();
+							}
+						});
+						getPlayer().seekTo(getPlayer().getCurrentPosition());
+					} catch (IllegalStateException ignore) {}
+				}
+			});
+
+		}
+	}
+
+	public boolean isFullscreen() {
+		return mFullscreen;
+	}
+
+	private void setFullscreen(boolean fullscreen) {
+		mFullscreen = fullscreen;
 	}
 
 	public void setVideo(String path) {
@@ -118,6 +245,7 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 		try {
 			getContainer().setOnTouchListener(null);
 			getPlayer().setDataSource(path);
+			getPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
 			getPlayer().addOnPreparedListener(listener);
 			getPlayer().prepareAsync();
 		} catch (IOException | IllegalStateException e) {
@@ -188,6 +316,15 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 	}
 
 	@Override
+	public boolean onKey(View v, int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK && isFullscreen()) {
+			toggleFullscreen();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		Log.e(TAG, String.format("Error: %d : %d", what, extra));
 		showDeathOverlay();
@@ -195,8 +332,69 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 	}
 
 	@Override
-	public void onPrepared(MediaPlayer mp) {
+	public void onPrepared(final MediaPlayer mp) {
+		// Re-measure the SurfaceView
+		invalidateSurface();
+		// Show controls
+		getControls().show();
+		// Hide overlay (if any)
 		hideDeathOverlay();
+	}
+
+	/**
+	 * Update surface's dimensions according to the {@link #mPlayer} loaded video.
+	 */
+	private void invalidateSurface() {
+		final int iw = getPlayer().getVideoWidth(), ih = getPlayer().getVideoHeight();
+		final Runnable containerUpdater = new Runnable() {
+			@Override
+			public void run() {
+				// iw/ih - input, cw/ch - container, w/h - final output sizes
+				int w, h;
+				int cw = getContainer().getWidth(), ch = getContainer().getHeight();
+				if (cw == 0 || ch == 0) {
+					// If container still has 0 width or height use the video's dimensions
+					w = iw;
+					h = ih;
+				} else {
+					if (iw > ih) {
+						double modifier = (double) cw / iw;
+						w = cw;
+						h = (int) (ih * modifier);
+					} else {
+						double modifier = (double) ch / ih;
+						h = ch;
+						w = (int) (iw * modifier);
+					}
+				}
+
+				// Rescale the surface to fit the prepared video
+				ViewGroup.LayoutParams params = mSurfaceView.getLayoutParams();
+				params.width = w;
+				params.height = h;
+
+				// Re-draw with the new dimensions
+				mSurfaceView.invalidate();
+				getContainer().requestFocus();
+			}
+		};
+		// If container's height or width are 0 or it has no parent, wait for it drawn/added
+		if (getContainer().getWidth() <= 0 || getContainer().getHeight() <= 0 ||
+				getContainer().getParent() == null) {
+			getContainer().addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+				@Override
+				public void onLayoutChange(View v, int left, int top, int right, int bottom,
+				                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+					if (getContainer().getWidth() > 0 && getContainer().getHeight() > 0 &&
+							getContainer().getParent() != null) {
+						getContainer().removeOnLayoutChangeListener(this);
+						containerUpdater.run();
+					}
+				}
+			});
+		} else {
+			containerUpdater.run();
+		}
 	}
 
 }

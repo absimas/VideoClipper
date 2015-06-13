@@ -33,6 +33,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
@@ -143,26 +144,26 @@ public class MainActivity extends AppCompatActivity
 		setContentView(R.layout.activity_main);
 
 		mToolbar = (Toolbar) findViewById(R.id.toolbar);
-		mViewPager = (ViewPager) findViewById(R.id.view_pager);
-		final PagerPoolAdapter pagerAdapter = new PagerPoolAdapter(getSupportFragmentManager());
-		mViewPager.setAdapter(pagerAdapter);
-		mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-			@Override
-			public void onPageSelected(int position) {
-				Log.e(TAG, "Pager selected: " + position);
-				try {
-					setTitle(mNavDrawerFragment.adapter.getItem(position).getFile().getName());
-				} catch (NullPointerException ignored) {
-					setTitle(VC.getStr(R.string.app_name));
-				}
-			}
-
-			@Override
-			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-
-			@Override
-			public void onPageScrollStateChanged(int state) {}
-		});
+//		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+//		final PagerPoolAdapter pagerAdapter = new PagerPoolAdapter(getSupportFragmentManager());
+//		mViewPager.setAdapter(pagerAdapter);
+//		mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+//			@Override
+//			public void onPageSelected(int position) {
+//				Log.e(TAG, "Pager selected: " + position);
+//				try {
+//					setTitle(mNavDrawerFragment.adapter.getItem(position).getFile().getName());
+//				} catch (NullPointerException ignored) {
+//					setTitle(VC.getStr(R.string.app_name));
+//				}
+//			}
+//
+//			@Override
+//			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+//
+//			@Override
+//			public void onPageScrollStateChanged(int state) {}
+//		});
 
 //		addTooltips();
 		setSupportActionBar(mToolbar);
@@ -175,8 +176,8 @@ public class MainActivity extends AppCompatActivity
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
 		// Set up editor
-//		mEditorFragment = (EditorFragment) getSupportFragmentManager()
-//				.findFragmentById(R.id.editor_fragment);
+		mEditorFragment = (EditorFragment) getSupportFragmentManager()
+				.findFragmentById(R.id.editor_fragment);
 
 //		// Hidden by default
 //		getSupportFragmentManager().beginTransaction()
@@ -188,7 +189,7 @@ public class MainActivity extends AppCompatActivity
 			@Override
 			public void onChanged() {
 				super.onChanged();
-				pagerAdapter.notifyDataSetChanged();
+//				pagerAdapter.notifyDataSetChanged();
 				ListView lv = mNavDrawerFragment.getList();
 				// Make sure we're not in CAB mode (multiple selections)
 				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
@@ -370,6 +371,7 @@ public class MainActivity extends AppCompatActivity
 			super.onBackPressed();
 		}
 	}
+
 
 	public Toolbar getToolbar() {
 		return mToolbar;

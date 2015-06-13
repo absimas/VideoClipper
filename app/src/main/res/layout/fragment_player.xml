@@ -16,13 +16,17 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
   -->
-<com.simas.vc.editor.player.PlayerContainer
+<RelativeLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id="@+id/root"
+	android:id="@+id/player_container"
+	android:focusableInTouchMode="true"
+	android:focusable="true"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent">
+	android:layout_height="match_parent"
+	android:background="#000">
     <SurfaceView
 	    android:id="@+id/player_surface"
+	    android:layout_centerInParent="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
@@ -82,4 +86,4 @@
 		android:src="@drawable/fail"
 		android:visibility="gone"/>
 	<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
-</com.simas.vc.editor.player.PlayerContainer>
+</RelativeLayout>

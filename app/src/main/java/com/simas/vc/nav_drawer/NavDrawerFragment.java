@@ -36,6 +36,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -208,6 +209,14 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	public void setUp(int fragmentId, DrawerLayout drawerLayout) {
 		mFragmentContainerView = getActivity().findViewById(fragmentId);
 		mDrawerLayout = drawerLayout;
+
+		mDrawerLayout.setOnKeyListener(new View.OnKeyListener() {
+			@Override
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				Log.e(TAG, "jibanas draweris " + keyCode);
+				return false;
+			}
+		});
 
 		// Set a custom shadow that overlays the main content when the drawer opens
 		getDrawerLayout().setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);

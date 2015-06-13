@@ -20,6 +20,8 @@ package com.simas.vc.editor.player;
 
 import android.media.MediaPlayer;
 import android.os.Handler;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -116,7 +118,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 			View.OnTouchListener {
 
 		private static final int SHOW_DURATION = 3000;
-		private static final int CURRENT_TIME_RECHECK_INTERVAL = 1000;
+		private static final int CURRENT_TIME_RECHECK_INTERVAL = 300;
 		private final String TAG = getClass().getName();
 
 		private RelativeLayout mContainer;
@@ -204,7 +206,9 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-			seekTo(progress);
+			if (fromUser) {
+				seekTo(progress);
+			}
 		}
 
 		@Override
@@ -227,6 +231,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 			show();
 			return false;
 		}
+
 	}
 
 }

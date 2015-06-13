@@ -19,6 +19,7 @@
 package com.simas.vc;
 
 import android.os.Handler;
+import android.os.Looper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +44,13 @@ public class DelayedHandler {
 	 */
 	public DelayedHandler(Handler handler) {
 		mHandler = handler;
+	}
+
+	/**
+	 * Create a resumable handler. Default state: Paused.
+	 */
+	public DelayedHandler() {
+		mHandler = new Handler(Looper.getMainLooper());
 	}
 
 	/**

@@ -27,6 +27,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.Utils;
@@ -74,93 +75,74 @@ public class EditorFragment extends Fragment {
 			mPreviouslyVisibleTreeChildren = savedInstanceState
 					.getIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN);
 		}
+
+//		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
+//				.findFragmentById(R.id.player_fragment_container);
+//		// Recreate the fragment only if it doesn't exist
+//		if (mPlayerFragment == null) {
+//			mPlayerFragment = new PlayerFragment();
+//			getChildFragmentManager().beginTransaction()
+//					.add(R.id.player_fragment_container, mPlayerFragment)
+//					.commit();
+//		}
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedState) {
 		final View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
 
-		// Create a nested fragment
-		final View playerFragmentContainer = rootView.findViewById(R.id.player_fragment_container);
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
-				.findFragmentById(R.id.player_fragment_container);
-		// Recreate the fragment only if it doesn't exist
-		if (mPlayerFragment == null) {
-			mPlayerFragment = new PlayerFragment();
-			getChildFragmentManager().beginTransaction()
-					.add(R.id.player_fragment_container, mPlayerFragment)
-					.commit();
+				.findFragmentById(R.id.player_fragment);
+
+		final View playerContainer = mPlayerFragment.getContainer();
+
+		ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
+		if (params == null) {
+			params = new LinearLayout.LayoutParams(
+					LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		}
+		if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+			params.height = 0;
+		} else {
+			params.width = 0;
 		}
 
-		// Display a black window while working
-		final ViewGroup root = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
-		final View black = new View(getActivity());
-		black.setBackgroundColor(Color.RED); // ToDo dafuq red? xD
+		playerContainer.setLayoutParams(params);
 
-		// ToDo // Fragment won't be visible when HelperFragment is shown on top.
-		// No need for a black view then.
-		final boolean visibleOnCreation = isVisible();
-		if (visibleOnCreation) {
-			root.addView(black,
-					ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-		}
-
-		// Queue PlayerContainer modifications to when its first measured
-		playerFragmentContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+		// Queue container modifications to when its first measured
+		playerContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
 			@Override
 			public void onLayoutChange(View v, int left, int top, int right, int bottom,
 			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-				playerFragmentContainer.removeOnLayoutChangeListener(this);
-
-				// Show the black view only if it wasn't added yet
-				if (root.getParent() == null) {
-					root.addView(black, ViewGroup.LayoutParams.MATCH_PARENT,
-							ViewGroup.LayoutParams.MATCH_PARENT);
-				}
-
-				playerFragmentContainer.post(new Runnable() {
-					@Override
-					public void run() {
-						// Set width to be equal to height (or the other way round)
-						ViewGroup.LayoutParams params = playerFragmentContainer.getLayoutParams();
-						int width = playerFragmentContainer.getWidth();
-						int height = playerFragmentContainer.getHeight();
-						if (getResources().getConfiguration()
-								.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-							if (height <= 0) {
-								Log.w(TAG, "Height is 0 in landscape! Using screen's height...");
-								params.width = params.height = Utils.getScreenSize().getHeight();
-							} else {
-								params.height = height;
-								//noinspection SuspiciousNameCombination
-								params.width = height;
-							}
-						} else {
-							if (width <= 0) {
-								Log.w(TAG, "Width is 0 in portrait! Using screen's width...");
-								params.width = params.height = Utils.getScreenSize().getWidth();
-							} else {
-								params.width = width;
-								//noinspection SuspiciousNameCombination
-								params.height = width;
-							}
-						}
-						playerFragmentContainer.setLayoutParams(params);
-
-						// Queue the removal of the black view
-						playerFragmentContainer.post(new Runnable() {
-							@Override
-							public void run() {
-								root.removeView(black);
-								if (!visibleOnCreation) {
-									mDelayedHandler.resume();
-								}
-							}
-						});
+				playerContainer.removeOnLayoutChangeListener(this);
+				// Set width to be equal to height (or the other way round)
+				ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
+				int width = playerContainer.getWidth();
+				int height = playerContainer.getHeight();
+				if (getResources().getConfiguration()
+						.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+					if (height <= 0) {
+						Log.w(TAG, "Height is 0 in landscape! Using screen's height...");
+						params.width = params.height = Utils.getScreenSize().getHeight();
+					} else {
+						params.height = height;
+						//noinspection SuspiciousNameCombination
+						params.width = height;
 					}
-				});
+				} else {
+					if (width <= 0) {
+						Log.w(TAG, "Width is 0 in portrait! Using screen's width...");
+						params.width = params.height = Utils.getScreenSize().getWidth();
+					} else {
+						params.width = width;
+						//noinspection SuspiciousNameCombination
+						params.height = width;
+					}
+				}
+				playerContainer.invalidate();
 			}
 		});
+		playerContainer.requestLayout();
 
 		View actions = rootView.findViewById(R.id.editor_actions);
 		mDataMap.put(Data.ACTIONS, actions);
@@ -169,9 +151,7 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.DURATION, actions.findViewById(R.id.duration_value));
 		mDataMap.put(Data.STREAMS, actions.findViewById(R.id.stream_container));
 
-		if (visibleOnCreation) {
-			mDelayedHandler.resume();
-		}
+		mDelayedHandler.resume();
 
 		return rootView;
 	}
