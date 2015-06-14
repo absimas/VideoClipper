@@ -84,6 +84,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:src="@drawable/fail"
-		android:visibility="gone"/>
+		android:visibility="gone"
+		android:contentDescription="@string/dead_smiley"/>
 	<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
 </RelativeLayout>

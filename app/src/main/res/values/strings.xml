@@ -111,4 +111,5 @@
 	<string name="minute_short">m</string>
 	<string name="second_short">s</string>
 	<string name="player_play_button">Player\'s play button</string>
+	<string name="dead_smiley">Dead smiley</string>
 </resources>

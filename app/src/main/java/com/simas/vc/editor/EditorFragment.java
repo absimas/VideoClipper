@@ -88,26 +88,24 @@ public class EditorFragment extends Fragment {
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedState) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle state) {
 		final View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
-
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
 
 		final View playerContainer = mPlayerFragment.getContainer();
 
+		//
 		ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
-		if (params == null) {
-			params = new LinearLayout.LayoutParams(
-					LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		if (params != null) {
+			if (getResources()
+					.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+				params.height = 0;
+			} else {
+				params.width = 0;
+			}
+			playerContainer.setLayoutParams(params);
 		}
-		if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-			params.height = 0;
-		} else {
-			params.width = 0;
-		}
-
-		playerContainer.setLayoutParams(params);
 
 		// Queue container modifications to when its first measured
 		playerContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
@@ -142,7 +140,6 @@ public class EditorFragment extends Fragment {
 				playerContainer.invalidate();
 			}
 		});
-		playerContainer.requestLayout();
 
 		View actions = rootView.findViewById(R.id.editor_actions);
 		mDataMap.put(Data.ACTIONS, actions);
@@ -247,16 +244,6 @@ public class EditorFragment extends Fragment {
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				// ToDo either delay setting the video or
-				// ToDo start using your own video player, FFplay => more customization no lag etc.
-				// ToDo Possibly just use android https://github.com/commonsguy/vidtry
-//				mPlayerFragment.post(new Runnable() {
-//					@Override
-//					public void run() {
-//						mPlayerFragment.setVideoPath(curItem.getFile().getPath());
-//					}
-//				});
-
 				mPlayerFragment.post(new Runnable() {
 					@Override
 					public void run() {

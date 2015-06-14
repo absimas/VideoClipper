@@ -38,7 +38,6 @@
 	both width and height to consume the full space available. -->
 	<android.support.v4.widget.DrawerLayout
 		android:id="@+id/drawer_layout"
-		android:descendantFocusability="afterDescendants"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
 			<!--Editor and helper are on top of each other-->
@@ -61,7 +60,6 @@
 			<!--</RelativeLayout>-->
 		<!--<android.support.v4.view.ViewPager-->
 			<!--android:id="@+id/view_pager"-->
-			<!--android:descendantFocusability="afterDescendants"-->
 			<!--android:layout_width="match_parent"-->
 			<!--android:layout_height="match_parent"/>-->
 		<fragment android:id="@+id/editor_fragment"

@@ -18,12 +18,10 @@
  */
 package com.simas.vc.editor.player;
 
-import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -39,6 +37,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.VideoView;
 
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.R;
@@ -46,10 +45,23 @@ import com.simas.vc.Utils;
 
 import java.io.IOException;
 
-// ToDo onSaveInstanceState: FS, seekPos, playing, controls visibility
+// ToDo test holder modifications and callbacks properly
+// ToDo restore the use of deathOverlay
 
-public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
-		View.OnTouchListener, MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener {
+public class PlayerFragment extends Fragment implements	View.OnTouchListener,
+		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener, SurfaceHolder.Callback {
+
+	/* Instance state variables */
+	private static final String STATE_FULLSCREEN = "state_fullscreen";
+	private static final String STATE_SEEK_POS = "state_seek_pos";
+	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
+	private static final String STATE_PLAYING = "state_player_state";
+
+	/* Full screen variables */
+	private boolean mFullscreen;
+	private LinearLayout.LayoutParams mDefaultContainerParams;
+	private ViewGroup mDefaultContainerParent;
+	private int mDefaultContainerBottomPadding;
 
 	private final String TAG = getClass().getName();
 	private Player mPlayer;
@@ -59,7 +71,7 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 	private ImageView mDeadSmiley;
 	private GestureDetector mGestureDetector;
 	/**
-	 * Handler that runs the queued messages at the end of
+	 * Handler that runs the queued messages when {@link #mContainer} is ready. I.e. at the end of
 	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} and through the post method of
 	 * {@link #mContainer}.
 	 */
@@ -67,20 +79,20 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 
 	@Nullable
 	@Override
-	public View onCreateView(LayoutInflater inflater, final ViewGroup container,
-	                         Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
 		mContainer = (RelativeLayout) inflater.inflate(R.layout.fragment_player, container, false);
-
 		getContainer().setOnTouchListener(this);
 		getContainer().setOnKeyListener(this);
 
 		mDeadSmiley = (ImageView) getContainer().findViewById(R.id.dead_smiley);
 		mSurfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
+		mHolder = mSurfaceView.getHolder();
+		mHolder.addCallback(this);
 
 		mPlayer = new Player(getContainer());
 
 		// Custom listeners to show and hide the dead smiley overlay
-		getPlayer().setOnErrorListener(this);
+		getPlayer().addOnErrorListener(this);
 		getPlayer().addOnPreparedListener(this);
 
 		// Gesture detector for root dialog (to detect double clicks)
@@ -107,13 +119,40 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 						return true;
 					}
 				});
-		mHolder = mSurfaceView.getHolder();
-		mHolder.addCallback(this);
 
-
-		mContainer.post(new Runnable() {
+		getContainer().post(new Runnable() {
 			@Override
 			public void run() {
+				if (savedInstanceState != null) {
+					if (savedInstanceState.getBoolean(STATE_FULLSCREEN, false) && !isFullscreen()) {
+						toggleFullscreen();
+					}
+				}
+
+				getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+					@Override
+					public void onPrepared(MediaPlayer mp) {
+						getPlayer().removeOnPreparedListener(this);
+						if (savedInstanceState != null) {
+							// Playing
+							if (savedInstanceState.getBoolean(STATE_PLAYING, false)) {
+								getPlayer().start();
+							}
+							// Seek
+							final int msec = savedInstanceState.getInt(STATE_SEEK_POS, 0);
+							if (msec > 0) {
+								updatePreview(msec);
+							}
+							// Controls visibility
+							if (savedInstanceState.getBoolean(STATE_CONTROLS_VISIBLE, false)) {
+								getControls().show();
+							} else {
+								getControls().hide();
+							}
+						}
+					}
+				});
+
 				mDelayedHandler.resume();
 			}
 		});
@@ -121,12 +160,48 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 		return mContainer;
 	}
 
-	private boolean mFullscreen;
-	private LinearLayout.LayoutParams mDefaultContainerParams;
-	private ViewGroup mDefaultContainerParent;
-	private int mDefaultContainerBottomPadding;
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		// Fullscreen
+		outState.putBoolean(STATE_FULLSCREEN, isFullscreen());
 
+		// Controls visibility
+		outState.putBoolean(STATE_CONTROLS_VISIBLE, getControls().isVisible());
+
+		// Seek pos
+		int msec = 0;
+		try {
+			msec = getPlayer().getCurrentPosition();
+		} catch (IllegalStateException ignored) {}
+		outState.putInt(STATE_SEEK_POS, msec);
+
+		// Player state
+		outState.putBoolean(STATE_PLAYING, getPlayer().getState() == Player.State.STARTED);
+	}
+
+	/**
+	 * Should be called only when {@link Player} is in a prepared (or higher) state.
+	 * @see
+	 * <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#StateDiagram">
+	 *     MediaPlayer</a>
+	 */
 	void toggleFullscreen() {
+		// Video should be paused while working
+		Player.State state = getPlayer().getState();
+		boolean playing = false;
+		switch (state) {
+			case STARTED:
+				// Pause if started
+				playing = true;
+				getPlayer().pause();
+				break;
+		}
+		final boolean wasPlaying = playing;
+
+		// Hide surface view while doing all the work, this is to make sure it's not being re-drawn
+		mSurfaceView.setVisibility(View.GONE);
+
 		// Toggle state
 		setFullscreen(!isFullscreen());
 
@@ -147,20 +222,19 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 			// Save current bottom padding
 			mDefaultContainerBottomPadding = getContainer().getPaddingBottom();
 
-			// Set bottom padding, so controls don't appear underneath the nav bar
-			getContainer()
-					.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
-							getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
+			// Remove from current parent
+			mDefaultContainerParent = (ViewGroup) getContainer().getParent();
+			mDefaultContainerParent.removeView(getContainer());
 
 			// Set new params
 			ViewGroup.LayoutParams params = getContainer().getLayoutParams();
 			params.width = LinearLayout.LayoutParams.MATCH_PARENT;
 			params.height = LinearLayout.LayoutParams.MATCH_PARENT;
-			getContainer().setLayoutParams(params);
 
-			// Remove from current parent
-			mDefaultContainerParent = (ViewGroup) getContainer().getParent();
-			mDefaultContainerParent.removeView(getContainer());
+			// Set bottom padding, so controls don't appear underneath the nav bar
+			getContainer()
+					.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+							getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
 
 			// Re-measure the SurfaceView
 			getContainer().setRight(0);
@@ -170,7 +244,7 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 			// Add to the root view
 			ViewGroup rootView = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
 			rootView.addView(getContainer()); // Add as last view, so it's on top of everything else
-			mContainer.requestFocus();
+			getContainer().requestFocus();
 		} else {
 			if (Build.VERSION.SDK_INT >= 14) {
 				// For higher APIs remove the low profile mode
@@ -182,6 +256,9 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 			}
 
 			if (mDefaultContainerParams != null && mDefaultContainerParent != null) {
+				// Remove from current parent
+				((ViewGroup)getContainer().getParent()).removeView(getContainer());
+
 				// Restore params
 				getContainer().setLayoutParams(mDefaultContainerParams);
 
@@ -189,9 +266,6 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 				getContainer()
 						.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
 								getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
-
-				// Remove from current parent
-				((ViewGroup)getContainer().getParent()).removeView(getContainer());
 
 				// Re-measure the SurfaceView
 				getContainer().setRight(0);
@@ -203,26 +277,88 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 			}
 		}
 
-		// Parse a preview
-		if (!getPlayer().isPlaying()) {
-			getContainer().post(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						getPlayer().setOnSeekCompleteListener(new MediaPlayer
-								.OnSeekCompleteListener() {
-							@Override
-							public void onSeekComplete(MediaPlayer mp) {
-								getPlayer().setOnSeekCompleteListener(null);
-								getPlayer().start();
-								getPlayer().pause();
-							}
-						});
-						getPlayer().seekTo(getPlayer().getCurrentPosition());
-					} catch (IllegalStateException ignore) {}
-				}
-			});
+		getContainer().post(new Runnable() {
+			@Override
+			public void run() {
+				mSurfaceView.setVisibility(View.VISIBLE);
 
+				Player.State state = getPlayer().getState();
+				switch (state) {
+					case PAUSED: case PREPARED: case STARTED:
+						if (wasPlaying) {
+							getPlayer().start();
+						} else {
+							updatePreview();
+						}
+				}
+			}
+		});
+	}
+
+	/**
+	 * Will update the preview by seeking to the current position. Won't do anything if in
+	 * {@link Player.State#ERROR} state.
+	 */
+	private void updatePreview() {
+		if (getPlayer().getState() != Player.State.ERROR) {
+			updatePreview(getPlayer().getCurrentPosition());
+		}
+	}
+
+	/**
+	 * Update preview to the given time. Won't change the state but will
+	 * {@link MediaPlayer#seekTo(int)} to the given position. Will do nothing if the state is not
+	 * one of: {@link Player.State#PREPARED}, {@link Player.State#STARTED} or
+	 * {@link Player.State#PAUSED}.
+	 * @param msec    time at which the duration should be taken.
+	 */
+	private void updatePreview(final int msec) {
+		switch (getPlayer().getState()) {
+			case PREPARED: case STARTED: case PAUSED:
+				getContainer().post(new Runnable() {
+					@Override
+					public void run() {
+						// Make sure the state hasn't changed while posting
+						switch (getPlayer().getState()) {
+							case PREPARED: case STARTED: case PAUSED:
+								getPlayer().seekTo(msec);
+						}
+					}
+				});
+		}
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		if (getActivity() != null && getActivity().isFinishing()) {
+			getPlayer().release();
+		} else {
+			Player.State state = getPlayer().getState();
+			switch (state) {
+				case PREPARED: case STARTED: case PAUSED:
+					getPlayer().stop();
+			}
+		}
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		getPlayer().release();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		Player.State state = getPlayer().getState();
+		switch (state) {
+			case INITIALIZED: case STOPPED:
+				try {
+					getPlayer().prepare();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
 	}
 
@@ -247,6 +383,7 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 			getPlayer().setDataSource(path);
 			getPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
 			getPlayer().addOnPreparedListener(listener);
+//			getPlayer().setDisplay(mHolder);
 			getPlayer().prepareAsync();
 		} catch (IOException | IllegalStateException e) {
 			e.printStackTrace();
@@ -278,11 +415,6 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 		mDelayedHandler.add(runnable);
 	}
 
-	private void setHolder(SurfaceHolder surfaceHolder) {
-		mHolder = surfaceHolder;
-		getPlayer().setDisplay(mHolder);
-	}
-
 	public Player.Controls getControls() {
 		return getPlayer().getControls();
 	}
@@ -293,21 +425,6 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 
 	public RelativeLayout getContainer() {
 		return mContainer;
-	}
-
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-		setHolder(holder);
-	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		setHolder(holder);
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		setHolder(null);
 	}
 
 	@Override
@@ -375,7 +492,6 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 
 				// Re-draw with the new dimensions
 				mSurfaceView.invalidate();
-				getContainer().requestFocus();
 			}
 		};
 		// If container's height or width are 0 or it has no parent, wait for it drawn/added
@@ -395,6 +511,21 @@ public class PlayerFragment extends Fragment implements SurfaceHolder.Callback,
 		} else {
 			containerUpdater.run();
 		}
+	}
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		getPlayer().setDisplay(holder);
+	}
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+		getPlayer().setDisplay(holder);
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+//		getPlayer().setDisplay(null);
 	}
 
 }

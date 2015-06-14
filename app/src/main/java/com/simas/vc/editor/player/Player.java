@@ -32,6 +32,7 @@ import android.widget.TextView;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 
+import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -41,34 +42,68 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * multiple {@link android.media.MediaPlayer.OnPreparedListener}.
  */
 public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListener,
-		MediaPlayer.OnCompletionListener {
+		MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+
+	public enum State {
+		ERROR, RELEASED, IDLE, INITIALIZED, PREPARING, PREPARED, STARTED, STOPPED, PAUSED
+	}
+
+	private State mState = State.IDLE;
 
 	private final String TAG = getClass().getName();
 	private final CopyOnWriteArraySet<OnPreparedListener> mPrepareListeners =
 			new CopyOnWriteArraySet<>();
+	private final CopyOnWriteArraySet<OnErrorListener> mErrorListeners = new CopyOnWriteArraySet<>();
 	private Controls mControls;
 
 	public Player(View container) {
 		super.setOnPreparedListener(this);
+		super.setOnErrorListener(this);
 		setOnCompletionListener(this);
 		mControls = new Controls(container);
+	}
+
+	private synchronized void setState(State state) {
+		mState = state;
+	}
+
+	public synchronized State getState() {
+		return mState;
 	}
 
 	@Override
 	public void start() throws IllegalStateException {
 		super.start();
+		setState(State.STARTED);
 		getControls().setPlaying(true);
 	}
 
 	@Override
 	public void stop() throws IllegalStateException {
 		super.stop();
+		setState(State.STOPPED);
 		getControls().setPlaying(false);
 	}
 
 	@Override
 	public void pause() throws IllegalStateException {
 		super.pause();
+		setState(State.PAUSED);
+		getControls().setPlaying(false);
+	}
+
+	@Override
+	public void release() {
+		super.release();
+		if (getState().ordinal() < State.RELEASED.ordinal())
+		setState(State.RELEASED);
+		getControls().setPlaying(false);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+		setState(State.IDLE);
 		getControls().setPlaying(false);
 	}
 
@@ -80,6 +115,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 
 	@Override
 	public void onPrepared(MediaPlayer mp) {
+		setState(State.PREPARED);
 		getControls().setCurrent(0);
 		getControls().setTotal(mp.getDuration());
 		getControls().setPlaying(false);
@@ -88,6 +124,27 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		for (OnPreparedListener listener : mPrepareListeners) {
 			listener.onPrepared(mp);
 		}
+	}
+
+	@Override
+	public boolean onError(MediaPlayer mp, int what, int extra) {
+		setState(State.ERROR);
+		for (OnErrorListener listener : mErrorListeners) {
+			listener.onError(mp, what, extra);
+		}
+		return false;
+	}
+
+	@Override
+	public void prepareAsync() throws IllegalStateException {
+		setState(State.PREPARING);
+		super.prepareAsync();
+	}
+
+	@Override
+	public void prepare() throws IOException, IllegalStateException {
+		setState(State.PREPARING);
+		super.prepare();
 	}
 
 	@Override
@@ -108,10 +165,24 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		mPrepareListeners.remove(listener);
 	}
 
+	public void addOnErrorListener(OnErrorListener listener) {
+		mErrorListeners.add(listener);
+	}
+
+	public void removeOnErrorListener(OnErrorListener listener) {
+		mErrorListeners.remove(listener);
+	}
+
 	@Override
 	public void setOnPreparedListener(OnPreparedListener listener) {
 		throw new IllegalStateException("Player cannot have its prepared listener set! Use " +
 				"addOnPreparedListener instead.");
+	}
+
+	@Override
+	public void setOnErrorListener(OnErrorListener listener) {
+		throw new IllegalStateException("Player cannot have its error listener set! Use " +
+				"addOnErrorListener instead.");
 	}
 
 	public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickListener,
@@ -153,8 +224,9 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		public void setPlaying(boolean isPlaying) {
 			mSeekHandler.removeCallbacksAndMessages(null);
 			if (isPlaying) {
-				mSeekHandler.postDelayed(new Runnable(){
-					public void run(){
+				mSeekHandler.postDelayed(new Runnable() {
+					@Override
+					public void run() {
 						mSeekHandler.postDelayed(this, CURRENT_TIME_RECHECK_INTERVAL);
 						setCurrent(getCurrentPosition());
 					}
@@ -167,8 +239,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		}
 
 		/**
-		 * Show controls and dismisses them in {@link #SHOW_DURATION}. If the container is
-		 * disabled, do nothing.
+		 * Show controls and dismisses them in {@link #SHOW_DURATION}.
 		 */
 		public void show() {
 			mVisibilityHandler.removeCallbacksAndMessages(null);

@@ -18,11 +18,8 @@
  */
 package com.simas.vc.nav_drawer;
 
-import android.animation.ObjectAnimator;
-import android.app.AlertDialog;
 import android.database.DataSetObserver;
 import android.graphics.Color;
-import android.os.Environment;
 import android.app.Activity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -36,13 +33,14 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
+import android.widget.VideoView;
+
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.VC;
@@ -155,7 +153,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
 				int width  = header.getWidth(),
 						height = header.getHeight();
-				Log.e(TAG, "got: " + width + " " + height);
 				if (width > 0 && height > 0) {
 					header.removeOnLayoutChangeListener(this);
 					sPreviewSize = (width > height) ? width : height;
@@ -209,14 +206,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	public void setUp(int fragmentId, DrawerLayout drawerLayout) {
 		mFragmentContainerView = getActivity().findViewById(fragmentId);
 		mDrawerLayout = drawerLayout;
-
-		mDrawerLayout.setOnKeyListener(new View.OnKeyListener() {
-			@Override
-			public boolean onKey(View v, int keyCode, KeyEvent event) {
-				Log.e(TAG, "jibanas draweris " + keyCode);
-				return false;
-			}
-		});
 
 		// Set a custom shadow that overlays the main content when the drawer opens
 		getDrawerLayout().setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
