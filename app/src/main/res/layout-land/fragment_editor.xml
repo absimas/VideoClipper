@@ -30,10 +30,11 @@
     tools:context=".EditorFragment">
     <fragment
         android:id="@+id/player_fragment"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
         android:name="com.simas.vc.editor.player.PlayerFragment"
-        tools:layout="@layout/fragment_player"/>
+        tools:layout="@layout/fragment_player"
+        tools:ignore="Suspicious0dp"/>
 
     <!--Actions menu-->
     <ScrollView

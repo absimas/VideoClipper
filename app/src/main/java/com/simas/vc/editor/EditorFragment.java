@@ -61,8 +61,8 @@ public class EditorFragment extends Fragment {
 	}
 	private Map<Data, View> mDataMap = new HashMap<>();
 	/**
-	 * Handler runs all the messages posted to it only when the fragment is ready, i.e. at the end
-	 * of {@code onCreateView}. Messages can be added by calling fragment's {@code post} method.
+	 * Handler runs all the messages posted to it only when the fragment layout is ready, i.e. at
+	 * the end of {@code onCreateView}.
 	 */
 	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
 
@@ -75,16 +75,6 @@ public class EditorFragment extends Fragment {
 			mPreviouslyVisibleTreeChildren = savedInstanceState
 					.getIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN);
 		}
-
-//		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
-//				.findFragmentById(R.id.player_fragment_container);
-//		// Recreate the fragment only if it doesn't exist
-//		if (mPlayerFragment == null) {
-//			mPlayerFragment = new PlayerFragment();
-//			getChildFragmentManager().beginTransaction()
-//					.add(R.id.player_fragment_container, mPlayerFragment)
-//					.commit();
-//		}
 	}
 
 	@Override
@@ -93,21 +83,8 @@ public class EditorFragment extends Fragment {
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
 
+		// Queue container modifications until it's measured
 		final View playerContainer = mPlayerFragment.getContainer();
-
-		//
-		ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
-		if (params != null) {
-			if (getResources()
-					.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-				params.height = 0;
-			} else {
-				params.width = 0;
-			}
-			playerContainer.setLayoutParams(params);
-		}
-
-		// Queue container modifications to when its first measured
 		playerContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
 			@Override
 			public void onLayoutChange(View v, int left, int top, int right, int bottom,
