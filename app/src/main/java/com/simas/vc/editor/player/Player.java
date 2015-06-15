@@ -20,26 +20,25 @@ package com.simas.vc.editor.player;
 
 import android.media.MediaPlayer;
 import android.os.Handler;
-import android.util.Log;
-import android.view.KeyEvent;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
 import com.simas.vc.R;
 import com.simas.vc.Utils;
-
 import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Notes:
- * - Do not call {@link #setOnPreparedListener(OnPreparedListener)} for this Player.
- * Instead use {@link #addOnPreparedListener(OnPreparedListener)}. This allows the use of
- * multiple {@link android.media.MediaPlayer.OnPreparedListener}.
+ * - Do not call {@link #setOnPreparedListener(OnPreparedListener)} and
+ * {@link #setOnErrorListener(OnErrorListener)}. Instead use
+ * {@link #addOnPreparedListener(OnPreparedListener)} and
+ * {@link #addOnErrorListener(OnErrorListener)} accordingly.
  */
 public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListener,
 		MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
@@ -55,6 +54,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 			new CopyOnWriteArraySet<>();
 	private final CopyOnWriteArraySet<OnErrorListener> mErrorListeners = new CopyOnWriteArraySet<>();
 	private Controls mControls;
+	private OnStateChangedListener mStateListener;
 
 	public Player(View container) {
 		super.setOnPreparedListener(this);
@@ -63,8 +63,12 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		mControls = new Controls(container);
 	}
 
-	private synchronized void setState(State state) {
-		mState = state;
+	private synchronized void setState(State newState) {
+		final State previousState = mState;
+		mState = newState;
+		if (mStateListener != null) {
+			mStateListener.onStateChanged(previousState, newState);
+		}
 	}
 
 	public synchronized State getState() {
@@ -149,8 +153,8 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
+		setState(State.PAUSED);
 		getControls().setPlaying(false);
-		// ToDo after this, when setPlaying(true) is called, the video should be seeked to start manually
 	}
 
 	public Controls getControls() {
@@ -183,6 +187,14 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	public void setOnErrorListener(OnErrorListener listener) {
 		throw new IllegalStateException("Player cannot have its error listener set! Use " +
 				"addOnErrorListener instead.");
+	}
+
+	public void setOnStateChangedListener(OnStateChangedListener listener) {
+		mStateListener = listener;
+	}
+
+	public interface OnStateChangedListener {
+		void onStateChanged(@Nullable State previousState, @NonNull State newState);
 	}
 
 	public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickListener,

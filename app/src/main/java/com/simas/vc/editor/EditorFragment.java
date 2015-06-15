@@ -19,7 +19,6 @@
 package com.simas.vc.editor;
 
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -27,7 +26,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.Utils;
@@ -197,6 +195,10 @@ public class EditorFragment extends Fragment {
 		}
 	}
 
+	public PlayerFragment getPlayer() {
+		return mPlayerFragment;
+	}
+
 	/**
 	 * Update fields to match {@link #mCurrentItem}.
 	 */
@@ -224,6 +226,7 @@ public class EditorFragment extends Fragment {
 				mPlayerFragment.post(new Runnable() {
 					@Override
 					public void run() {
+						mPlayerFragment.setPreview(curItem.getPreview());
 						mPlayerFragment.setVideo(curItem.getFile().getPath());
 					}
 				});

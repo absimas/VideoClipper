@@ -18,10 +18,12 @@
  */
 package com.simas.vc.editor.player;
 
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -37,7 +39,6 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.VideoView;
 
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.R;
@@ -49,7 +50,7 @@ import java.io.IOException;
 // ToDo restore the use of deathOverlay
 
 public class PlayerFragment extends Fragment implements	View.OnTouchListener,
-		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener, SurfaceHolder.Callback {
+		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener, SurfaceHolder.Callback, Player.OnStateChangedListener {
 
 	/* Instance state variables */
 	private static final String STATE_FULLSCREEN = "state_fullscreen";
@@ -69,7 +70,13 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mHolder;
 	private ImageView mDeadSmiley;
+	private ImageView mPreview;
 	private GestureDetector mGestureDetector;
+
+	/**
+	 * The preview visibility state. False by default.
+	 */
+	private boolean mPreviewVisible;
 	/**
 	 * Handler that runs the queued messages when {@link #mContainer} is ready. I.e. at the end of
 	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} and through the post method of
@@ -85,6 +92,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		getContainer().setOnKeyListener(this);
 
 		mDeadSmiley = (ImageView) getContainer().findViewById(R.id.dead_smiley);
+		mPreview = (ImageView) getContainer().findViewById(R.id.preview);
 		mSurfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
 		mHolder = mSurfaceView.getHolder();
 		mHolder.addCallback(this);
@@ -94,6 +102,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// Custom listeners to show and hide the dead smiley overlay
 		getPlayer().addOnErrorListener(this);
 		getPlayer().addOnPreparedListener(this);
+		getPlayer().setOnStateChangedListener(this);
 
 		// Gesture detector for root dialog (to detect double clicks)
 		mGestureDetector = new GestureDetector(getActivity(),
@@ -370,6 +379,59 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mFullscreen = fullscreen;
 	}
 
+	public void setPreview(Bitmap preview) {
+		mPreview.setImageBitmap(preview);
+	}
+
+	/**
+	 * Set the preview visibility state. Unlike {@link #setPreviewTemporarilyVisible(boolean)},
+	 * this method will also save the preview visibility state to {@link #mPreviewVisible}.
+	 */
+	public void setPreviewVisible(boolean visible) {
+		mPreviewVisible = visible;
+		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
+	}
+
+	/**
+	 * Set the video preview visibility but don't save the state. This allows to return to the
+	 * previous state with {@link #resetPreviewVisibility()}. <b>Must</b> call
+	 * {@link #resetPreviewVisibility()} when done with the temporary visibility.
+	 */
+	public void setPreviewTemporarilyVisible(boolean visible) {
+		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
+	}
+
+	/**
+	 * Reset the preview visibility to its saved state.
+	 * @see #mPreviewVisible
+	 */
+	public void resetPreviewVisibility() {
+		setPreviewTemporarilyVisible(mPreviewVisible);
+	}
+
+	@Override
+	public void onStateChanged(@Nullable Player.State previous, @NonNull Player.State newState) {
+		// hide preview in: STARTED, ERROR, RELEASED, PAUSED
+		// show preview in: STOPPED, PREPARED, PREPARING, IDLE, INITIALIZED
+		boolean show;
+		switch (newState) {
+			case STARTED: case ERROR: case RELEASED: case PAUSED:
+				show = false;
+				break;
+			default:
+				show = true;
+		}
+
+		if (mPreviewVisible != (mPreview.getVisibility() == View.VISIBLE)) {
+			// If temporarily invisible/visible, only change the visibility flag.
+			// Afterwards, when reset is called, the real state will be used.
+			mPreviewVisible = show;
+		} else {
+			// Otherwise, we are free to change the visibility now
+			setPreviewVisible(show);
+		}
+	}
+
 	public void setVideo(String path) {
 		MediaPlayer.OnPreparedListener listener = new MediaPlayer.OnPreparedListener() {
 			@Override
@@ -383,7 +445,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			getPlayer().setDataSource(path);
 			getPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
 			getPlayer().addOnPreparedListener(listener);
-//			getPlayer().setDisplay(mHolder);
 			getPlayer().prepareAsync();
 		} catch (IOException | IllegalStateException e) {
 			e.printStackTrace();
@@ -527,5 +588,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	public void surfaceDestroyed(SurfaceHolder holder) {
 //		getPlayer().setDisplay(null);
 	}
+
 
 }

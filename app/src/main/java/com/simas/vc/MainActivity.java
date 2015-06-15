@@ -21,9 +21,6 @@ package com.simas.vc;
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.database.DataSetObserver;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
@@ -33,32 +30,30 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
+import android.view.ViewGroup;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.VideoView;
 
 import com.simas.vc.background_tasks.FFmpeg;
+import com.simas.vc.editor.player.Player;
+import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 // ToDo use dimensions in xml instead of hard-coded values
-// ToDo "add items" TextView is visibile for a brief moment on screen rotation
+// ToDo link onPageScrolled with drawer list's onScroll
+// ToDo empty view for ViewPager
+// ToDo properly link drawer and viewPager adapters. rotation causes a crash.
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -77,8 +72,7 @@ public class MainActivity extends AppCompatActivity
 
 	private class PagerPoolAdapter extends FragmentStatePagerAdapter {
 
-		private final Fragment[] mFragmentPool = new Fragment[2];
-		private int mUsedFragmentIndex = -1;
+		private SparseArray<Fragment> mFragments = new SparseArray<>();
 
 		public PagerPoolAdapter(FragmentManager fm) {
 			super(fm);
@@ -86,37 +80,9 @@ public class MainActivity extends AppCompatActivity
 
 		@Override
 		public Fragment getItem(final int position) {
-//			Fragment available = null;
-//			for (int i=0; i<mFragmentPool.length; ++i) {
-//				if (mFragmentPool[i] == null) {
-//					// Lazy instantiation
-//					available = mFragmentPool[i] = new EditorFragment();
-//					// This fragment is used
-//					mUsedFragmentIndex = i;
-//					// Break the fragment pool loop
-//					break;
-//				} else {
-//					if (mUsedFragmentIndex != i) {
-//						// Use the un-used and instantiated fragment
-//						available = mFragmentPool[i];
-//						mUsedFragmentIndex = i;
-//						break;
-//					}
-//				}
-//			}
-//
-//
-//			if (available == null) {
-//				throw new IllegalStateException("Error: there are no fragments available in the " +
-//						"pool!");
-//			} else if (!(available instanceof EditorFragment)) {
-//				throw new IllegalStateException("Error: the fragment inside the pool is not an " +
-//						"EditorFragment!");
-//			}
+			final EditorFragment editor = new EditorFragment();
+			mFragments.put(position, editor);
 
-			Log.e(TAG, "getItem: " + position);
-
-			final EditorFragment editor = (EditorFragment) new EditorFragment();
 			editor.post(new Runnable() {
 				@Override
 				public void run() {
@@ -124,8 +90,21 @@ public class MainActivity extends AppCompatActivity
 				}
 			});
 
-
 			return editor;
+		}
+
+		@Override
+		public void destroyItem(ViewGroup container, int position, Object object) {
+			super.destroyItem(container, position, object);
+			mFragments.put(position, null);
+		}
+
+		/**
+		 * Returns the fragment associated with this position or null if the fragment hasn't been
+		 * set yet or was destroyed.
+		 */
+		public Fragment getCreatedItem(int position) {
+			return mFragments.get(position);
 		}
 
 		@Override
@@ -144,26 +123,115 @@ public class MainActivity extends AppCompatActivity
 		setContentView(R.layout.activity_main);
 
 		mToolbar = (Toolbar) findViewById(R.id.toolbar);
-//		mViewPager = (ViewPager) findViewById(R.id.view_pager);
-//		final PagerPoolAdapter pagerAdapter = new PagerPoolAdapter(getSupportFragmentManager());
-//		mViewPager.setAdapter(pagerAdapter);
-//		mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-//			@Override
-//			public void onPageSelected(int position) {
-//				Log.e(TAG, "Pager selected: " + position);
-//				try {
-//					setTitle(mNavDrawerFragment.adapter.getItem(position).getFile().getName());
-//				} catch (NullPointerException ignored) {
-//					setTitle(VC.getStr(R.string.app_name));
-//				}
-//			}
-//
-//			@Override
-//			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-//
-//			@Override
-//			public void onPageScrollStateChanged(int state) {}
-//		});
+		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+		final PagerPoolAdapter pagerAdapter = new PagerPoolAdapter(getSupportFragmentManager());
+		mViewPager.setAdapter(pagerAdapter);
+		mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+			private int mPosition;
+			private float mPositionOffset;
+
+			@Override
+			public void onPageSelected(int position) {
+				try {
+					setTitle(mNavDrawerFragment.adapter.getItem(position).getFile().getName());
+				} catch (NullPointerException ignored) {
+					setTitle(VC.getStr(R.string.app_name));
+				}
+			}
+
+			@Override
+			public void onPageScrolled(int position, float positionOffset, int positionOffsetPxs) {
+				final float previousOffset = mPositionOffset;
+				mPosition = position;
+				mPositionOffset = positionOffset;
+				// onPageScrollStateChanged ignores 0 offsets which would mean an invalid drag.
+				// However, it might change to a valid offset. Then, a re-invoke is necessary.
+				if (previousOffset == 0 && previousOffset != positionOffset) {
+					onPageScrollStateChanged(ViewPager.SCROLL_STATE_DRAGGING);
+				}
+			}
+
+			@Override
+			public void onPageScrollStateChanged(int state) {
+				Fragment fragment;
+				switch (state) {
+					case ViewPager.SCROLL_STATE_IDLE:
+						// Hide player preview for currently visible page
+						fragment = pagerAdapter.getCreatedItem(mPosition);
+						if (fragment != null && fragment instanceof EditorFragment) {
+							final EditorFragment editor = (EditorFragment) fragment;
+							editor.post(new Runnable() {
+								@Override
+								public void run() {
+									final PlayerFragment player = editor.getPlayer();
+									if (player != null) {
+										player.post(new Runnable() {
+											@Override
+											public void run() {
+												player.resetPreviewVisibility();
+											}
+										});
+									}
+								}
+							});
+						}
+						break;
+					case ViewPager.SCROLL_STATE_DRAGGING:
+						// Ignore 0 offset to avoid invalid drags
+						if (mPositionOffset == 0) return;
+
+						// Show player preview for currently visible page
+						fragment = pagerAdapter.getCreatedItem(mPosition);
+						if (fragment != null && fragment instanceof EditorFragment) {
+							final EditorFragment editor = (EditorFragment) fragment;
+							editor.post(new Runnable() {
+								@Override
+								public void run() {
+									final PlayerFragment player = editor.getPlayer();
+									if (player != null) {
+										player.post(new Runnable() {
+											@Override
+											public void run() {
+												if (player.getPlayer().getState() ==
+														Player.State.STARTED) {
+													player.getPlayer().pause();
+												}
+												player.setPreviewTemporarilyVisible(true);
+											}
+										});
+									}
+								}
+							});
+						}
+
+						// Show player preview for the next visible page
+						int nextPosition = (mPositionOffset > 0) ? mPosition + 1 : mPosition - 1;
+						fragment = pagerAdapter.getCreatedItem(nextPosition);
+						if (fragment != null && fragment instanceof EditorFragment) {
+							final EditorFragment editor = (EditorFragment) fragment;
+							editor.post(new Runnable() {
+								@Override
+								public void run() {
+									final PlayerFragment player = editor.getPlayer();
+									if (player != null) {
+										player.post(new Runnable() {
+											@Override
+											public void run() {
+												if (player.getPlayer().getState() ==
+														Player.State.STARTED) {
+													player.getPlayer().pause();
+												}
+												player.setPreviewTemporarilyVisible(true);
+											}
+										});
+									}
+								}
+							});
+						}
+						break;
+				}
+			}
+		});
 
 //		addTooltips();
 		setSupportActionBar(mToolbar);
@@ -175,9 +243,9 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setUp(R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
-		// Set up editor
-		mEditorFragment = (EditorFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.editor_fragment);
+//		// Set up editor
+//		mEditorFragment = (EditorFragment) getSupportFragmentManager()
+//				.findFragmentById(R.id.editor_fragment);
 
 //		// Hidden by default
 //		getSupportFragmentManager().beginTransaction()
@@ -189,7 +257,9 @@ public class MainActivity extends AppCompatActivity
 			@Override
 			public void onChanged() {
 				super.onChanged();
-//				pagerAdapter.notifyDataSetChanged();
+				// Connect drawer list and pager adapters
+				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
+				pagerAdapter.notifyDataSetChanged();
 				ListView lv = mNavDrawerFragment.getList();
 				// Make sure we're not in CAB mode (multiple selections)
 				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
@@ -203,8 +273,16 @@ public class MainActivity extends AppCompatActivity
 			}
 		});
 
-		// ToDo default item test
-//		mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//		// ToDo default item test
+//		new Handler().postDelayed(new Runnable() {
+//			@Override
+//			public void run() {
+//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//			}
+//		}, 1000);
 	}
 
 	/**

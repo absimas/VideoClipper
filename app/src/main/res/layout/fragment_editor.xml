@@ -41,7 +41,6 @@
             tools:layout="@layout/fragment_player"
             tools:ignore="Suspicious0dp"/>
 
-		<!--Actions menu-->
 		<include layout="@layout/editor_actions"/>
 	</LinearLayout>
 </ScrollView>

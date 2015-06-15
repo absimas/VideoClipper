@@ -30,6 +30,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+	<!--Preview overlay to hide the surface. Invisible by default.-->
+	<ImageView
+		android:background="#000"
+		android:id="@+id/preview"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:contentDescription="@string/dead_smiley"
+		android:visibility="gone"/>
+
     <RelativeLayout
         android:id="@+id/player_controls"
         android:layout_width="match_parent"
@@ -80,6 +89,7 @@
     </RelativeLayout>
 
 	<ImageView
+		android:background="#000"
 		android:id="@+id/dead_smiley"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
