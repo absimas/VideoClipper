@@ -44,9 +44,9 @@ When first compiling this library you need to complete a few steps:
         	}
         */
         
-**Note:** Code in step 3 needs to be uncommented only when:
-- You're compiling for the first time (and lib still doesn't exist)
-- You've made changes in the native source code, e.g. `vc.c`
+    **Note:** This code needs to be uncommented only when:
+    - You're compiling for the first time (and lib still doesn't exist)
+    - You've made changes in the native source code, e.g. `vc.c`
 
 ## Functionality
 Currently the app can accomplish the following:
