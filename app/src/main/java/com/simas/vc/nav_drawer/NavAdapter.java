@@ -29,13 +29,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+
+import com.simas.vc.MainActivity;
+import com.simas.vc.ObservableSynchronizedList;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.VC;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 // ToDo choosing a failed item is permitted and the editor doesn't get updated.
 	// should display an error message when selected but previous selection shouldn't be changed
@@ -47,10 +46,8 @@ import java.util.List;
 public class NavAdapter extends BaseAdapter {
 
 	private final String TAG = getClass().getName();
-	private Context mContext;
 	private LayoutInflater mInflater;
 	private ListView mListView;
-	private List<NavItem> mItems = new ArrayList<>();
 
 	private static class ViewHolder {
 		private ImageView mImageView;
@@ -107,86 +104,28 @@ public class NavAdapter extends BaseAdapter {
 	/**
 	 * Default constructor, creating an empty adapter
 	 */
-	public NavAdapter(Context context) {
-		initForContext(context);
-	}
-
-	public void initForContext(Context ctx) {
-		mContext = ctx;
-		mInflater = LayoutInflater.from(mContext);
-	}
-
-	/**
-	 * Append given items to the list. If new items actually provided, notify the ListView.
-	 * @param items    items to be appended
-	 */
-	public void addItems(NavItem... items) {
-		addItems(Arrays.asList(items));
-	}
-
-	/**
-	 * Append given items to the list. If new items actually provided, notify the ListView.
-	 * @param items    items to be appended
-	 */
-	public void addItems(List<NavItem> items) {
-		if (items != null && items.size() > 0) {
-			mItems.addAll(items);
-		}
-	}
-
-	public void removeItem(NavItem item) {
-		mItems.remove(item);
-	}
-
-	/**
-	 * Change the old items with the new ones. If new items actually provided, notify the ListView.
-	 * @param items    items to be initialized with (can be {@code null})
-	 */
-	public void changeItems(NavItem... items) {
-		changeItems(Arrays.asList(items));
-	}
-
-	/**
-	 * Change the old items with the new ones. If new items actually provided, notify the ListView.
-	 * @param items    items to be initialized with (can be {@code null})
-	 */
-	public void changeItems(List<NavItem> items) {
-		if (items != null && items.size() > 0) {
-			mItems = items;
-		} else {
-			mItems.clear();
-		}
-	}
-
-	public void addItem(NavItem item) {
-		if (mItems == null) {
-			// Init array if necessary
-			mItems = new ArrayList<>();
-		}
-		mItems.add(item);
-	}
-
-	public void attachToList(ListView listView) {
+	public NavAdapter(Context context, ListView listView) {
+		mInflater = LayoutInflater.from(context);
 		mListView = listView;
-	}
 
+		// Register a listener on the sItems
+		final String NAV_ADAPTER_OBSERVER = "nav_adapter_observer";
+		MainActivity.sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+			@Override
+			public void onChanged() {
+				notifyDataSetChanged();
+			}
+		}, NAV_ADAPTER_OBSERVER);
+	}
 
 	@Override
 	public int getCount() {
-		return (mItems == null) ? 0 : mItems.size();
+		return MainActivity.sItems.size();
 	}
 
 	@Override
 	public NavItem getItem(int position) {
-		if (getCount() <= position) {
-			return null;
-		} else {
-			return mItems.get(position);
-		}
-	}
-
-	public List<NavItem> getItems() {
-		return mItems;
+		return MainActivity.sItems.get(position);
 	}
 
 	@Override
@@ -266,10 +205,6 @@ public class NavAdapter extends BaseAdapter {
 		holder.listenTo(item);
 
 		return convertView;
-	}
-
-	private Context getContext() {
-		return mContext;
 	}
 
 	private LayoutInflater getInflater() {

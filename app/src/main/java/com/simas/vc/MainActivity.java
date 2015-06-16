@@ -20,40 +20,36 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
-import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.simas.vc.background_tasks.FFmpeg;
-import com.simas.vc.editor.player.Player;
-import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
+import com.simas.vc.pager.PagerAdapter;
+import com.simas.vc.pager.PagerScrollListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
 
-// ToDo use dimensions in xml instead of hard-coded values
+// ToDo when restoring instance state, should probly call sItems.notifyChanged() to invoke listeners
+// ToDo only a single MediaPlayer should be allocated at once. I.e. always call release when changing pages
+	// Use a single MediaPlayer throughout every page
 // ToDo link onPageScrolled with drawer list's onScroll
 // ToDo empty view for ViewPager
-// ToDo properly link drawer and viewPager adapters. rotation causes a crash.
+// ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
+// ToDo use dimensions in xml instead of hard-coded values
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -61,185 +57,76 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity
 		implements NavDrawerFragment.NavigationDrawerCallbacks {
 
+	private static final String STATE_ITEMS = "items_list";
 	private final String TAG = getClass().getName();
-	/**
-	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
-	 */
 	private NavDrawerFragment mNavDrawerFragment;
 	private EditorFragment mEditorFragment;
 	private Toolbar mToolbar;
 	private ViewPager mViewPager;
+	/**
+	 * A list that contains all the added items, shared throughout the app. It's used by
+	 * {@link NavDrawerFragment}, {@link com.simas.vc.nav_drawer.NavAdapter},
+	 * {@link PagerAdapter} and individual {@link NavItem}s.
+	 */
+	public static ObservableSynchronizedList sItems = new ObservableSynchronizedList();
 
-	private class PagerPoolAdapter extends FragmentStatePagerAdapter {
-
-		private SparseArray<Fragment> mFragments = new SparseArray<>();
-
-		public PagerPoolAdapter(FragmentManager fm) {
-			super(fm);
-		}
-
-		@Override
-		public Fragment getItem(final int position) {
-			final EditorFragment editor = new EditorFragment();
-			mFragments.put(position, editor);
-
-			editor.post(new Runnable() {
-				@Override
-				public void run() {
-					editor.setCurrentItem(mNavDrawerFragment.adapter.getItem(position));
+	public boolean isConcatenatable() {
+		if (sItems == null) {
+			// Adapter not available yet
+			return false;
+		} else if (sItems.size() < 2) {
+			// There must be at least 2 videos to concatenate
+			return false;
+		} else {
+			// Loop and look for invalid items
+			for (NavItem item : sItems) {
+				if (item.getState() != NavItem.State.VALID) {
+					return false;
 				}
-			});
-
-			return editor;
-		}
-
-		@Override
-		public void destroyItem(ViewGroup container, int position, Object object) {
-			super.destroyItem(container, position, object);
-			mFragments.put(position, null);
-		}
-
-		/**
-		 * Returns the fragment associated with this position or null if the fragment hasn't been
-		 * set yet or was destroyed.
-		 */
-		public Fragment getCreatedItem(int position) {
-			return mFragments.get(position);
-		}
-
-		@Override
-		public int getCount() {
-			if (mNavDrawerFragment != null && mNavDrawerFragment.adapter != null) {
-				return mNavDrawerFragment.adapter.getCount();
-			} else {
-				return 0;
 			}
 		}
+		return true;
 	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Restore items if available from onSaveInstanceState
+		if (savedInstanceState != null) {
+			ArrayList<NavItem> items = savedInstanceState.getParcelableArrayList(STATE_ITEMS);
+			if (items != null) {
+				// Remove previously set observers
+				sItems.unregisterAllObservers();
+				sItems = new ObservableSynchronizedList();
+				sItems.addAll(items);
+			}
+		}
+
 		setContentView(R.layout.activity_main);
 
+		/* Toolbar */
 		mToolbar = (Toolbar) findViewById(R.id.toolbar);
-		mViewPager = (ViewPager) findViewById(R.id.view_pager);
-		final PagerPoolAdapter pagerAdapter = new PagerPoolAdapter(getSupportFragmentManager());
-		mViewPager.setAdapter(pagerAdapter);
-		mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-			private int mPosition;
-			private float mPositionOffset;
+		setSupportActionBar(mToolbar);
+//		addTooltips();
 
+		/* Pager */
+		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+		final PagerAdapter pagerAdapter = new PagerAdapter(getSupportFragmentManager());
+
+		mViewPager.addOnPageChangeListener(new PagerScrollListener(this, pagerAdapter, mViewPager));
+		mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
 			@Override
 			public void onPageSelected(int position) {
-				try {
-					setTitle(mNavDrawerFragment.adapter.getItem(position).getFile().getName());
-				} catch (NullPointerException ignored) {
-					setTitle(VC.getStr(R.string.app_name));
-				}
-			}
-
-			@Override
-			public void onPageScrolled(int position, float positionOffset, int positionOffsetPxs) {
-				final float previousOffset = mPositionOffset;
-				mPosition = position;
-				mPositionOffset = positionOffset;
-				// onPageScrollStateChanged ignores 0 offsets which would mean an invalid drag.
-				// However, it might change to a valid offset. Then, a re-invoke is necessary.
-				if (previousOffset == 0 && previousOffset != positionOffset) {
-					onPageScrollStateChanged(ViewPager.SCROLL_STATE_DRAGGING);
-				}
-			}
-
-			@Override
-			public void onPageScrollStateChanged(int state) {
-				Fragment fragment;
-				switch (state) {
-					case ViewPager.SCROLL_STATE_IDLE:
-						// Hide player preview for currently visible page
-						fragment = pagerAdapter.getCreatedItem(mPosition);
-						if (fragment != null && fragment instanceof EditorFragment) {
-							final EditorFragment editor = (EditorFragment) fragment;
-							editor.post(new Runnable() {
-								@Override
-								public void run() {
-									final PlayerFragment player = editor.getPlayer();
-									if (player != null) {
-										player.post(new Runnable() {
-											@Override
-											public void run() {
-												player.resetPreviewVisibility();
-											}
-										});
-									}
-								}
-							});
-						}
-						break;
-					case ViewPager.SCROLL_STATE_DRAGGING:
-						// Ignore 0 offset to avoid invalid drags
-						if (mPositionOffset == 0) return;
-
-						// Show player preview for currently visible page
-						fragment = pagerAdapter.getCreatedItem(mPosition);
-						if (fragment != null && fragment instanceof EditorFragment) {
-							final EditorFragment editor = (EditorFragment) fragment;
-							editor.post(new Runnable() {
-								@Override
-								public void run() {
-									final PlayerFragment player = editor.getPlayer();
-									if (player != null) {
-										player.post(new Runnable() {
-											@Override
-											public void run() {
-												if (player.getPlayer().getState() ==
-														Player.State.STARTED) {
-													player.getPlayer().pause();
-												}
-												player.setPreviewTemporarilyVisible(true);
-											}
-										});
-									}
-								}
-							});
-						}
-
-						// Show player preview for the next visible page
-						int nextPosition = (mPositionOffset > 0) ? mPosition + 1 : mPosition - 1;
-						fragment = pagerAdapter.getCreatedItem(nextPosition);
-						if (fragment != null && fragment instanceof EditorFragment) {
-							final EditorFragment editor = (EditorFragment) fragment;
-							editor.post(new Runnable() {
-								@Override
-								public void run() {
-									final PlayerFragment player = editor.getPlayer();
-									if (player != null) {
-										player.post(new Runnable() {
-											@Override
-											public void run() {
-												if (player.getPlayer().getState() ==
-														Player.State.STARTED) {
-													player.getPlayer().pause();
-												}
-												player.setPreviewTemporarilyVisible(true);
-											}
-										});
-									}
-								}
-							});
-						}
-						break;
-				}
+				super.onPageSelected(position);
+				mEditorFragment = (EditorFragment) pagerAdapter.getCreatedItem(position);
 			}
 		});
+		mViewPager.setAdapter(pagerAdapter);
 
-//		addTooltips();
-		setSupportActionBar(mToolbar);
 
+		/* Drawer */
 		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.navigation_drawer);
-
-		// Set up the drawer.
 		mNavDrawerFragment.setUp(R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
@@ -253,25 +140,24 @@ public class MainActivity extends AppCompatActivity
 //				.commit();
 
 		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
-		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
-			@Override
-			public void onChanged() {
-				super.onChanged();
-				// Connect drawer list and pager adapters
-				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
-				pagerAdapter.notifyDataSetChanged();
-				ListView lv = mNavDrawerFragment.getList();
-				// Make sure we're not in CAB mode (multiple selections)
-				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
-					// Make sure the editor's item is the same as the currently checked one
-					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
-					if (mEditorFragment != null &&
-							mEditorFragment.getCurrentItem() != checkedItem) {
-						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
-					}
-				}
-			}
-		});
+//		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
+//			@Override
+//			public void onChanged() {
+//				super.onChanged();
+//				// Connect drawer list and pager adapters
+//				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
+//				ListView lv = mNavDrawerFragment.getListView();
+//				// Make sure we're not in CAB mode (multiple selections)
+//				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
+//					// Make sure the editor's item is the same as the currently checked one
+//					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+//					if (mEditorFragment != null &&
+//							mEditorFragment.getCurrentItem() != checkedItem) {
+//						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
+//					}
+//				}
+//			}
+//		});
 
 //		// ToDo default item test
 //		new Handler().postDelayed(new Runnable() {
@@ -283,6 +169,12 @@ public class MainActivity extends AppCompatActivity
 //				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
 //			}
 //		}, 1000);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putParcelableArrayList(STATE_ITEMS, sItems);
 	}
 
 	/**
@@ -297,11 +189,13 @@ public class MainActivity extends AppCompatActivity
 				View concat = mToolbar.findViewById(R.id.action_concat);
 				View add = mToolbar.findViewById(R.id.action_add_item);
 				if (concat != null && add != null) {
-					concat.setOnClickListener(new View.OnClickListener() {
+					add.setOnClickListener(new View.OnClickListener() {
+						private boolean mRotated;
 						@Override
 						public void onClick(View v) {
-							ObjectAnimator animator = ObjectAnimator.ofFloat(v, "rotation", 180);
-							animator.setDuration(2000);
+							ObjectAnimator animator = ObjectAnimator.ofFloat(v, "rotation",
+									(mRotated = !mRotated) ? 360 : 0);
+							animator.setDuration(300);
 							animator.start();
 						}
 					});
@@ -317,7 +211,7 @@ public class MainActivity extends AppCompatActivity
 
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
-		ListView lv = mNavDrawerFragment.getList();
+		ListView lv = mNavDrawerFragment.getListView();
 
 		// Fetch the NavItem corresponding to the given position. null if the position is invalid
 		// or if it belongs to a header/footer
@@ -338,10 +232,19 @@ public class MainActivity extends AppCompatActivity
 			lv.setItemChecked(position, true);
 		}
 
-		// If editor's item was updated show/hide the editor and the drawer
-		if (mEditorFragment != null && mEditorFragment.setCurrentItem(item)) {
+		if (item != null) {
+			// Move ViewPager to the selected item
+			int itemPosition = position - lv.getHeaderViewsCount();
+			if (mViewPager.getCurrentItem() != itemPosition) {
+				mViewPager.setCurrentItem(itemPosition);
+			}
+
+			// Close drawer
+			mNavDrawerFragment.setDrawerOpen(false);
+		}
+
+//		if (mEditorFragment != null && mEditorFragment.setCurrentItem(item)) {
 			// Close drawer if a new and non-null item is selected
-			if (item != null) mNavDrawerFragment.setDrawerOpen(false);
 
 			// Hide/Show the Editor/Helper
 //			if (item == null && mEditorFragment.isVisible()) {
@@ -368,20 +271,36 @@ public class MainActivity extends AppCompatActivity
 //				fadeOut.setFillAfter(true);
 //				view.startAnimation(fadeOut);
 //			}
-		}
+//		}
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		boolean result = super.onCreateOptionsMenu(menu);
 		getMenuInflater().inflate(R.menu.menu_main, menu);
+
+
+		final String CONCAT_OBSERVER_TAG = "concatenation_observer";
+		sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+			@Override
+			public void onChanged() {
+				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
+			}
+		}, CONCAT_OBSERVER_TAG);
+
 		return result;
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		sItems.unregisterAllObservers();
 	}
 
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		if (mNavDrawerFragment != null) {
-			menu.findItem(R.id.action_concat).setEnabled(mNavDrawerFragment.isConcatenatable());
+			menu.findItem(R.id.action_concat).setEnabled(isConcatenatable());
 		}
 		return super.onPrepareOptionsMenu(menu);
 	}
@@ -401,7 +320,7 @@ public class MainActivity extends AppCompatActivity
 				}
 				try {
 					// Concat videos
-					FFmpeg.concat(output, mNavDrawerFragment.adapter.getItems());
+					FFmpeg.concat(output, sItems);
 				} catch (IOException e) {
 					Log.e(TAG, "Error!", e);
 					new AlertDialog.Builder(this)

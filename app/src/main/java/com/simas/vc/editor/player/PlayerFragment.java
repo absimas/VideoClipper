@@ -19,7 +19,6 @@
 package com.simas.vc.editor.player;
 
 import android.graphics.Bitmap;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
@@ -46,6 +45,10 @@ import com.simas.vc.Utils;
 
 import java.io.IOException;
 
+// ToDo! PlayerFragment shouldn't handle sPlayer lifecycle.
+// ToDo! First create a Fragment that doesn't have any state saves. So it uses a static player
+	// shared properly. Only then, save states like seek, opened file, fs and re-create accordingly.
+
 // ToDo test holder modifications and callbacks properly
 // ToDo restore the use of deathOverlay
 
@@ -65,13 +68,20 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private int mDefaultContainerBottomPadding;
 
 	private final String TAG = getClass().getName();
-	private Player mPlayer;
 	private RelativeLayout mContainer;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mHolder;
 	private ImageView mDeadSmiley;
 	private ImageView mPreview;
 	private GestureDetector mGestureDetector;
+	/**
+	 * {@link Controls} are fragment specific.
+	 */
+	private Controls mControls;
+	/**
+	 * A single {@link Player} is shared between all the {@link PlayerFragment}s.
+	 */
+	private static final Player sPlayer = new Player();
 
 	/**
 	 * The preview visibility state. False by default.
@@ -97,12 +107,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mHolder = mSurfaceView.getHolder();
 		mHolder.addCallback(this);
 
-		mPlayer = new Player(getContainer());
-
-		// Custom listeners to show and hide the dead smiley overlay
-		getPlayer().addOnErrorListener(this);
-		getPlayer().addOnPreparedListener(this);
-		getPlayer().setOnStateChangedListener(this);
+		mControls = new Controls(getContainer());
 
 		// Gesture detector for root dialog (to detect double clicks)
 		mGestureDetector = new GestureDetector(getActivity(),
@@ -197,14 +202,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 */
 	void toggleFullscreen() {
 		// Video should be paused while working
-		Player.State state = getPlayer().getState();
 		boolean playing = false;
-		switch (state) {
-			case STARTED:
+		if (getPlayer().getState() == Player.State.STARTED) {
 				// Pause if started
 				playing = true;
 				getPlayer().pause();
-				break;
 		}
 		final boolean wasPlaying = playing;
 
@@ -352,12 +354,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	}
 
 	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		getPlayer().release();
-	}
-
-	@Override
 	public void onResume() {
 		super.onResume();
 		Player.State state = getPlayer().getState();
@@ -433,24 +429,79 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	}
 
 	public void setVideo(String path) {
-		MediaPlayer.OnPreparedListener listener = new MediaPlayer.OnPreparedListener() {
+		// Re-set the container's touch listener when MediaPlayer's prepared
+		final MediaPlayer.OnPreparedListener listener = new MediaPlayer.OnPreparedListener() {
 			@Override
 			public void onPrepared(MediaPlayer mp) {
 				getPlayer().removeOnPreparedListener(this);
 				getContainer().setOnTouchListener(PlayerFragment.this);
 			}
 		};
+		// Remove touch listener temporarily
+		getContainer().setOnTouchListener(null);
+
+		// Reset the previous MediaPlayer listeners and states
+		resetPlayer();
+
+		// Update the MediaPlayer so it conforms to this fragment
+		updatePlayer();
+
+		// Set the source
 		try {
-			getContainer().setOnTouchListener(null);
 			getPlayer().setDataSource(path);
-			getPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
-			getPlayer().addOnPreparedListener(listener);
-			getPlayer().prepareAsync();
-		} catch (IOException | IllegalStateException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			showDeathOverlay();
 			getPlayer().removeOnPreparedListener(listener);
 		}
+
+		// Prepare MediaPlayer
+		getPlayer().addOnPreparedListener(listener);
+		getPlayer().prepareAsync();
+	}
+
+	/**
+	 * Removes all added prepared and error listeners. Also disconnects from possibly set
+	 * {@link Controls}.
+	 */
+	private void resetPlayer() {
+		getPlayer().setDisplay(null);
+
+		// Remove previous listeners from the Player
+		getPlayer().removeOnErrorListeners();
+		getPlayer().removeOnPreparedListeners();
+
+		// Cancel the previous Player-Controls combo
+		if (getPlayer().getControls() != null) {
+			getPlayer().getControls().setPlayer(null);
+			getPlayer().setControls(null);
+		}
+
+		// Switch player to IDLE state
+		Player.State state = getPlayer().getState();
+		if (state != Player.State.IDLE) {
+			if (state != Player.State.INITIALIZED && state != Player.State.ERROR) {
+				getPlayer().stop();
+			}
+			getPlayer().reset();
+		}
+	}
+
+	/**
+	 * Updates the player so it conforms to the current fragment. Will update the listeners and
+	 * connect to this fragment's {@link Controls}.
+	 */
+	private void updatePlayer() {
+		getPlayer().setDisplay(mHolder);
+
+		// Add listeners applicable to this fragment
+		getPlayer().addOnErrorListener(this);
+		getPlayer().addOnPreparedListener(this);
+		getPlayer().setOnStateChangedListener(this);
+
+		// Set the new Player-Controls combo
+		getControls().setPlayer(getPlayer());
+		getPlayer().setControls(getControls());
 	}
 
 	/**
@@ -476,12 +527,12 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mDelayedHandler.add(runnable);
 	}
 
-	public Player.Controls getControls() {
-		return getPlayer().getControls();
+	public Controls getControls() {
+		return mControls;
 	}
 
 	public Player getPlayer() {
-		return mPlayer;
+		return sPlayer;
 	}
 
 	public RelativeLayout getContainer() {
@@ -520,7 +571,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	}
 
 	/**
-	 * Update surface's dimensions according to the {@link #mPlayer} loaded video.
+	 * Update surface's dimensions according to the {@link #sPlayer} loaded video.
 	 */
 	private void invalidateSurface() {
 		final int iw = getPlayer().getVideoWidth(), ih = getPlayer().getVideoHeight();
@@ -576,12 +627,12 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-		getPlayer().setDisplay(holder);
+//		getPlayer().setDisplay(holder);
 	}
 
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		getPlayer().setDisplay(holder);
+//		getPlayer().setDisplay(holder);
 	}
 
 	@Override

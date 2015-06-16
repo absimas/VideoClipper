@@ -28,6 +28,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.ListView;
+
+import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -133,7 +135,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 					mModifiedDataSet = true;
 				}
 				// Add the list to other items in adapter
-				getAdapter().addItems(items);
+				MainActivity.sItems.addAll(items);
 
 				mode.finish();
 				return true;
@@ -151,7 +153,8 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 				// because the checked positions are sorted in a descending order
 				for (int position : checkedPositions) {
 					int adapterItemPos = position - getListView().getHeaderViewsCount();
-					getAdapter().getItems().remove(adapterItemPos);
+					// ToDo this might cause bshit because each remove notifies the adapter
+					MainActivity.sItems.remove(adapterItemPos);
 					mModifiedDataSet = true;
 				}
 
@@ -203,7 +206,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 	}
 
 	private ListView getListView() {
-		return navDrawerFragment.getList();
+		return navDrawerFragment.getListView();
 	}
 
 	private NavAdapter getAdapter() {

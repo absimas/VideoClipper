@@ -24,6 +24,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.Log;
+
+import com.simas.vc.MainActivity;
 import com.simas.vc.VCException;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.R;
@@ -63,10 +65,6 @@ public class NavItem implements Parcelable, Cloneable {
 	 * Attributes fetched with FFprobe
 	 */
 	private FileAttributes mAttributes;
-	/**
-	 * Item's parent, i.e. the NavAdapter that contains it
-	 */
-	private NavAdapter mParent;
 
 	/**
 	 * Thread-safe list holding all the update listeners. These can be called from a <b>non-UI
@@ -122,8 +120,7 @@ public class NavItem implements Parcelable, Cloneable {
 	 * Creates a NavItem and its preview
 	 * @param file       file to which NavItem is pointing to
 	 */
-	public NavItem(NavAdapter parent, File file) {
-		setParent(parent);
+	public NavItem(File file) {
 		mFile = file;
 		mType = determineExtensionType(file);
 		if (mType == Type.UNSUPPORTED) {
@@ -174,7 +171,7 @@ public class NavItem implements Parcelable, Cloneable {
 	 */
 	private Bitmap parsePreview() {
 		// Loop existing items
-		for (NavItem item : mParent.getItems()) {
+		for (NavItem item : MainActivity.sItems) {
 			// Check if the other item has a preview and if the files match
 			if (item.getPreview() != null && item.getFile().compareTo(getFile()) == 0) {
 				/*// Deep copy the preview and use it for this item
@@ -233,17 +230,6 @@ public class NavItem implements Parcelable, Cloneable {
 		return Type.UNSUPPORTED;
 	}
 
-	/* Setters/Getters */
-	public void setParent(NavAdapter newParent) {
-		final NavAdapter oldParent = mParent;
-		mParent = newParent;
-
-		// Announce to listeners
-		for (OnUpdatedListener listener : mUpdateListeners) {
-			listener.onUpdated(ItemAttribute.OTHER, oldParent, newParent);
-		}
-	}
-
 	public void setPreview(Bitmap newPreview) {
 		final Bitmap oldPreview = mPreview;
 		mPreview = newPreview;
@@ -283,10 +269,6 @@ public class NavItem implements Parcelable, Cloneable {
 
 	public Type getType() {
 		return mType;
-	}
-
-	public NavAdapter getParent() {
-		return mParent;
 	}
 
 	public Bitmap getPreview() {
@@ -334,7 +316,6 @@ public class NavItem implements Parcelable, Cloneable {
 
 	/* Cloneable */
 	public NavItem(NavItem otherItem) {
-		mParent = otherItem.mParent;
 		mType = otherItem.mType;
 		mAttributes = otherItem.mAttributes;
 		mFile = otherItem.mFile;
@@ -360,7 +341,7 @@ public class NavItem implements Parcelable, Cloneable {
 	public String toString() {
 		return "File: " + getFile().getPath() + "\n" + "Preview: " + getPreview() + "\n" +
 				"Type: " + getType() + "\n" + "Attributes: " + mAttributes + "\n" +
-				"State: " + mState.name() + "\n" + "Parent: " + getParent() + "\n";
+				"State: " + mState.name();
 	}
 
 }

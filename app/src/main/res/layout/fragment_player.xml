@@ -59,7 +59,7 @@
 		    android:orientation="horizontal">
 		    <TextView
 			    android:textColor="#FFF"
-			    android:text="00:00:05"
+			    android:text="@string/zero_time"
 			    android:id="@+id/current_time"
 			    android:layout_width="wrap_content"
 			    android:layout_height="match_parent"
@@ -77,7 +77,7 @@
 
 		    <TextView
 			    android:textColor="#FFF"
-			    android:text="00:09:00"
+			    android:text="@string/zero_time"
 				android:id="@+id/total_time"
 			    android:layout_width="wrap_content"
 			    android:layout_height="match_parent"

@@ -112,4 +112,5 @@
 	<string name="second_short">s</string>
 	<string name="player_play_button">Player\'s play button</string>
 	<string name="dead_smiley">Dead smiley</string>
+	<string name="zero_time">00:00:00</string>
 </resources>

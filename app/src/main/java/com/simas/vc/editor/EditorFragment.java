@@ -195,7 +195,7 @@ public class EditorFragment extends Fragment {
 		}
 	}
 
-	public PlayerFragment getPlayer() {
+	public PlayerFragment getPlayerFragment() {
 		return mPlayerFragment;
 	}
 
@@ -227,7 +227,7 @@ public class EditorFragment extends Fragment {
 					@Override
 					public void run() {
 						mPlayerFragment.setPreview(curItem.getPreview());
-						mPlayerFragment.setVideo(curItem.getFile().getPath());
+//						mPlayerFragment.setVideo(curItem.getFile().getPath());
 					}
 				});
 

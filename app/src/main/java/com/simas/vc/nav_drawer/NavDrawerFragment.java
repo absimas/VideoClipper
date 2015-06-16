@@ -18,6 +18,7 @@
  */
 package com.simas.vc.nav_drawer;
 
+import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.app.Activity;
@@ -32,14 +33,13 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
@@ -69,11 +69,11 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 * Per the design guidelines, you should show the drawer on launch until the user manually
 	 * collapses it. This shared preference tracks this.
 	 */
-	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
+	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learneddd"; // todo
 	private static final String TAG = "NavDrawerFragment";
 
 	public static int sPreviewSize;
-	public NavAdapter adapter;
+	public NavAdapter adapter; // ToDo eventually move to a private adapter
 
 	/**
 	 * A pointer to the current callbacks instance (the Activity).
@@ -94,7 +94,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private int mCurrentSelectedPosition = ListView.INVALID_POSITION;
 	private boolean mFromSavedInstanceState;
 	private boolean mUserLearnedDrawer;
-	private List<NavItem> mPreviousAdapterItems;
 	public enum DrawerState {
 		OPEN, OPENING, CLOSED, CLOSING
 	}
@@ -115,7 +114,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		if (savedInstanceState != null) {
 			mCurrentSelectedPosition = savedInstanceState.getInt(STATE_SELECTED_POSITION,
 					ListView.INVALID_POSITION);
-			mPreviousAdapterItems = savedInstanceState.getParcelableArrayList(STATE_ADAPTER_ITEMS);
 			mNavCAB = savedInstanceState.getParcelable(STATE_CAB);
 			mFromSavedInstanceState = true;
 		}
@@ -159,7 +157,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				}
 			}
 		});
-		getList().addHeaderView(header);
+		getListView().addHeaderView(header);
 
 		return mDrawerList;
 	}
@@ -190,10 +188,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		}
 	}
 
-	/**
-	 * Checks if the drawer is closing. This state is determined by the {@code setDrawerOpen}
-	 * method invocations.
-	 */
 	public DrawerState getDrawerState() {
 		return mDrawerState;
 	}
@@ -232,8 +226,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 				// Set the choice mode ONLY IF IT'S NOT SINGLE
 				// Otherwise, will cause the AbsListView to reset its mCheckState array!!!
-				if (getList().getChoiceMode() != ListView.CHOICE_MODE_SINGLE) {
-					getList().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+				if (getListView().getChoiceMode() != ListView.CHOICE_MODE_SINGLE) {
+					getListView().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 				}
 				if (!isAdded()) {
 					return;
@@ -300,28 +294,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		getDrawerLayout().setDrawerListener(mDrawerToggle);
 
 		// The adapter needs a reference to the list its connected to
-		adapter = new NavAdapter(getActivity());
-		// Update adapter's list
-		adapter.attachToList(getList());
-
-		// Listen to added/removed items
-		adapter.registerDataSetObserver(new DataSetObserver() {
-			@Override
-			public void onChanged() {
-				super.onChanged();
-				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
-			}
-		});
-
-		// Update adapter items if already present
-		if (mPreviousAdapterItems != null) {
-			for (NavItem item : mPreviousAdapterItems) {
-				item.setParent(adapter);
-			}
-			adapter.changeItems(mPreviousAdapterItems);
-		}
-		getList().setAdapter(adapter);
-
+		adapter = new NavAdapter(getActivity(), getListView());
+		getListView().setAdapter(adapter);
 
 		if (mNavCAB == null) {
 			// Newly created CAB
@@ -329,7 +303,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		} else {
 			// Previous CAB
 			mNavCAB.navDrawerFragment = this;
-			getList().post(new Runnable() {
+			getListView().post(new Runnable() {
 				@Override
 				public void run() {
 					// Update list if CAB has checked items
@@ -339,37 +313,37 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						positions.addAll(mNavCAB.checkedPositions);
 
 						// Update the LV's item checked state
-						getList().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+						getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 						for (Integer position : positions) {
-							getList().setItemChecked(position, true);
+							getListView().setItemChecked(position, true);
 						}
 					}
 				}
 			});
 		}
 
-		getList().setMultiChoiceModeListener(mNavCAB);
+		getListView().setMultiChoiceModeListener(mNavCAB);
 
 		// Click listeners
-		getList().setOnItemClickListener(new AdapterView.OnItemClickListener() {
+		getListView().setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				// Make sure it's not the header
 				if (position != 0) {
 					selectItem(position);
 					// Change the item's background based on its checked state
-					if (getList().isItemChecked(position)) {
+					if (getListView().isItemChecked(position)) {
 						view.setBackgroundColor(Color.DKGRAY);
 					} else {
 						view.setBackgroundColor(Color.TRANSPARENT);
 					}
 				} else {
-					((MainActivity)getActivity()).showFileChooser();
+					((MainActivity) getActivity()).showFileChooser();
 				}
 			}
 		});
 
-		getList().setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+		getListView().setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
 				// Make sure it's not the header that's been clicked
@@ -377,36 +351,16 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					return false;
 				} else {
 					// Make sure a valid item has been clicked
-					boolean valid = (adapter.getItem(position-1).getState() == NavItem.State.VALID);
+					boolean valid = (adapter.getItem(position - 1).getState() == NavItem.State.VALID);
 					if (!valid) return false;
 
 					// Need to enable multiple mode and force-check manually, so CAB is called
-					getList().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-					getList().setItemChecked(position, true);
+					getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+					getListView().setItemChecked(position, true);
 					return true;
 				}
 			}
 		});
-	}
-
-	// ToDo move outside this fragment
-	public boolean isConcatenatable() {
-		if (adapter == null) {
-			// Adapter not available yet
-			return false;
-		} else if (adapter.getCount() < 2) {
-			// There must be at least 2 videos to concatenate
-			return false;
-		} else {
-			// Loop and look for invalid items
-			for (NavItem item : adapter.getItems()) {
-				if (item.getState() != NavItem.State.VALID) {
-					return false;
-				}
-			}
-		}
-
-		return true;
 	}
 
 	public void selectItem(int position) {
@@ -436,10 +390,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		super.onSaveInstanceState(out);
 		// Save current ListView selection
 		out.putInt(STATE_SELECTED_POSITION, mCurrentSelectedPosition);
-		// Save adapter items
-		if (adapter != null) {
-			out.putParcelableArrayList(STATE_ADAPTER_ITEMS, (ArrayList<NavItem>) adapter.getItems());
-		}
+
 		// Save selected items (CAB)
 		if (mNavCAB != null) {
 			out.putParcelable(STATE_CAB, mNavCAB);
@@ -465,7 +416,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	@Override
 	public void onChosen(File file) {
-		final NavItem item = new NavItem(adapter, file);
+		final NavItem item = new NavItem(file);
 		// Enable concat action when state validates
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
 			@Override
@@ -474,9 +425,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				Utils.runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						// Make sure the concat action button is initialized (drawer was opened)
-						getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
-
 						if (newValue == NavItem.State.INVALID) {
 							// Display a toast notifying of the error if item parsing failed
 							Toast.makeText(VC.getAppContext(),
@@ -484,8 +432,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 											item.getFile().getName()), Toast.LENGTH_LONG)
 									.show();
 							// If an invalid state was reached, remove this item from the drawer
-							adapter.removeItem(item);
-							adapter.notifyDataSetChanged();
+							MainActivity.sItems.remove(item);
 						}
 					}
 				});
@@ -496,8 +443,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				}
 			}
 		});
-		adapter.addItem(item);
-		adapter.notifyDataSetChanged();
+		MainActivity.sItems.add(item);
 	}
 
 	/**
@@ -510,7 +456,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		void onNavigationDrawerItemSelected(int position);
 	}
 
-	public ListView getList() {
+	public ListView getListView() {
 		return mDrawerList;
 	}
 
