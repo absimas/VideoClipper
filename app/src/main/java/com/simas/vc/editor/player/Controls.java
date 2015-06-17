@@ -77,16 +77,15 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	public void setPlaying(boolean isPlaying) {
 		mSeekHandler.removeCallbacksAndMessages(null);
 		if (isPlaying) {
-			if (getPlayer() != null) {
-				mSeekHandler.postDelayed(new Runnable() {
-					@Override
-					public void run() {
+			mSeekHandler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					if (getPlayer() != null) {
 						mSeekHandler.postDelayed(this, CURRENT_TIME_RECHECK_INTERVAL);
 						setCurrent(getPlayer().getCurrentPosition());
 					}
-				}, CURRENT_TIME_RECHECK_INTERVAL);
-			}
-
+				}
+			}, CURRENT_TIME_RECHECK_INTERVAL);
 			mPlayButton.setImageResource(R.drawable.ic_action_error);
 		} else {
 			mPlayButton.setImageResource(R.drawable.ic_action_play_dark);

@@ -33,19 +33,19 @@ import android.view.View;
 import android.widget.ListView;
 
 import com.simas.vc.background_tasks.FFmpeg;
+import com.simas.vc.editor.player.Player;
+import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 import com.simas.vc.pager.PagerAdapter;
-import com.simas.vc.pager.PagerScrollListener;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-// ToDo when restoring instance state, should probly call sItems.notifyChanged() to invoke listeners
-// ToDo only a single MediaPlayer should be allocated at once. I.e. always call release when changing pages
-	// Use a single MediaPlayer throughout every page
+
 // ToDo link onPageScrolled with drawer list's onScroll
 // ToDo empty view for ViewPager
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity
 	private EditorFragment mEditorFragment;
 	private Toolbar mToolbar;
 	private ViewPager mViewPager;
+	private PagerScrollListener mPagerScrollListener;
+	private PagerAdapter mPagerAdapter;
 	/**
 	 * A list that contains all the added items, shared throughout the app. It's used by
 	 * {@link NavDrawerFragment}, {@link com.simas.vc.nav_drawer.NavAdapter},
@@ -88,6 +90,66 @@ public class MainActivity extends AppCompatActivity
 		return true;
 	}
 
+	private class PagerScrollListener extends ViewPager.SimpleOnPageChangeListener {
+
+		private final String TAG = getClass().getName();
+		private static final float MIN_SCROLL_OFFSET = 0.01f;
+		private float mCurrentOffset;
+
+		@Override
+		public void onPageSelected(int position) {
+			super.onPageSelected(position);
+			mEditorFragment = (EditorFragment) mPagerAdapter.getCreatedItem(position);
+			Log.e(TAG, "editor selected: " + mEditorFragment);
+		}
+
+		@Override
+		public void onPageScrolled(int position, float positionOffset, int positionOffsetPxs) {
+			final float previousOffset = mCurrentOffset;
+			mCurrentOffset = positionOffset;
+
+			// Re-invoke onPageScrollStateChanged when switched to a valid scroll offset
+			if (Math.abs(mCurrentOffset) >= MIN_SCROLL_OFFSET &&
+					Math.abs(previousOffset) < MIN_SCROLL_OFFSET) {
+				onPageScrollStateChanged(ViewPager.SCROLL_STATE_DRAGGING);
+			}
+		}
+
+		@Override
+		public void onPageScrollStateChanged(int state) {
+			switch (state) {
+				case ViewPager.SCROLL_STATE_DRAGGING:
+					// Ignore low offsets, to avoid invalid drags
+					if (Math.abs(mCurrentOffset) < MIN_SCROLL_OFFSET) {
+						return;
+					}
+
+					// Pause player
+					pausePlayer();
+					break;
+				case ViewPager.SCROLL_STATE_IDLE:
+					if (mEditorFragment != null) {
+						mEditorFragment.post(new Runnable() {
+							@Override
+							public void run() {
+								mEditorFragment.getPlayerFragment().setVideo(
+										mEditorFragment.getItem().getFile().getPath()
+								);
+							}
+						});
+					}
+			}
+		}
+
+		private void pausePlayer() {
+			Player player = PlayerFragment.getPlayer();
+			if (player != null && player.getState() == Player.State.STARTED) {
+				player.pause();
+			}
+		}
+
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -111,18 +173,10 @@ public class MainActivity extends AppCompatActivity
 
 		/* Pager */
 		mViewPager = (ViewPager) findViewById(R.id.view_pager);
-		final PagerAdapter pagerAdapter = new PagerAdapter(getSupportFragmentManager());
-
-		mViewPager.addOnPageChangeListener(new PagerScrollListener(this, pagerAdapter, mViewPager));
-		mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-			@Override
-			public void onPageSelected(int position) {
-				super.onPageSelected(position);
-				mEditorFragment = (EditorFragment) pagerAdapter.getCreatedItem(position);
-			}
-		});
-		mViewPager.setAdapter(pagerAdapter);
-
+		mPagerAdapter = new PagerAdapter(getSupportFragmentManager());
+		mPagerScrollListener = new PagerScrollListener();
+		mViewPager.addOnPageChangeListener(mPagerScrollListener);
+		mViewPager.setAdapter(mPagerAdapter);
 
 		/* Drawer */
 		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
@@ -130,14 +184,19 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setUp(R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
-//		// Set up editor
-//		mEditorFragment = (EditorFragment) getSupportFragmentManager()
-//				.findFragmentById(R.id.editor_fragment);
 
-//		// Hidden by default
-//		getSupportFragmentManager().beginTransaction()
-//				.hide(mEditorFragment)
-//				.commit();
+		// First item needs explicit selection via the scroll listener
+		final String FIRST_ITEM_OBSERVER = "Zfirst_item_observer";
+		sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+			@Override
+			public void onChanged() {
+				if (sItems.size() == 1) {
+					sItems.unregisterDataSetObserver(FIRST_ITEM_OBSERVER);
+					mPagerScrollListener.onPageSelected(0);
+					mPagerScrollListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
+				}
+			}
+		}, FIRST_ITEM_OBSERVER);
 
 		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
 //		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
@@ -152,7 +211,7 @@ public class MainActivity extends AppCompatActivity
 //					// Make sure the editor's item is the same as the currently checked one
 //					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
 //					if (mEditorFragment != null &&
-//							mEditorFragment.getCurrentItem() != checkedItem) {
+//							mEditorFragment.getItem() != checkedItem) {
 //						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
 //					}
 //				}
@@ -169,6 +228,10 @@ public class MainActivity extends AppCompatActivity
 //				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
 //			}
 //		}, 1000);
+	}
+
+	public EditorFragment getEditorFragment() {
+		return mEditorFragment;
 	}
 
 	@Override
@@ -213,37 +276,23 @@ public class MainActivity extends AppCompatActivity
 	public void onNavigationDrawerItemSelected(int position) {
 		ListView lv = mNavDrawerFragment.getListView();
 
-		// Fetch the NavItem corresponding to the given position. null if the position is invalid
-		// or if it belongs to a header/footer
-		NavItem item = null;
-		//noinspection StatementWithEmptyBody
-		if (position == ListView.INVALID_POSITION) {
-			// Invalidate editor fragment on an invalid position
-		} else if (position < lv.getHeaderViewsCount() ||
+		if (position == ListView.INVALID_POSITION ||
+				position < lv.getHeaderViewsCount() ||
 				position >= lv.getCount() - lv.getFooterViewsCount()) {
 			// Skip headers and footers
 			return;
 		} else {
-			// Position is fine, fetch the item
-			item = (NavItem) lv.getItemAtPosition(position);
-			if (item != null) setTitle(item.getFile().getName());
-
 			// Check the item in the drawer
 			lv.setItemChecked(position, true);
-		}
 
-		if (item != null) {
-			// Move ViewPager to the selected item
-			int itemPosition = position - lv.getHeaderViewsCount();
-			if (mViewPager.getCurrentItem() != itemPosition) {
-				mViewPager.setCurrentItem(itemPosition);
-			}
-
-			// Close drawer
 			mNavDrawerFragment.setDrawerOpen(false);
+
+			// Open selected item in the view pager
+			int itemPosition = position - lv.getHeaderViewsCount();
+			mViewPager.setCurrentItem(itemPosition);
 		}
 
-//		if (mEditorFragment != null && mEditorFragment.setCurrentItem(item)) {
+//		if (mEditorFragment != null && mEditorFragment.setItem(item)) {
 			// Close drawer if a new and non-null item is selected
 
 			// Hide/Show the Editor/Helper

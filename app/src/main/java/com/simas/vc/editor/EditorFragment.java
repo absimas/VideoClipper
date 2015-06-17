@@ -40,7 +40,7 @@ import java.util.Map;
 
 /**
  * Fragment containing the information about the opened NavItem, as well as actions that can be
- * invoked. The fragment doesn't save its state because {@link #mCurrentItem} is a <b>shared</b>
+ * invoked. The fragment doesn't save its state because {@link #mItem} is a <b>shared</b>
  * object that's assigned by {@link com.simas.vc.MainActivity}.
  */
 public class EditorFragment extends Fragment {
@@ -51,7 +51,7 @@ public class EditorFragment extends Fragment {
 	private TreeParser mTreeParser;
 	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
-	private NavItem mCurrentItem;
+	private NavItem mItem;
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
@@ -150,27 +150,25 @@ public class EditorFragment extends Fragment {
 	};
 
 	/**
-	 * Set the editor's currently active item. It will change the editor's fields immediately if
-	 * the item has finished loading otherwise it will wait and set it then.
+	 * Set the item. Editor fields will be changed once the item has been validated.
 	 * @return true if the item was changed, false otherwise
 	 */
-	public boolean setCurrentItem(final NavItem newItem) {
-		if (getCurrentItem() == newItem) {
+	public boolean setItem(final NavItem newItem) {
+		if (getItem() == newItem) {
 			return false;
 		}
 
 		// Clear listener from the previous item (if it's set)
-		if (getCurrentItem() != null) {
-			getCurrentItem().unregisterUpdateListener(mItemValidationListener);
+		if (getItem() != null) {
+			getItem().unregisterUpdateListener(mItemValidationListener);
 		}
 
-		// Set the new item as current one
-		mCurrentItem = newItem;
+		mItem = newItem;
 
 		// Update fields and add listeners if the new item is not null
-		if (getCurrentItem() != null) {
+		if (getItem() != null) {
 			// Present the new item if it's ready, otherwise wait for it
-			switch (getCurrentItem().getState()) {
+			switch (getItem().getState()) {
 				case VALID:
 					updateFields();
 					break;
@@ -180,7 +178,7 @@ public class EditorFragment extends Fragment {
 			}
 
 			// Add an update listener
-			getCurrentItem().registerUpdateListener(mItemValidationListener);
+			getItem().registerUpdateListener(mItemValidationListener);
 		}
 
 		return true;
@@ -200,13 +198,13 @@ public class EditorFragment extends Fragment {
 	}
 
 	/**
-	 * Update fields to match {@link #mCurrentItem}.
+	 * Update fields to match {@link #mItem}.
 	 */
 	private void updateFields() {
 		if (getActivity() == null) return;
 
-		final NavItem curItem = getCurrentItem();
-		final FileAttributes attributes = curItem.getAttributes();
+		final NavItem item = getItem();
+		final FileAttributes attributes = item.getAttributes();
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView size = (TextView) mDataMap.get(Data.SIZE);
 		final TextView duration = (TextView) mDataMap.get(Data.DURATION);
@@ -223,15 +221,14 @@ public class EditorFragment extends Fragment {
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				mPlayerFragment.post(new Runnable() {
+				getPlayerFragment().post(new Runnable() {
 					@Override
 					public void run() {
-						mPlayerFragment.setPreview(curItem.getPreview());
-//						mPlayerFragment.setVideo(curItem.getFile().getPath());
+						getPlayerFragment().setPreview(item.getPreview());
 					}
 				});
 
-				filename.setText(curItem.getFile().getName());
+				filename.setText(item.getFile().getName());
 				size.setText(sizeStr);
 				duration.setText(durationStr);
 				streams.removeAllViews();
@@ -241,8 +238,8 @@ public class EditorFragment extends Fragment {
 		});
 	}
 
-	public NavItem getCurrentItem() {
-		return mCurrentItem;
+	public NavItem getItem() {
+		return mItem;
 	}
 
 	/**

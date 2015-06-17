@@ -23,10 +23,13 @@ import com.simas.vc.nav_drawer.NavItem;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 public final class ObservableSynchronizedList extends ArrayList<NavItem> {
 
-	private final HashMap<String, Observer> mObservers = new HashMap<>();
+	private final TreeMap<String, Observer> mObservers = new TreeMap<>();
 
 	/**
 	 * Register an observer, replacing any previous one with the same tag.
@@ -55,14 +58,10 @@ public final class ObservableSynchronizedList extends ArrayList<NavItem> {
 	 * Notify all observers.
 	 */
 	public synchronized void notifyChanged() {
-//		Utils.runOnUiThread(new Runnable() {
-//			@Override
-//			public void run() {
-				for (Observer observer : mObservers.values()) {
-					observer.onChanged();
-				}
-//			}
-//		});
+		NavigableMap<String, Observer> descendingMap = mObservers.descendingMap();
+		for (Observer observer : descendingMap.values()) {
+			observer.onChanged();
+		}
 	}
 
 	@Override

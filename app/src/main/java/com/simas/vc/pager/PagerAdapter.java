@@ -28,6 +28,8 @@ import com.simas.vc.MainActivity;
 import com.simas.vc.ObservableSynchronizedList;
 import com.simas.vc.editor.EditorFragment;
 
+// ToDo copy FragmentStatePagerAdapter code and re-use mFragments instead of making 2 separate arrays
+
 public class PagerAdapter extends FragmentStatePagerAdapter {
 
 	private final String TAG = getClass().getName();
@@ -47,12 +49,13 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 	@Override
 	public Fragment getItem(final int position) {
 		final EditorFragment editor = new EditorFragment();
+
 		mFragments.put(position, editor);
 
 		editor.post(new Runnable() {
 			@Override
 			public void run() {
-				editor.setCurrentItem(MainActivity.sItems.get(position));
+				editor.setItem(MainActivity.sItems.get(position));
 			}
 		});
 

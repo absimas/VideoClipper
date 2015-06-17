@@ -46,6 +46,9 @@ import com.simas.vc.Utils;
 import java.io.IOException;
 
 // ToDo! PlayerFragment shouldn't handle sPlayer lifecycle.
+// ToDo! this frag should only save seek position in the instance state, then restore it once video is prepared
+	// FS, and play states are more difficult but might still be pretty easy, as view adapter
+		// probly properly saves its and all the pages state on orientation changes too
 // ToDo! First create a Fragment that doesn't have any state saves. So it uses a static player
 	// shared properly. Only then, save states like seek, opened file, fs and re-create accordingly.
 
@@ -60,6 +63,8 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private static final String STATE_SEEK_POS = "state_seek_pos";
 	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
 	private static final String STATE_PLAYING = "state_player_state";
+	private Integer mSeekPosition;
+	private Boolean mPlaying;
 
 	/* Full screen variables */
 	private boolean mFullscreen;
@@ -105,7 +110,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mPreview = (ImageView) getContainer().findViewById(R.id.preview);
 		mSurfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
 		mHolder = mSurfaceView.getHolder();
-		mHolder.addCallback(this);
 
 		mControls = new Controls(getContainer());
 
@@ -134,38 +138,43 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 					}
 				});
 
+		if (savedInstanceState != null) {
+			mSeekPosition = savedInstanceState.getInt(STATE_SEEK_POS);
+			mPlaying = savedInstanceState.getBoolean(STATE_PLAYING);
+		}
+
 		getContainer().post(new Runnable() {
 			@Override
 			public void run() {
-				if (savedInstanceState != null) {
-					if (savedInstanceState.getBoolean(STATE_FULLSCREEN, false) && !isFullscreen()) {
-						toggleFullscreen();
-					}
-				}
+//				if (savedInstanceState != null) {
+//					if (savedInstanceState.getBoolean(STATE_FULLSCREEN, false) && !isFullscreen()) {
+//						toggleFullscreen();
+//					}
+//				}
 
-				getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-					@Override
-					public void onPrepared(MediaPlayer mp) {
-						getPlayer().removeOnPreparedListener(this);
-						if (savedInstanceState != null) {
-							// Playing
-							if (savedInstanceState.getBoolean(STATE_PLAYING, false)) {
-								getPlayer().start();
-							}
-							// Seek
-							final int msec = savedInstanceState.getInt(STATE_SEEK_POS, 0);
-							if (msec > 0) {
-								updatePreview(msec);
-							}
-							// Controls visibility
-							if (savedInstanceState.getBoolean(STATE_CONTROLS_VISIBLE, false)) {
-								getControls().show();
-							} else {
-								getControls().hide();
-							}
-						}
-					}
-				});
+//				getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+//					@Override
+//					public void onPrepared(MediaPlayer mp) {
+//						getPlayer().removeOnPreparedListener(this);
+//						if (savedInstanceState != null) {
+//							// Playing
+//							if (savedInstanceState.getBoolean(STATE_PLAYING, false)) {
+//								getPlayer().start();
+//							}
+//							// Seek
+//							final int msec = savedInstanceState.getInt(STATE_SEEK_POS, 0);
+//							if (msec > 0) {
+//								updatePreview(msec);
+//							}
+//							// Controls visibility
+//							if (savedInstanceState.getBoolean(STATE_CONTROLS_VISIBLE, false)) {
+//								getControls().show();
+//							} else {
+//								getControls().hide();
+//							}
+//						}
+//					}
+//				});
 
 				mDelayedHandler.resume();
 			}
@@ -184,14 +193,17 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		outState.putBoolean(STATE_CONTROLS_VISIBLE, getControls().isVisible());
 
 		// Seek pos
-		int msec = 0;
 		try {
-			msec = getPlayer().getCurrentPosition();
+			int pos = getPlayer().getCurrentPosition();
+			if (pos > 0) {
+				outState.putInt(STATE_SEEK_POS, pos);
+			}
 		} catch (IllegalStateException ignored) {}
-		outState.putInt(STATE_SEEK_POS, msec);
 
 		// Player state
-		outState.putBoolean(STATE_PLAYING, getPlayer().getState() == Player.State.STARTED);
+		if (getPlayer().getState() == Player.State.STARTED) {
+			outState.putBoolean(STATE_PLAYING, true);
+		}
 	}
 
 	/**
@@ -339,33 +351,33 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		}
 	}
 
-	@Override
-	public void onStop() {
-		super.onStop();
-		if (getActivity() != null && getActivity().isFinishing()) {
-			getPlayer().release();
-		} else {
-			Player.State state = getPlayer().getState();
-			switch (state) {
-				case PREPARED: case STARTED: case PAUSED:
-					getPlayer().stop();
-			}
-		}
-	}
-
-	@Override
-	public void onResume() {
-		super.onResume();
-		Player.State state = getPlayer().getState();
-		switch (state) {
-			case INITIALIZED: case STOPPED:
-				try {
-					getPlayer().prepare();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-		}
-	}
+//	@Override
+//	public void onStop() {
+//		super.onStop();
+//		if (getActivity() != null && getActivity().isFinishing()) {
+//			getPlayer().release();
+//		} else {
+//			Player.State state = getPlayer().getState();
+//			switch (state) {
+//				case PREPARED: case STARTED: case PAUSED:
+//					getPlayer().stop();
+//			}
+//		}
+//	}
+//
+//	@Override
+//	public void onResume() {
+//		super.onResume();
+//		Player.State state = getPlayer().getState();
+//		switch (state) {
+//			case INITIALIZED: case STOPPED:
+//				try {
+//					getPlayer().prepare();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//		}
+//	}
 
 	public boolean isFullscreen() {
 		return mFullscreen;
@@ -379,129 +391,151 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mPreview.setImageBitmap(preview);
 	}
 
-	/**
-	 * Set the preview visibility state. Unlike {@link #setPreviewTemporarilyVisible(boolean)},
-	 * this method will also save the preview visibility state to {@link #mPreviewVisible}.
-	 */
 	public void setPreviewVisible(boolean visible) {
-		mPreviewVisible = visible;
 		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
 	}
 
-	/**
-	 * Set the video preview visibility but don't save the state. This allows to return to the
-	 * previous state with {@link #resetPreviewVisibility()}. <b>Must</b> call
-	 * {@link #resetPreviewVisibility()} when done with the temporary visibility.
-	 */
-	public void setPreviewTemporarilyVisible(boolean visible) {
-		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
+	public void setVideo(String path) {
+		Log.e(TAG, "set video : " + path);
+		// Remove touch listener temporarily
+		getContainer().setOnTouchListener(null);
+
+		// Connect to this fragment's Controls and Surface.
+		setupPlayer();
+
+		// Change data source (if it's new)
+		if (setDataSource(path)) {
+			// If the source was changed, delete the saved state
+			clearState();
+		}
+
+		// ToDo controls need to be updated when fragment is re-used, coz total time is bullshitted
+		// ToDo also somethings wrong with the restoration of the current time when page is scrolled a little
+
+		Player.State state = getPlayer().getState();
+		switch (state) {
+			case INITIALIZED: case STOPPED:
+				// Prepare if necessary
+				getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+					@Override
+					public void onPrepared(MediaPlayer mp) {
+						getPlayer().removeOnPreparedListener(this);
+						getPlayer().resetControls();
+						restoreState();
+						getContainer().setOnTouchListener(PlayerFragment.this);
+					}
+				});
+				getPlayer().prepareAsync();
+				break;
+			case ERROR: case RELEASED:
+				// Do nothing on error
+				break;
+			default:
+				getPlayer().resetControls();
+				// Restore states and touch listener if player is alright
+				restoreState();
+				getContainer().setOnTouchListener(this);
+		}
+	}
+
+
+
+	private void clearState() {
+		mSeekPosition = null;
+		mPlaying = null;
+	}
+
+	private void restoreState() {
+		if (mSeekPosition != null) {
+			getPlayer().seekTo(mSeekPosition);
+		}
+		if (mPlaying != null && mPlaying) {
+			getPlayer().start();
+		}
 	}
 
 	/**
-	 * Reset the preview visibility to its saved state.
-	 * @see #mPreviewVisible
+	 * Sets the player's data source.
+	 * @return true if changed data source was changed, false if it wasn't
 	 */
-	public void resetPreviewVisibility() {
-		setPreviewTemporarilyVisible(mPreviewVisible);
+	private boolean setDataSource(String path) {
+		if (getPlayer().getDataSource() == null || !getPlayer().getDataSource().equals(path)) {
+			// Switch player to IDLE state
+			Player.State state = getPlayer().getState();
+			if (state != Player.State.IDLE) {
+				if (state != Player.State.INITIALIZED && state != Player.State.ERROR) {
+					getPlayer().stop();
+				}
+				getPlayer().reset();
+			}
+			// Set the source
+			try {
+				getPlayer().setDataSource(path);
+			} catch (IOException e) {
+				e.printStackTrace();
+				showDeathOverlay();
+			}
+
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
 	public void onStateChanged(@Nullable Player.State previous, @NonNull Player.State newState) {
 		// hide preview in: STARTED, ERROR, RELEASED, PAUSED
 		// show preview in: STOPPED, PREPARED, PREPARING, IDLE, INITIALIZED
-		boolean show;
 		switch (newState) {
-			case STARTED: case ERROR: case RELEASED: case PAUSED:
-				show = false;
+			case STARTED: case ERROR: case RELEASED: /*case PAUSED:*/
+				setPreviewVisible(false);
 				break;
 			default:
-				show = true;
-		}
-
-		if (mPreviewVisible != (mPreview.getVisibility() == View.VISIBLE)) {
-			// If temporarily invisible/visible, only change the visibility flag.
-			// Afterwards, when reset is called, the real state will be used.
-			mPreviewVisible = show;
-		} else {
-			// Otherwise, we are free to change the visibility now
-			setPreviewVisible(show);
-		}
-	}
-
-	public void setVideo(String path) {
-		// Re-set the container's touch listener when MediaPlayer's prepared
-		final MediaPlayer.OnPreparedListener listener = new MediaPlayer.OnPreparedListener() {
-			@Override
-			public void onPrepared(MediaPlayer mp) {
-				getPlayer().removeOnPreparedListener(this);
-				getContainer().setOnTouchListener(PlayerFragment.this);
-			}
-		};
-		// Remove touch listener temporarily
-		getContainer().setOnTouchListener(null);
-
-		// Reset the previous MediaPlayer listeners and states
-		resetPlayer();
-
-		// Update the MediaPlayer so it conforms to this fragment
-		updatePlayer();
-
-		// Set the source
-		try {
-			getPlayer().setDataSource(path);
-		} catch (IOException e) {
-			e.printStackTrace();
-			showDeathOverlay();
-			getPlayer().removeOnPreparedListener(listener);
-		}
-
-		// Prepare MediaPlayer
-		getPlayer().addOnPreparedListener(listener);
-		getPlayer().prepareAsync();
-	}
-
-	/**
-	 * Removes all added prepared and error listeners. Also disconnects from possibly set
-	 * {@link Controls}.
-	 */
-	private void resetPlayer() {
-		getPlayer().setDisplay(null);
-
-		// Remove previous listeners from the Player
-		getPlayer().removeOnErrorListeners();
-		getPlayer().removeOnPreparedListeners();
-
-		// Cancel the previous Player-Controls combo
-		if (getPlayer().getControls() != null) {
-			getPlayer().getControls().setPlayer(null);
-			getPlayer().setControls(null);
-		}
-
-		// Switch player to IDLE state
-		Player.State state = getPlayer().getState();
-		if (state != Player.State.IDLE) {
-			if (state != Player.State.INITIALIZED && state != Player.State.ERROR) {
-				getPlayer().stop();
-			}
-			getPlayer().reset();
+				setPreviewVisible(true);
 		}
 	}
 
 	/**
-	 * Updates the player so it conforms to the current fragment. Will update the listeners and
-	 * connect to this fragment's {@link Controls}.
+	 * Removes any previous connections with other fragments and re-connects to this one. Will do
+	 * nothing if this fragment is already connected to the player.
 	 */
-	private void updatePlayer() {
-		getPlayer().setDisplay(mHolder);
+	private void setupPlayer() {
+		// If the player is already connected to this fragment's Controls don't re-connect it
+		if (getPlayer().getControls() != getControls()) {
 
-		// Add listeners applicable to this fragment
-		getPlayer().addOnErrorListener(this);
-		getPlayer().addOnPreparedListener(this);
-		getPlayer().setOnStateChangedListener(this);
+			// Reset the previous MediaPlayer listeners and states
+			getPlayer().setDisplay(null);
 
-		// Set the new Player-Controls combo
-		getControls().setPlayer(getPlayer());
-		getPlayer().setControls(getControls());
+			// Remove previous listeners from the Player
+			getPlayer().removeOnErrorListeners();
+			getPlayer().removeOnPreparedListeners();
+
+			// Cancel the previous Player-Controls combo
+			if (getPlayer().getControls() != null) {
+				getPlayer().getControls().setPlayer(null);
+				getPlayer().setControls(null);
+			}
+
+			// Update the MediaPlayer so it conforms to this fragment
+			Log.e(TAG, "mholder: " + mHolder.isCreating());
+			Log.e(TAG, "mholder: " + mHolder.getSurface());
+			Log.e(TAG, "mholder: " + mHolder.getSurface().isValid());
+
+			if (mHolder.getSurface().isValid()) {
+				getPlayer().setDisplay(mHolder);
+			} else {
+				mHolder.addCallback(this);
+			}
+
+			// Add listeners applicable to this fragment
+			getPlayer().addOnErrorListener(this);
+			getPlayer().addOnPreparedListener(this);
+			getPlayer().setOnStateChangedListener(this);
+
+			// Set the new Player-Controls combo
+			getControls().setPlayer(getPlayer());
+			getPlayer().setControls(getControls());
+		}
 	}
 
 	/**
@@ -531,7 +565,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		return mControls;
 	}
 
-	public Player getPlayer() {
+	public static Player getPlayer() {
 		return sPlayer;
 	}
 
@@ -627,7 +661,10 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-//		getPlayer().setDisplay(holder);
+		if (holder.getSurface().isValid()) {
+			mHolder.removeCallback(this);
+			getPlayer().setDisplay(holder);
+		}
 	}
 
 	@Override

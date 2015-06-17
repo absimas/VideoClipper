@@ -18,12 +18,16 @@
  */
 package com.simas.vc.editor.player;
 
+import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -54,6 +58,8 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		super.setOnErrorListener(this);
 		setOnCompletionListener(this);
 	}
+
+
 
 	private synchronized void setState(State newState) {
 		final State previousState = mState;
@@ -97,11 +103,56 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	@Override
 	public void release() {
 		super.release();
-		if (getState().ordinal() < State.RELEASED.ordinal())
 		setState(State.RELEASED);
 		if (getControls() != null) {
 			getControls().setPlaying(false);
 		}
+	}
+
+	private Object mDataSource;
+
+	@Override
+	public void setDataSource(Context context, Uri uri)
+			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
+		super.setDataSource(context, uri);
+		mDataSource = uri;
+		setState(State.INITIALIZED);
+	}
+
+	@Override
+	public void setDataSource(FileDescriptor fd)
+			throws IOException, IllegalArgumentException, IllegalStateException {
+		super.setDataSource(fd);
+		mDataSource = fd;
+		setState(State.INITIALIZED);
+	}
+
+	@Override
+	public void setDataSource(String path)
+			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
+		super.setDataSource(path);
+		mDataSource = path;
+		setState(State.INITIALIZED);
+	}
+
+	@Override
+	public void setDataSource(FileDescriptor fd, long offset, long length)
+			throws IOException, IllegalArgumentException, IllegalStateException {
+		super.setDataSource(fd, offset, length);
+		mDataSource = fd;
+		setState(State.INITIALIZED);
+	}
+
+	@Override
+	public void setDataSource(Context context, Uri uri, Map<String, String> headers)
+			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
+		super.setDataSource(context, uri, headers);
+		mDataSource = uri;
+		setState(State.INITIALIZED);
+	}
+
+	public Object getDataSource() {
+		return mDataSource;
 	}
 
 	@Override
@@ -124,15 +175,23 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		setState(State.PREPARED);
-		if (getControls() != null) {
-			getControls().setCurrent(0);
-			getControls().setTotal(mp.getDuration());
-			getControls().setPlaying(false);
-			getControls().show();
-		}
 
 		for (OnPreparedListener listener : mPreparedListeners) {
 			listener.onPrepared(mp);
+		}
+	}
+
+	public void resetControls() {
+		if (getControls() != null) {
+			getControls().setCurrent(0);
+			switch (getState()) {
+				case ERROR: case IDLE: case INITIALIZED:
+					break;
+				default:
+					getControls().setTotal(getDuration());
+			}
+			getControls().setPlaying(false);
+			getControls().show();
 		}
 	}
 
