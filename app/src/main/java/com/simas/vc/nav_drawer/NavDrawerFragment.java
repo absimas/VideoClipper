@@ -40,7 +40,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
-
 import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.VC;
@@ -69,7 +68,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	 * Per the design guidelines, you should show the drawer on launch until the user manually
 	 * collapses it. This shared preference tracks this.
 	 */
-	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learneddd"; // todo
+	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
 	private static final String TAG = "NavDrawerFragment";
 
 	public static int sPreviewSize;

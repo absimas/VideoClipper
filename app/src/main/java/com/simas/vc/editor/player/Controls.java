@@ -20,6 +20,7 @@
 package com.simas.vc.editor.player;
 
 import android.os.Handler;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -36,13 +37,17 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	private static final int CURRENT_TIME_RECHECK_INTERVAL = 300;
 	private final String TAG = getClass().getName();
 
+	/**
+	 * If set, will override the default behaviour of the play button click event.
+	 */
+	private PlayClickOverrider mPlayClickOverrider;
 	private Player mPlayer;
-	private RelativeLayout mContainer;
-	private SeekBar mSeekBar;
-	private ImageView mPlayButton;
-	private TextView mCurrentTime, mTotalTime;
-	private Handler mVisibilityHandler = new Handler();
-	private Handler mSeekHandler = new Handler();
+	private final RelativeLayout mContainer;
+	private final SeekBar mSeekBar;
+	private final ImageView mPlayButton;
+	private final TextView mCurrentTime, mDuration;
+	private final Handler mVisibilityHandler = new Handler();
+	private final Handler mSeekHandler = new Handler();
 
 	public Controls(View container) {
 		mContainer = (RelativeLayout) container.findViewById(R.id.player_controls);
@@ -51,7 +56,15 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		mPlayButton = (ImageView) mContainer.findViewById(R.id.play_button);
 		mPlayButton.setOnClickListener(this);
 		mCurrentTime = (TextView) mContainer.findViewById(R.id.current_time);
-		mTotalTime = (TextView) mContainer.findViewById(R.id.total_time);
+		mDuration = (TextView) mContainer.findViewById(R.id.duration);
+	}
+
+	/**
+	 * Set an overrider to provide custom functionality when the play button is pressed. If set
+	 * to null will return to the default (play/stop according to {@link Player}'s state).
+	 */
+	public void setPlayClickOverrider(PlayClickOverrider overrider) {
+		mPlayClickOverrider = overrider;
 	}
 
 	public void setPlayer(Player player) {
@@ -62,9 +75,9 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		return mPlayer;
 	}
 
-	public void setTotal(int msec) {
+	public void setDuration(int msec) {
 		int secs = msec / 1000;
-		mTotalTime.setText(Utils.secsToTime(secs));
+		mDuration.setText(Utils.secsToTime(secs));
 		mSeekBar.setMax(msec);
 	}
 
@@ -72,6 +85,14 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		int secs = msec / 1000;
 		mCurrentTime.setText(Utils.secsToTime(secs));
 		mSeekBar.setProgress(msec);
+	}
+
+	public int getCurrent() {
+		return mSeekBar.getProgress();
+	}
+
+	public int getDuration() {
+		return mSeekBar.getMax();
 	}
 
 	public void setPlaying(boolean isPlaying) {
@@ -112,7 +133,9 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	 * If container is disabled, do nothing.
 	 */
 	public void hide() {
-		mContainer.setVisibility(View.INVISIBLE);
+		synchronized (mContainer) {
+			mContainer.setVisibility(View.INVISIBLE);
+		}
 		// When controls are hidden, children can't receive any touch events
 		setChildrenTouchListener(null);
 	}
@@ -122,11 +145,22 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		mPlayButton.setOnTouchListener(listener);
 		mCurrentTime.setOnTouchListener(listener);
 		mSeekBar.setOnTouchListener(listener);
-		mTotalTime.setOnTouchListener(listener);
+		mDuration.setOnTouchListener(listener);
 	}
 
 	public boolean isVisible() {
 		return mContainer.getVisibility() == View.VISIBLE;
+	}
+
+	public void reset() {
+		setCurrent(0);
+		setDuration(0);
+		setPlaying(false);
+		hide();
+	}
+
+	public boolean isReset() {
+		return getCurrent() == 0 && getDuration() == 0;
 	}
 
 	@Override
@@ -144,12 +178,17 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 
 	@Override
 	public void onClick(View v) {
-		if (getPlayer() != null) {
-			if (getPlayer().isPlaying()) {
-				getPlayer().pause();
-			} else {
-				getPlayer().start();
+		// Invoke the Player's start/pause method if the overrider is not set
+		if (mPlayClickOverrider == null) {
+			if (getPlayer() != null) {
+				if (getPlayer().isPlaying()) {
+					getPlayer().pause();
+				} else {
+					getPlayer().start();
+				}
 			}
+		} else {
+			mPlayClickOverrider.onPlayClicked();
 		}
 	}
 
@@ -157,6 +196,13 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	public boolean onTouch(View v, MotionEvent event) {
 		show();
 		return false;
+	}
+
+	/**
+	 * Listener that's invoked when the play/pause button is clicked.
+	 */
+	public interface PlayClickOverrider {
+		void onPlayClicked();
 	}
 
 }

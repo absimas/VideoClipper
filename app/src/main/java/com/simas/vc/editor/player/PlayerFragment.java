@@ -38,32 +38,28 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-
 import com.simas.vc.DelayedHandler;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
-
+import com.simas.vc.nav_drawer.NavItem;
 import java.io.IOException;
 
-// ToDo! PlayerFragment shouldn't handle sPlayer lifecycle.
+// ToDo save fullscreen/playing/controls visibility for the active EditorFragment
 // ToDo! this frag should only save seek position in the instance state, then restore it once video is prepared
 	// FS, and play states are more difficult but might still be pretty easy, as view adapter
 		// probly properly saves its and all the pages state on orientation changes too
-// ToDo! First create a Fragment that doesn't have any state saves. So it uses a static player
-	// shared properly. Only then, save states like seek, opened file, fs and re-create accordingly.
-
 // ToDo test holder modifications and callbacks properly
-// ToDo restore the use of deathOverlay
 
 public class PlayerFragment extends Fragment implements	View.OnTouchListener,
-		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener, SurfaceHolder.Callback, Player.OnStateChangedListener {
+		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener,
+		SurfaceHolder.Callback, Player.OnStateChangedListener, Controls.PlayClickOverrider {
 
 	/* Instance state variables */
 	private static final String STATE_FULLSCREEN = "state_fullscreen";
 	private static final String STATE_SEEK_POS = "state_seek_pos";
+	private static final String STATE_DURATION = "state_duration";
 	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
 	private static final String STATE_PLAYING = "state_player_state";
-	private Integer mSeekPosition;
 	private Boolean mPlaying;
 
 	/* Full screen variables */
@@ -78,6 +74,13 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private SurfaceHolder mHolder;
 	private ImageView mDeadSmiley;
 	private ImageView mPreview;
+	private NavItem mItem;
+	/**
+	 * Initialized = player connected, data source set and the player is prepared.
+	 * This is enable by calling  {@link #setItem(NavItem)} and disabled by
+	 * {@link #initializePlayer()}.
+	 */
+	private boolean mInitialized;
 	private GestureDetector mGestureDetector;
 	/**
 	 * {@link Controls} are fragment specific.
@@ -102,6 +105,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Nullable
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
+		Log.e(TAG, "onCreateView");
 		mContainer = (RelativeLayout) inflater.inflate(R.layout.fragment_player, container, false);
 		getContainer().setOnTouchListener(this);
 		getContainer().setOnKeyListener(this);
@@ -112,6 +116,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mHolder = mSurfaceView.getHolder();
 
 		mControls = new Controls(getContainer());
+		mControls.setPlayClickOverrider(this);
 
 		// Gesture detector for root dialog (to detect double clicks)
 		mGestureDetector = new GestureDetector(getActivity(),
@@ -139,8 +144,19 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				});
 
 		if (savedInstanceState != null) {
-			mSeekPosition = savedInstanceState.getInt(STATE_SEEK_POS);
 			mPlaying = savedInstanceState.getBoolean(STATE_PLAYING);
+
+			// Total duration
+			int duration = savedInstanceState.getInt(STATE_DURATION, -1);
+			if (duration != -1) {
+				mControls.setDuration(duration);
+			}
+
+			// Seek
+			int seekPosition = savedInstanceState.getInt(STATE_SEEK_POS, -1);
+			if (seekPosition != -1) {
+				mControls.setCurrent(seekPosition);
+			}
 		}
 
 		getContainer().post(new Runnable() {
@@ -192,18 +208,16 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// Controls visibility
 		outState.putBoolean(STATE_CONTROLS_VISIBLE, getControls().isVisible());
 
-		// Seek pos
-		try {
-			int pos = getPlayer().getCurrentPosition();
-			if (pos > 0) {
-				outState.putInt(STATE_SEEK_POS, pos);
-			}
-		} catch (IllegalStateException ignored) {}
-
 		// Player state
-		if (getPlayer().getState() == Player.State.STARTED) {
-			outState.putBoolean(STATE_PLAYING, true);
+		if (mControls.getPlayer() != null && getPlayer().getState() != Player.State.ERROR) {
+			outState.putBoolean(STATE_PLAYING, mControls.getPlayer().isPlaying());
 		}
+
+		// Seek pos
+		outState.putInt(STATE_SEEK_POS, mControls.getCurrent());
+
+		// Duration
+		outState.putInt(STATE_DURATION, mControls.getDuration());
 	}
 
 	/**
@@ -351,34 +365,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		}
 	}
 
-//	@Override
-//	public void onStop() {
-//		super.onStop();
-//		if (getActivity() != null && getActivity().isFinishing()) {
-//			getPlayer().release();
-//		} else {
-//			Player.State state = getPlayer().getState();
-//			switch (state) {
-//				case PREPARED: case STARTED: case PAUSED:
-//					getPlayer().stop();
-//			}
-//		}
-//	}
-//
-//	@Override
-//	public void onResume() {
-//		super.onResume();
-//		Player.State state = getPlayer().getState();
-//		switch (state) {
-//			case INITIALIZED: case STOPPED:
-//				try {
-//					getPlayer().prepare();
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//		}
-//	}
-
 	public boolean isFullscreen() {
 		return mFullscreen;
 	}
@@ -395,71 +381,36 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
 	}
 
-	public void setVideo(String path) {
-		Log.e(TAG, "set video : " + path);
-		// Remove touch listener temporarily
-		getContainer().setOnTouchListener(null);
+	public NavItem getItem() {
+		return mItem;
+	}
 
-		// Connect to this fragment's Controls and Surface.
-		setupPlayer();
+	public void setInitialized(boolean required) {
+		mInitialized = required;
+	}
 
-		// Change data source (if it's new)
-		if (setDataSource(path)) {
-			// If the source was changed, delete the saved state
-			clearState();
-		}
+	public boolean isInitialized() {
+		return mInitialized;
+	}
 
-		// ToDo controls need to be updated when fragment is re-used, coz total time is bullshitted
-		// ToDo also somethings wrong with the restoration of the current time when page is scrolled a little
-
-		Player.State state = getPlayer().getState();
-		switch (state) {
-			case INITIALIZED: case STOPPED:
-				// Prepare if necessary
-				getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-					@Override
-					public void onPrepared(MediaPlayer mp) {
-						getPlayer().removeOnPreparedListener(this);
-						getPlayer().resetControls();
-						restoreState();
-						getContainer().setOnTouchListener(PlayerFragment.this);
-					}
-				});
-				getPlayer().prepareAsync();
-				break;
-			case ERROR: case RELEASED:
-				// Do nothing on error
-				break;
-			default:
-				getPlayer().resetControls();
-				// Restore states and touch listener if player is alright
-				restoreState();
-				getContainer().setOnTouchListener(this);
+	public void setItem(NavItem item) {
+		NavItem previous = mItem;
+		mItem = item;
+		// If it's a new item, player needs re-initialization
+		if (previous != mItem) {
+			setInitialized(false);
+			if (previous != null) {
+				getControls().reset();
+			}
 		}
 	}
 
+	public void initializePlayer() {
+		// Connect Player to this fragment's Controls and SurfaceView
+		connectPlayer();
 
-
-	private void clearState() {
-		mSeekPosition = null;
-		mPlaying = null;
-	}
-
-	private void restoreState() {
-		if (mSeekPosition != null) {
-			getPlayer().seekTo(mSeekPosition);
-		}
-		if (mPlaying != null && mPlaying) {
-			getPlayer().start();
-		}
-	}
-
-	/**
-	 * Sets the player's data source.
-	 * @return true if changed data source was changed, false if it wasn't
-	 */
-	private boolean setDataSource(String path) {
-		if (getPlayer().getDataSource() == null || !getPlayer().getDataSource().equals(path)) {
+		// Modify player's data source if it's new
+		if (getPlayer().getDataSource() != getItem().getFile().getPath()) {
 			// Switch player to IDLE state
 			Player.State state = getPlayer().getState();
 			if (state != Player.State.IDLE) {
@@ -468,17 +419,58 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				}
 				getPlayer().reset();
 			}
-			// Set the source
 			try {
-				getPlayer().setDataSource(path);
+				getPlayer().setDataSource(getItem().getFile().getPath());
 			} catch (IOException e) {
 				e.printStackTrace();
-				showDeathOverlay();
 			}
+		}
 
-			return true;
-		} else {
-			return false;
+		/* Prepare and start the player */
+
+		// If Controls are reset, update them according to Player, otherwise update Player
+		final Runnable updateControlsOrPlayer = new Runnable() {
+			@Override
+			public void run() {
+				if (getControls().isReset()) {
+					getPlayer().updateControls();
+				} else {
+					getPlayer().seekTo(getControls().getCurrent());
+				}
+			}
+		};
+
+		final MediaPlayer.OnPreparedListener prepListener = new MediaPlayer.OnPreparedListener() {
+			@Override
+			public void onPrepared(MediaPlayer mp) {
+				getPlayer().removeOnPreparedListener(this);
+				updateControlsOrPlayer.run();
+				setInitialized(true);
+				getPlayer().start();
+			}
+		};
+
+		switch (getPlayer().getState()) {
+			case INITIALIZED: case STOPPED:
+				// Prepare the Player
+				getPlayer().addOnPreparedListener(prepListener);
+				getPlayer().prepareAsync();
+				break;
+			case PREPARING:
+				getPlayer().addOnPreparedListener(prepListener);
+				break;
+			case ERROR: case RELEASED: case IDLE:
+				// Make sure the death overlay is shown on error
+				showDeathOverlay();
+				break;
+			case STARTED:
+				// The video is already playing, do nothing
+				break;
+			case PREPARED: case PAUSED:
+				updateControlsOrPlayer.run();
+				setInitialized(true);
+				getPlayer().start();
+				break;
 		}
 	}
 
@@ -499,7 +491,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * Removes any previous connections with other fragments and re-connects to this one. Will do
 	 * nothing if this fragment is already connected to the player.
 	 */
-	private void setupPlayer() {
+	private void connectPlayer() {
 		// If the player is already connected to this fragment's Controls don't re-connect it
 		if (getPlayer().getControls() != getControls()) {
 
@@ -517,9 +509,9 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			}
 
 			// Update the MediaPlayer so it conforms to this fragment
-			Log.e(TAG, "mholder: " + mHolder.isCreating());
-			Log.e(TAG, "mholder: " + mHolder.getSurface());
-			Log.e(TAG, "mholder: " + mHolder.getSurface().isValid());
+			Log.e(TAG, "connectPlayer. Holder creating: " + mHolder.isCreating() +
+					". Surface: " + mHolder.getSurface() +
+					", valid: " + mHolder.getSurface().isValid());
 
 			if (mHolder.getSurface().isValid()) {
 				getPlayer().setDisplay(mHolder);
@@ -677,5 +669,22 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 //		getPlayer().setDisplay(null);
 	}
 
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		Log.e(TAG, "destroy view");
+	}
 
+	@Override
+	public void onPlayClicked() {
+		if (!isInitialized()) {
+			initializePlayer();
+		} else {
+			if (getPlayer().isPlaying()) {
+				getPlayer().pause();
+			} else {
+				getPlayer().start();
+			}
+		}
+	}
 }

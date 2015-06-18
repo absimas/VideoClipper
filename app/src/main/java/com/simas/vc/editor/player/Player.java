@@ -24,7 +24,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.Map;
@@ -58,8 +57,6 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		super.setOnErrorListener(this);
 		setOnCompletionListener(this);
 	}
-
-
 
 	private synchronized void setState(State newState) {
 		final State previousState = mState;
@@ -181,17 +178,19 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		}
 	}
 
-	public void resetControls() {
+	/**
+	 * Stops playing. Updates current and total times.
+	 * If no controls are connected to the player, does nothing.
+	 */
+	public void updateControls() {
 		if (getControls() != null) {
 			getControls().setCurrent(0);
 			switch (getState()) {
 				case ERROR: case IDLE: case INITIALIZED:
 					break;
 				default:
-					getControls().setTotal(getDuration());
+					getControls().setDuration(getDuration());
 			}
-			getControls().setPlaying(false);
-			getControls().show();
 		}
 	}
 
@@ -219,7 +218,9 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	@Override
 	public void onCompletion(MediaPlayer mp) {
 		setState(State.PAUSED);
-		getControls().setPlaying(false);
+		if (getControls() != null) {
+			getControls().setPlaying(false);
+		}
 	}
 
 	public void setControls(Controls controls) {

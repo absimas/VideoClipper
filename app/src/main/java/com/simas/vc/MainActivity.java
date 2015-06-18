@@ -31,7 +31,6 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
-
 import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
 import com.simas.vc.editor.player.PlayerFragment;
@@ -40,13 +39,10 @@ import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
 import com.simas.vc.pager.PagerAdapter;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-
-// ToDo link onPageScrolled with drawer list's onScroll
 // ToDo empty view for ViewPager
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
 // ToDo use dimensions in xml instead of hard-coded values
@@ -99,8 +95,9 @@ public class MainActivity extends AppCompatActivity
 		@Override
 		public void onPageSelected(int position) {
 			super.onPageSelected(position);
+			// Update the EditorFragment and invalidate the PlayerFragment
 			mEditorFragment = (EditorFragment) mPagerAdapter.getCreatedItem(position);
-			Log.e(TAG, "editor selected: " + mEditorFragment);
+			mEditorFragment.getPlayerFragment().setInitialized(false);
 		}
 
 		@Override
@@ -128,16 +125,16 @@ public class MainActivity extends AppCompatActivity
 					pausePlayer();
 					break;
 				case ViewPager.SCROLL_STATE_IDLE:
-					if (mEditorFragment != null) {
-						mEditorFragment.post(new Runnable() {
-							@Override
-							public void run() {
-								mEditorFragment.getPlayerFragment().setVideo(
-										mEditorFragment.getItem().getFile().getPath()
-								);
-							}
-						});
-					}
+//					if (mEditorFragment != null) {
+//						mEditorFragment.post(new Runnable() {
+//							@Override
+//							public void run() {
+//								mEditorFragment.getPlayerFragment().setVideo(
+//										mEditorFragment.getItem().getFile().getPath()
+//								);
+//							}
+//						});
+//					}
 			}
 		}
 
@@ -153,15 +150,19 @@ public class MainActivity extends AppCompatActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// Restore items if available from onSaveInstanceState
+		// Always reset observers when (re-)creating the activity
+		sItems.unregisterAllObservers();
+		// Restore items if available, otherwise make sure the list is empty
 		if (savedInstanceState != null) {
 			ArrayList<NavItem> items = savedInstanceState.getParcelableArrayList(STATE_ITEMS);
 			if (items != null) {
-				// Remove previously set observers
-				sItems.unregisterAllObservers();
 				sItems = new ObservableSynchronizedList();
 				sItems.addAll(items);
+			} else {
+				sItems.clear();
 			}
+		} else {
+			sItems.clear();
 		}
 
 		setContentView(R.layout.activity_main);
@@ -173,6 +174,7 @@ public class MainActivity extends AppCompatActivity
 
 		/* Pager */
 		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+
 		mPagerAdapter = new PagerAdapter(getSupportFragmentManager());
 		mPagerScrollListener = new PagerScrollListener();
 		mViewPager.addOnPageChangeListener(mPagerScrollListener);
@@ -344,6 +346,11 @@ public class MainActivity extends AppCompatActivity
 	protected void onDestroy() {
 		super.onDestroy();
 		sItems.unregisterAllObservers();
+		if (isFinishing()) {
+			if (PlayerFragment.getPlayer() != null) {
+				PlayerFragment.getPlayer().release();
+			}
+		}
 	}
 
 	@Override
@@ -417,7 +424,6 @@ public class MainActivity extends AppCompatActivity
 			super.onBackPressed();
 		}
 	}
-
 
 	public Toolbar getToolbar() {
 		return mToolbar;

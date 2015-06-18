@@ -36,8 +36,8 @@
 		android:id="@+id/preview"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:contentDescription="@string/dead_smiley"
-		android:visibility="gone"/>
+		android:contentDescription="@string/video_preview"
+		android:visibility="visible"/>
 
     <RelativeLayout
         android:id="@+id/player_controls"
@@ -69,16 +69,18 @@
 			    android:paddingRight="5dp"/>
 
 		    <SeekBar
-			    android:id="@+id/seek_bar"
 			    style="?android:attr/progressBarStyleHorizontal"
+			    android:id="@+id/seek_bar"
 			    android:layout_width="0dip"
 			    android:layout_weight="1"
-			    android:layout_height="32dip"/>
+			    android:layout_height="32dip"
+			    android:progress="0"
+			    android:max="0"/>
 
 		    <TextView
 			    android:textColor="#FFF"
 			    android:text="@string/zero_time"
-				android:id="@+id/total_time"
+				android:id="@+id/duration"
 			    android:layout_width="wrap_content"
 			    android:layout_height="match_parent"
 				android:textStyle="bold"
