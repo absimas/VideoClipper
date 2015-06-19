@@ -97,7 +97,9 @@ public class MainActivity extends AppCompatActivity
 			super.onPageSelected(position);
 			// Update the EditorFragment and invalidate the PlayerFragment
 			mEditorFragment = (EditorFragment) mPagerAdapter.getCreatedItem(position);
-			mEditorFragment.getPlayerFragment().setInitialized(false);
+			if (mEditorFragment != null) {
+				mEditorFragment.getPlayerFragment().setInitialized(false);
+			}
 		}
 
 		@Override
@@ -122,26 +124,11 @@ public class MainActivity extends AppCompatActivity
 					}
 
 					// Pause player
-					pausePlayer();
+					Player player = PlayerFragment.getPlayer();
+					if (player != null && player.getState() == Player.State.STARTED) {
+						player.pause();
+					}
 					break;
-				case ViewPager.SCROLL_STATE_IDLE:
-//					if (mEditorFragment != null) {
-//						mEditorFragment.post(new Runnable() {
-//							@Override
-//							public void run() {
-//								mEditorFragment.getPlayerFragment().setVideo(
-//										mEditorFragment.getItem().getFile().getPath()
-//								);
-//							}
-//						});
-//					}
-			}
-		}
-
-		private void pausePlayer() {
-			Player player = PlayerFragment.getPlayer();
-			if (player != null && player.getState() == Player.State.STARTED) {
-				player.pause();
 			}
 		}
 
@@ -179,6 +166,9 @@ public class MainActivity extends AppCompatActivity
 		mPagerScrollListener = new PagerScrollListener();
 		mViewPager.addOnPageChangeListener(mPagerScrollListener);
 		mViewPager.setAdapter(mPagerAdapter);
+		// This is to avoid a black screen flash when the SurfaceView is setting up another window
+		// https://code.google.com/p/gmaps-api-issues/issues/detail?id=4639#c2
+		mViewPager.requestTransparentRegion(mViewPager);
 
 		/* Drawer */
 		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
@@ -282,6 +272,7 @@ public class MainActivity extends AppCompatActivity
 				position < lv.getHeaderViewsCount() ||
 				position >= lv.getCount() - lv.getFooterViewsCount()) {
 			// Skip headers and footers
+			//noinspection UnnecessaryReturnStatement
 			return;
 		} else {
 			// Check the item in the drawer

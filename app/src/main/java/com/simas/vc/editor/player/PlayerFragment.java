@@ -44,11 +44,11 @@ import com.simas.vc.Utils;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.IOException;
 
+// ToDo while toggling FS, show a loading overlay (this will fill the space for controls :D)
 // ToDo save fullscreen/playing/controls visibility for the active EditorFragment
-// ToDo! this frag should only save seek position in the instance state, then restore it once video is prepared
-	// FS, and play states are more difficult but might still be pretty easy, as view adapter
-		// probly properly saves its and all the pages state on orientation changes too
-// ToDo test holder modifications and callbacks properly
+// ToDo orientation change state saving: FS, Playing, Controls visibility.
+	// I presume seek should already be OK, as long as the right page is shown.
+// ToDo when paused, continue showing surface? I.E. return to using updatePreview()
 
 public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener,
@@ -60,7 +60,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private static final String STATE_DURATION = "state_duration";
 	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
 	private static final String STATE_PLAYING = "state_player_state";
-	private Boolean mPlaying;
 
 	/* Full screen variables */
 	private boolean mFullscreen;
@@ -72,7 +71,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private RelativeLayout mContainer;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mHolder;
-	private ImageView mDeadSmiley;
+	private ImageView mErrorOverlay;
 	private ImageView mPreview;
 	private NavItem mItem;
 	/**
@@ -81,7 +80,31 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * {@link #initializePlayer()}.
 	 */
 	private boolean mInitialized;
-	private GestureDetector mGestureDetector;
+	private Boolean mPlaying;
+	private final GestureDetector mGestureDetector = new GestureDetector(getActivity(),
+			new GestureDetector.SimpleOnGestureListener() {
+				@Override
+				public boolean onDown(MotionEvent e) {
+					return true;
+				}
+
+				@Override
+				public boolean onSingleTapConfirmed(MotionEvent e) {
+					if (getControls().isVisible()) {
+						getControls().hide();
+					} else {
+						getControls().show();
+					}
+					return true;
+				}
+
+				@Override
+				public boolean onDoubleTap(MotionEvent e) {
+					toggleFullscreen();
+					return true;
+				}
+			}
+	);
 	/**
 	 * {@link Controls} are fragment specific.
 	 */
@@ -89,12 +112,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	/**
 	 * A single {@link Player} is shared between all the {@link PlayerFragment}s.
 	 */
-	private static final Player sPlayer = new Player();
-
-	/**
-	 * The preview visibility state. False by default.
-	 */
-	private boolean mPreviewVisible;
+	private static Player sPlayer = new Player();
 	/**
 	 * Handler that runs the queued messages when {@link #mContainer} is ready. I.e. at the end of
 	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} and through the post method of
@@ -106,43 +124,25 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
 		Log.e(TAG, "onCreateView");
+		/* Container */
 		mContainer = (RelativeLayout) inflater.inflate(R.layout.fragment_player, container, false);
 		getContainer().setOnTouchListener(this);
 		getContainer().setOnKeyListener(this);
 
-		mDeadSmiley = (ImageView) getContainer().findViewById(R.id.dead_smiley);
+		/* Overlays */
+		mErrorOverlay = (ImageView) getContainer().findViewById(R.id.error_image);
 		mPreview = (ImageView) getContainer().findViewById(R.id.preview);
+
+		/* SurfaceView and SurfaceHolder*/
 		mSurfaceView = (SurfaceView) getContainer().findViewById(R.id.player_surface);
 		mHolder = mSurfaceView.getHolder();
+		mHolder.addCallback(this);
 
+		/* Controls */
 		mControls = new Controls(getContainer());
 		mControls.setPlayClickOverrider(this);
 
-		// Gesture detector for root dialog (to detect double clicks)
-		mGestureDetector = new GestureDetector(getActivity(),
-				new GestureDetector.SimpleOnGestureListener() {
-					@Override
-					public boolean onDown(MotionEvent e) {
-						return true;
-					}
-
-					@Override
-					public boolean onSingleTapConfirmed(MotionEvent e) {
-						if (getControls().isVisible()) {
-							getControls().hide();
-						} else {
-							getControls().show();
-						}
-						return true;
-					}
-
-					@Override
-					public boolean onDoubleTap(MotionEvent e) {
-						toggleFullscreen();
-						return true;
-					}
-				});
-
+		/* Saved states */
 		if (savedInstanceState != null) {
 			mPlaying = savedInstanceState.getBoolean(STATE_PLAYING);
 
@@ -220,116 +220,133 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		outState.putInt(STATE_DURATION, mControls.getDuration());
 	}
 
-	/**
-	 * Should be called only when {@link Player} is in a prepared (or higher) state.
-	 * @see
-	 * <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#StateDiagram">
-	 *     MediaPlayer</a>
-	 */
 	void toggleFullscreen() {
-		// Video should be paused while working
-		boolean playing = false;
-		if (getPlayer().getState() == Player.State.STARTED) {
-				// Pause if started
-				playing = true;
-				getPlayer().pause();
-		}
-		final boolean wasPlaying = playing;
-
-		// Hide surface view while doing all the work, this is to make sure it's not being re-drawn
-		mSurfaceView.setVisibility(View.GONE);
-
-		// Toggle state
-		setFullscreen(!isFullscreen());
-
-		// Expand or collapse the PlayerView
-		if (isFullscreen()) {
-			if (Build.VERSION.SDK_INT >= 14) {
-				// For higher APIs go into the low profile mode
-				getActivity().getWindow().getDecorView()
-						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_LOW_PROFILE);
-			} else {
-				// For lower APIs just go for fullscreen flag
-				getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-			}
-
-			// Save current params
-			mDefaultContainerParams = new LinearLayout.LayoutParams(getContainer().getLayoutParams());
-
-			// Save current bottom padding
-			mDefaultContainerBottomPadding = getContainer().getPaddingBottom();
-
-			// Remove from current parent
-			mDefaultContainerParent = (ViewGroup) getContainer().getParent();
-			mDefaultContainerParent.removeView(getContainer());
-
-			// Set new params
-			ViewGroup.LayoutParams params = getContainer().getLayoutParams();
-			params.width = LinearLayout.LayoutParams.MATCH_PARENT;
-			params.height = LinearLayout.LayoutParams.MATCH_PARENT;
-
-			// Set bottom padding, so controls don't appear underneath the nav bar
-			getContainer()
-					.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
-							getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
-
-			// Re-measure the SurfaceView
-			getContainer().setRight(0);
-			getContainer().setLeft(0);
-			invalidateSurface();
-
-			// Add to the root view
-			ViewGroup rootView = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
-			rootView.addView(getContainer()); // Add as last view, so it's on top of everything else
-			getContainer().requestFocus();
-		} else {
-			if (Build.VERSION.SDK_INT >= 14) {
-				// For higher APIs remove the low profile mode
-				getActivity().getWindow().getDecorView()
-						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_VISIBLE);
-			} else {
-				// For lower APIs just remove the fullscreen flag
-				getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-			}
-
-			if (mDefaultContainerParams != null && mDefaultContainerParent != null) {
-				// Remove from current parent
-				((ViewGroup)getContainer().getParent()).removeView(getContainer());
-
-				// Restore params
-				getContainer().setLayoutParams(mDefaultContainerParams);
-
-				// Remove bottom padding
-				getContainer()
-						.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
-								getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
-
-				// Re-measure the SurfaceView
-				getContainer().setRight(0);
-				getContainer().setLeft(0);
-				invalidateSurface();
-
-				// Add as the first child to the default parent
-				mDefaultContainerParent.addView(getContainer(), 0);
-			}
-		}
-
-		getContainer().post(new Runnable() {
+		final Runnable toggle = new Runnable() {
 			@Override
 			public void run() {
-				mSurfaceView.setVisibility(View.VISIBLE);
+				// Controls should be hidden while working
+				final boolean controlsWereShown = getControls().isVisible();
+				getControls().hide();
 
-				Player.State state = getPlayer().getState();
-				switch (state) {
-					case PAUSED: case PREPARED: case STARTED:
-						if (wasPlaying) {
-							getPlayer().start();
-						} else {
-							updatePreview();
-						}
+				// Video should be paused while working
+				boolean playing = false;
+				if (getPlayer().getState() == Player.State.STARTED) {
+					// Pause if started
+					playing = true;
+					getPlayer().pause();
 				}
+				final boolean wasPlaying = playing;
+
+				// Hide surface view while doing all the work, this is to make sure it's not being re-drawn
+				mSurfaceView.setVisibility(View.GONE);
+
+				// Toggle state
+				setFullscreen(!isFullscreen());
+
+				// Expand or collapse the PlayerView
+				if (isFullscreen()) {
+					if (Build.VERSION.SDK_INT >= 14) {
+						// For higher APIs go into the low profile mode
+						getActivity().getWindow().getDecorView()
+								.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_LOW_PROFILE);
+					} else {
+						// For lower APIs just go for fullscreen flag
+						getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+					}
+
+					// Save current params
+					mDefaultContainerParams = new LinearLayout.LayoutParams(getContainer().getLayoutParams());
+
+					// Save current bottom padding
+					mDefaultContainerBottomPadding = getContainer().getPaddingBottom();
+
+					// Remove from current parent
+					mDefaultContainerParent = (ViewGroup) getContainer().getParent();
+					mDefaultContainerParent.removeView(getContainer());
+
+					// Set new params
+					ViewGroup.LayoutParams params = getContainer().getLayoutParams();
+					params.width = LinearLayout.LayoutParams.MATCH_PARENT;
+					params.height = LinearLayout.LayoutParams.MATCH_PARENT;
+
+					// Set bottom padding, so controls don't appear underneath the nav bar
+					getContainer()
+							.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+									getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
+
+					// Re-measure the SurfaceView
+					getContainer().setRight(0);
+					getContainer().setLeft(0);
+					invalidateSurface();
+
+					// Add to the root view
+					ViewGroup rootView = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
+					rootView.addView(getContainer()); // Add as last view, so it's on top of everything else
+					getContainer().requestFocus();
+				} else {
+					if (Build.VERSION.SDK_INT >= 14) {
+						// For higher APIs remove the low profile mode
+						getActivity().getWindow().getDecorView()
+								.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_VISIBLE);
+					} else {
+						// For lower APIs just remove the fullscreen flag
+						getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+					}
+
+					if (mDefaultContainerParams != null && mDefaultContainerParent != null) {
+						// Remove from current parent
+						((ViewGroup)getContainer().getParent()).removeView(getContainer());
+
+						// Restore params
+						getContainer().setLayoutParams(mDefaultContainerParams);
+
+						// Remove bottom padding
+						getContainer()
+								.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+										getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
+
+						// Re-measure the SurfaceView
+						getContainer().setRight(0);
+						getContainer().setLeft(0);
+						invalidateSurface();
+
+						// Add as the first child to the default parent
+						mDefaultContainerParent.addView(getContainer(), 0);
+					}
+				}
+
+				getContainer().post(new Runnable() {
+					@Override
+					public void run() {
+						mSurfaceView.setVisibility(View.VISIBLE);
+						switch (getPlayer().getState()) {
+							case PAUSED: case PREPARED: case STARTED:
+								if (wasPlaying) {
+									getPlayer().start();
+								} else {
+									updatePreview();
+								}
+								if (controlsWereShown) {
+									getControls().show();
+								}
+								break;
+						}
+					}
+				});
 			}
-		});
+		};
+
+		// If player is currently preparing, delay toggling fullscreen
+		if (getPlayer().getState() == Player.State.PREPARING) {
+			getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+				@Override
+				public void onPrepared(MediaPlayer mp) {
+					toggle.run();
+				}
+			});
+		} else {
+			toggle.run();
+		}
 	}
 
 	/**
@@ -337,9 +354,9 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * {@link Player.State#ERROR} state.
 	 */
 	private void updatePreview() {
-		if (getPlayer().getState() != Player.State.ERROR) {
-			updatePreview(getPlayer().getCurrentPosition());
-		}
+//		if (getPlayer().getState() != Player.State.ERROR) {
+//			updatePreview(getPlayer().getCurrentPosition());
+//		}
 	}
 
 	/**
@@ -409,7 +426,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// Connect Player to this fragment's Controls and SurfaceView
 		connectPlayer();
 
-		// Modify player's data source if it's new
+		// Modify player's data source (if it's new)
 		if (getPlayer().getDataSource() != getItem().getFile().getPath()) {
 			// Switch player to IDLE state
 			Player.State state = getPlayer().getState();
@@ -426,8 +443,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			}
 		}
 
-		/* Prepare and start the player */
-
 		// If Controls are reset, update them according to Player, otherwise update Player
 		final Runnable updateControlsOrPlayer = new Runnable() {
 			@Override
@@ -440,6 +455,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			}
 		};
 
+		/* Prepare and start the player */
 		final MediaPlayer.OnPreparedListener prepListener = new MediaPlayer.OnPreparedListener() {
 			@Override
 			public void onPrepared(MediaPlayer mp) {
@@ -460,8 +476,8 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				getPlayer().addOnPreparedListener(prepListener);
 				break;
 			case ERROR: case RELEASED: case IDLE:
-				// Make sure the death overlay is shown on error
-				showDeathOverlay();
+				// Make sure the error overlay is shown on error
+				showErrorOverlay();
 				break;
 			case STARTED:
 				// The video is already playing, do nothing
@@ -494,7 +510,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private void connectPlayer() {
 		// If the player is already connected to this fragment's Controls don't re-connect it
 		if (getPlayer().getControls() != getControls()) {
-
 			// Reset the previous MediaPlayer listeners and states
 			getPlayer().setDisplay(null);
 
@@ -508,16 +523,34 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				getPlayer().setControls(null);
 			}
 
-			// Update the MediaPlayer so it conforms to this fragment
-			Log.e(TAG, "connectPlayer. Holder creating: " + mHolder.isCreating() +
-					". Surface: " + mHolder.getSurface() +
-					", valid: " + mHolder.getSurface().isValid());
-
+			// Set the Player to draw to this fragment's SurfaceHolder
 			if (mHolder.getSurface().isValid()) {
 				getPlayer().setDisplay(mHolder);
-			} else {
-				mHolder.addCallback(this);
 			}
+
+//			if (mHolder.getSurface().isValid()) {
+//				getPlayer().setDisplay(mHolder);
+//			} else {
+//				mHolder.addCallback(new SurfaceHolder.Callback() {
+//					@Override
+//					public void surfaceCreated(SurfaceHolder holder) {
+//						if (holder.getSurface().isValid()) {
+//							holder.removeCallback(this);
+//							Player player = getControls().getPlayer();
+//							if (player != null) {
+//								player.setDisplay(holder);
+//							}
+//						}
+//					}
+//
+//					@Override
+//					public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+//
+//					@Override
+//					public void surfaceDestroyed(SurfaceHolder holder) {}
+//				});
+//			}
+
 
 			// Add listeners applicable to this fragment
 			getPlayer().addOnErrorListener(this);
@@ -533,20 +566,20 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	/**
 	 * Displays a dead smiley face on top of the container.
 	 */
-	private void showDeathOverlay() {
+	private void showErrorOverlay() {
 		// Remove touch listener, so GestureDetector is not invoked
 		getContainer().setOnTouchListener(null);
 		getControls().hide();
-		mDeadSmiley.setVisibility(View.VISIBLE);
+		mErrorOverlay.setVisibility(View.VISIBLE);
 	}
 
 	/**
-	 * Makes sure the dead smiley from {@link #showDeathOverlay()} isn't showing.
+	 * Makes sure the dead smiley from {@link #showErrorOverlay()} isn't showing.
 	 */
-	private void hideDeathOverlay() {
+	private void hideErrorOverlay() {
 		// Reset the touch listener, so GestureDetector is invoked
 		getContainer().setOnTouchListener(this);
-		mDeadSmiley.setVisibility(View.GONE);
+		mErrorOverlay.setVisibility(View.GONE);
 	}
 
 	public void post(Runnable runnable) {
@@ -582,7 +615,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		Log.e(TAG, String.format("Error: %d : %d", what, extra));
-		showDeathOverlay();
+//		showErrorOverfaclay(); // ToDo retry button
 		return false;
 	}
 
@@ -593,7 +626,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// Show controls
 		getControls().show();
 		// Hide overlay (if any)
-		hideDeathOverlay();
+		hideErrorOverlay();
 	}
 
 	/**
@@ -654,14 +687,21 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		if (holder.getSurface().isValid()) {
-			mHolder.removeCallback(this);
-			getPlayer().setDisplay(holder);
+			Player player = getControls().getPlayer();
+			if (player != null) {
+				player.setDisplay(holder);
+			}
 		}
 	}
 
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-//		getPlayer().setDisplay(holder);
+		if (holder.getSurface().isValid()) {
+			Player player = getControls().getPlayer();
+			if (player != null) {
+				player.setDisplay(holder);
+			}
+		}
 	}
 
 	@Override

@@ -111,7 +111,7 @@
 	<string name="minute_short">m</string>
 	<string name="second_short">s</string>
 	<string name="player_play_button">Player\'s play button</string>
-	<string name="dead_smiley">Dead smiley</string>
+	<string name="error_smiley">Dead smiley</string>
 	<string name="zero_time">00:00:00</string>
 	<string name="video_preview">Video preview</string>
 </resources>

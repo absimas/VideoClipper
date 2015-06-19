@@ -92,11 +92,11 @@
 
 	<ImageView
 		android:background="#000"
-		android:id="@+id/dead_smiley"
+		android:id="@+id/error_image"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:src="@drawable/fail"
 		android:visibility="gone"
-		android:contentDescription="@string/dead_smiley"/>
+		android:contentDescription="@string/error_smiley"/>
 	<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
 </RelativeLayout>
