@@ -224,7 +224,7 @@ public class EditorFragment extends Fragment {
 				getPlayerFragment().post(new Runnable() {
 					@Override
 					public void run() {
-						getPlayerFragment().setPreview(item.getPreview());
+						getPlayerFragment().getPreview().setImageBitmap((item.getPreview()));
 						getPlayerFragment().setItem(item);
 					}
 				});

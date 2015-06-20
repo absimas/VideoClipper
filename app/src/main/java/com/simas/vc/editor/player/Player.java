@@ -24,8 +24,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.view.SurfaceHolder;
-
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.Map;
@@ -78,7 +76,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void start() throws IllegalStateException {
+	public synchronized void start() throws IllegalStateException {
 		super.start();
 		setState(State.STARTED);
 		if (getControls() != null) {
@@ -87,7 +85,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void stop() throws IllegalStateException {
+	public synchronized void stop() throws IllegalStateException {
 		super.stop();
 		setState(State.STOPPED);
 		if (getControls() != null) {
@@ -96,7 +94,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void pause() throws IllegalStateException {
+	public synchronized void pause() throws IllegalStateException {
 		super.pause();
 		setState(State.PAUSED);
 		if (getControls() != null) {
@@ -105,7 +103,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void release() {
+	public synchronized void release() {
 		super.release();
 		setState(State.RELEASED);
 		if (getControls() != null) {
@@ -116,7 +114,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	private Object mDataSource;
 
 	@Override
-	public void setDataSource(Context context, Uri uri)
+	public synchronized void setDataSource(Context context, Uri uri)
 			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
 		super.setDataSource(context, uri);
 		mDataSource = uri;
@@ -124,7 +122,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void setDataSource(FileDescriptor fd)
+	public synchronized void setDataSource(FileDescriptor fd)
 			throws IOException, IllegalArgumentException, IllegalStateException {
 		super.setDataSource(fd);
 		mDataSource = fd;
@@ -132,7 +130,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void setDataSource(String path)
+	public synchronized void setDataSource(String path)
 			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
 		super.setDataSource(path);
 		mDataSource = path;
@@ -140,7 +138,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void setDataSource(FileDescriptor fd, long offset, long length)
+	public synchronized void setDataSource(FileDescriptor fd, long offset, long length)
 			throws IOException, IllegalArgumentException, IllegalStateException {
 		super.setDataSource(fd, offset, length);
 		mDataSource = fd;
@@ -148,7 +146,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void setDataSource(Context context, Uri uri, Map<String, String> headers)
+	public synchronized void setDataSource(Context context, Uri uri, Map<String, String> headers)
 			throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
 		super.setDataSource(context, uri, headers);
 		mDataSource = uri;
@@ -160,7 +158,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void reset() {
+	public synchronized void reset() {
 		super.reset();
 		setState(State.IDLE);
 		if (getControls() != null) {
@@ -169,7 +167,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void seekTo(int msec) throws IllegalStateException {
+	public synchronized void seekTo(int msec) throws IllegalStateException {
 		super.seekTo(msec);
 		if (getControls() != null) {
 			getControls().setCurrent(msec);
@@ -177,7 +175,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void onPrepared(MediaPlayer mp) {
+	public synchronized void onPrepared(MediaPlayer mp) {
 		setState(State.PREPARED);
 
 		for (OnPreparedListener listener : mPreparedListeners) {
@@ -189,7 +187,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	 * Stops playing. Updates current and total times.
 	 * If no controls are connected to the player, does nothing.
 	 */
-	public void updateControls() {
+	public synchronized void updateControls() {
 		if (getControls() != null) {
 			getControls().setCurrent(0);
 			switch (getState()) {
@@ -202,7 +200,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public boolean onError(MediaPlayer mp, int what, int extra) {
+	public synchronized boolean onError(MediaPlayer mp, int what, int extra) {
 		setState(State.ERROR);
 		for (OnErrorListener listener : mErrorListeners) {
 			listener.onError(mp, what, extra);
@@ -211,19 +209,19 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	@Override
-	public void prepareAsync() throws IllegalStateException {
+	public synchronized void prepareAsync() throws IllegalStateException {
 		setState(State.PREPARING);
 		super.prepareAsync();
 	}
 
 	@Override
-	public void prepare() throws IOException, IllegalStateException {
+	public synchronized void prepare() throws IOException, IllegalStateException {
 		setState(State.PREPARING);
 		super.prepare();
 	}
 
 	@Override
-	public void onCompletion(MediaPlayer mp) {
+	public synchronized void onCompletion(MediaPlayer mp) {
 		setState(State.PAUSED);
 		if (getControls() != null) {
 			getControls().setPlaying(false);

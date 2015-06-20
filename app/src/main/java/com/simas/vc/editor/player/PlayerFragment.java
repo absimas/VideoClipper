@@ -19,6 +19,7 @@
 package com.simas.vc.editor.player;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,21 +40,26 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import com.simas.vc.DelayedHandler;
+import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.Utils;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.IOException;
 
+// ToDo going to FS when player is connected to another fragment, does not update the surface.
+// I.e. it seeks the player for the different video...
 // ToDo while toggling FS, show a loading overlay (this will fill the space for controls :D)
 // ToDo save fullscreen/playing/controls visibility for the active EditorFragment
 // ToDo orientation change state saving: FS, Playing, Controls visibility.
-	// I presume seek should already be OK, as long as the right page is shown.
+// I presume seek should already be OK, as long as the right page is shown.
 // ToDo when paused, continue showing surface? I.E. return to using updatePreview()
+// ToDo Galaxy S2 nav bar height is incorrect (in FS)
 
 public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener, View.OnKeyListener,
 		SurfaceHolder.Callback, Player.OnStateChangedListener, Controls.PlayClickOverrider {
 
+	private static final int MAX_RETRIES = 1;
 	/* Instance state variables */
 	private static final String STATE_FULLSCREEN = "state_fullscreen";
 	private static final String STATE_SEEK_POS = "state_seek_pos";
@@ -66,12 +72,13 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private LinearLayout.LayoutParams mDefaultContainerParams;
 	private ViewGroup mDefaultContainerParent;
 	private int mDefaultContainerBottomPadding;
+	private int mRetries;
 
 	private final String TAG = getClass().getName();
 	private RelativeLayout mContainer;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mHolder;
-	private ImageView mErrorOverlay;
+	private View mErrorOverlay;
 	private ImageView mPreview;
 	private NavItem mItem;
 	/**
@@ -80,6 +87,8 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * {@link #initializePlayer()}.
 	 */
 	private boolean mInitialized;
+	private boolean mPreviewVisible = true;
+	private boolean mPreviewTemporaryState;
 	private Boolean mPlaying;
 	private final GestureDetector mGestureDetector = new GestureDetector(getActivity(),
 			new GestureDetector.SimpleOnGestureListener() {
@@ -120,6 +129,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 */
 	private DelayedHandler mDelayedHandler = new DelayedHandler();
 
+
 	@Nullable
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
@@ -130,7 +140,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		getContainer().setOnKeyListener(this);
 
 		/* Overlays */
-		mErrorOverlay = (ImageView) getContainer().findViewById(R.id.error_image);
+		mErrorOverlay = getContainer().findViewById(R.id.error_image);
 		mPreview = (ImageView) getContainer().findViewById(R.id.preview);
 
 		/* SurfaceView and SurfaceHolder*/
@@ -221,9 +231,59 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	}
 
 	void toggleFullscreen() {
-		final Runnable toggle = new Runnable() {
+		final ViewGroup root = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
+		// Find progress overlay and remove it from parent
+		final View progressOverlay = (getActivity() instanceof MainActivity) ?
+				((MainActivity)getActivity()).getProgressOverlay() : null;
+		if (progressOverlay != null) {
+			progressOverlay.setVisibility(View.VISIBLE);
+			ViewGroup progressParent = (ViewGroup) progressOverlay.getParent();
+			if (progressParent != null) {
+				progressParent.removeView(progressOverlay);
+			}
+		}
+
+		// Toggle state
+		mFullscreen = !isFullscreen();
+
+		if (isFullscreen()) {
+			// Add preview to the root view
+			if (progressOverlay != null) {
+				root.addView(progressOverlay);
+			}
+
+			// Toggle window settings
+			if (Build.VERSION.SDK_INT >= 14) {
+				// For higher APIs go into the low profile mode
+				getActivity().getWindow().getDecorView()
+						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_LOW_PROFILE);
+			} else {
+				// For lower APIs just go for fullscreen flag
+				getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			}
+		} else {
+			// Add preview to the default parent
+			if (mDefaultContainerParent != null && progressOverlay != null) {
+				mDefaultContainerParent.addView(progressOverlay);
+			}
+
+			// Toggle window settings
+			if (Build.VERSION.SDK_INT >= 14) {
+				// For higher APIs remove the low profile mode
+				getActivity().getWindow().getDecorView()
+						.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_VISIBLE);
+			} else {
+				// For lower APIs just remove the fullscreen flag
+				getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			}
+		}
+
+		final Runnable changeContainerParent = new Runnable() {
 			@Override
 			public void run() {
+				// Hide surface view while doing all the work, this is to make sure it's not being re-drawn
+				mSurfaceView.setVisibility(View.GONE);
+
 				// Controls should be hidden while working
 				final boolean controlsWereShown = getControls().isVisible();
 				getControls().hide();
@@ -237,25 +297,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				}
 				final boolean wasPlaying = playing;
 
-				// Hide surface view while doing all the work, this is to make sure it's not being re-drawn
-				mSurfaceView.setVisibility(View.GONE);
-
-				// Toggle state
-				setFullscreen(!isFullscreen());
-
 				// Expand or collapse the PlayerView
 				if (isFullscreen()) {
-					if (Build.VERSION.SDK_INT >= 14) {
-						// For higher APIs go into the low profile mode
-						getActivity().getWindow().getDecorView()
-								.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_LOW_PROFILE);
-					} else {
-						// For lower APIs just go for fullscreen flag
-						getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-					}
-
 					// Save current params
-					mDefaultContainerParams = new LinearLayout.LayoutParams(getContainer().getLayoutParams());
+					mDefaultContainerParams = new LinearLayout
+							.LayoutParams(getContainer().getLayoutParams());
 
 					// Save current bottom padding
 					mDefaultContainerBottomPadding = getContainer().getPaddingBottom();
@@ -270,29 +316,18 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 					params.height = LinearLayout.LayoutParams.MATCH_PARENT;
 
 					// Set bottom padding, so controls don't appear underneath the nav bar
-					getContainer()
-							.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
-									getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
+					getContainer().setPadding(
+							getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+							getContainer().getPaddingRight(), Utils.getNavigationBarHeight());
 
 					// Re-measure the SurfaceView
-					getContainer().setRight(0);
-					getContainer().setLeft(0);
 					invalidateSurface();
 
-					// Add to the root view
-					ViewGroup rootView = (ViewGroup) getActivity().getWindow().getDecorView().getRootView();
-					rootView.addView(getContainer()); // Add as last view, so it's on top of everything else
+					// Add to the root view before the progressOverlay (if it's added)
+					int progressIndex = root.indexOfChild(progressOverlay);
+					root.addView(getContainer(), progressIndex);
 					getContainer().requestFocus();
 				} else {
-					if (Build.VERSION.SDK_INT >= 14) {
-						// For higher APIs remove the low profile mode
-						getActivity().getWindow().getDecorView()
-								.setSystemUiVisibility(ViewGroup.SYSTEM_UI_FLAG_VISIBLE);
-					} else {
-						// For lower APIs just remove the fullscreen flag
-						getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-					}
-
 					if (mDefaultContainerParams != null && mDefaultContainerParent != null) {
 						// Remove from current parent
 						((ViewGroup)getContainer().getParent()).removeView(getContainer());
@@ -301,13 +336,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 						getContainer().setLayoutParams(mDefaultContainerParams);
 
 						// Remove bottom padding
-						getContainer()
-								.setPadding(getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
-										getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
+						getContainer().setPadding(
+								getContainer().getPaddingLeft(), getContainer().getPaddingTop(),
+								getContainer().getPaddingRight(), mDefaultContainerBottomPadding);
 
 						// Re-measure the SurfaceView
-						getContainer().setRight(0);
-						getContainer().setLeft(0);
 						invalidateSurface();
 
 						// Add as the first child to the default parent
@@ -331,6 +364,9 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 								}
 								break;
 						}
+						if (progressOverlay != null) {
+							progressOverlay.setVisibility(View.INVISIBLE);
+						}
 					}
 				});
 			}
@@ -341,11 +377,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 				@Override
 				public void onPrepared(MediaPlayer mp) {
-					toggle.run();
+					changeContainerParent.run();
 				}
 			});
 		} else {
-			toggle.run();
+			changeContainerParent.run();
 		}
 	}
 
@@ -354,9 +390,9 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * {@link Player.State#ERROR} state.
 	 */
 	private void updatePreview() {
-//		if (getPlayer().getState() != Player.State.ERROR) {
-//			updatePreview(getPlayer().getCurrentPosition());
-//		}
+		if (getPlayer().getState() != Player.State.ERROR) {
+			updatePreview(getPlayer().getCurrentPosition());
+		}
 	}
 
 	/**
@@ -386,16 +422,25 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		return mFullscreen;
 	}
 
-	private void setFullscreen(boolean fullscreen) {
-		mFullscreen = fullscreen;
+	private void setPreviewVisible(boolean visible) {
+		mPreviewVisible = visible;
+		if (!mPreviewTemporaryState) {
+			mPreview.setVisibility((mPreviewVisible) ? View.VISIBLE : View.INVISIBLE);
+		}
 	}
 
-	public void setPreview(Bitmap preview) {
-		mPreview.setImageBitmap(preview);
+	public void showPreviewTemporarily(boolean show) {
+		mPreviewTemporaryState = show;
+		if (show) {
+			mPreview.setVisibility(View.VISIBLE);
+		} else {
+			// Fall back to the default
+			setPreviewVisible(mPreviewVisible);
+		}
 	}
 
-	public void setPreviewVisible(boolean visible) {
-		mPreview.setVisibility((visible) ? View.VISIBLE : View.GONE);
+	public ImageView getPreview() {
+		return mPreview;
 	}
 
 	public NavItem getItem() {
@@ -495,7 +540,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// hide preview in: STARTED, ERROR, RELEASED, PAUSED
 		// show preview in: STOPPED, PREPARED, PREPARING, IDLE, INITIALIZED
 		switch (newState) {
-			case STARTED: case ERROR: case RELEASED: /*case PAUSED:*/
+			case STARTED:
+				mRetries = 0;
+				setPreviewVisible(false);
+				break;
+			case ERROR: case RELEASED: case PAUSED:
 				setPreviewVisible(false);
 				break;
 			default:
@@ -615,6 +664,12 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		Log.e(TAG, String.format("Error: %d : %d", what, extra));
+		if (mRetries < MAX_RETRIES) {
+			Log.d(TAG, String.format("Retry number %d...", ++mRetries));
+			initializePlayer();
+		} else {
+			Log.d(TAG, String.format("%d retries failed. User can try himself.", mRetries));
+		}
 //		showErrorOverfaclay(); // ToDo retry button
 		return false;
 	}
@@ -633,6 +688,10 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * Update surface's dimensions according to the {@link #sPlayer} loaded video.
 	 */
 	private void invalidateSurface() {
+		// The container should be resized too
+		getContainer().setRight(0);
+		getContainer().setLeft(0);
+
 		final int iw = getPlayer().getVideoWidth(), ih = getPlayer().getVideoHeight();
 		final Runnable containerUpdater = new Runnable() {
 			@Override
@@ -707,12 +766,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
 //		getPlayer().setDisplay(null);
-	}
-
-	@Override
-	public void onDestroyView() {
-		super.onDestroyView();
-		Log.e(TAG, "destroy view");
 	}
 
 	@Override

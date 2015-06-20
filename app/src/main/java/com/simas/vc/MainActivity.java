@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity
 	private Toolbar mToolbar;
 	private ViewPager mViewPager;
 	private PagerScrollListener mPagerScrollListener;
+	private View mProgressBarContainer;
 	private PagerAdapter mPagerAdapter;
 	/**
 	 * A list that contains all the added items, shared throughout the app. It's used by
@@ -88,13 +89,21 @@ public class MainActivity extends AppCompatActivity
 
 	private class PagerScrollListener extends ViewPager.SimpleOnPageChangeListener {
 
+		private class IntegerPair {
+			Integer current, previous;
+		}
+
 		private final String TAG = getClass().getName();
 		private static final float MIN_SCROLL_OFFSET = 0.01f;
-		private float mCurrentOffset;
+		private IntegerPair mVisiblePositions = new IntegerPair();
+		private float mPositionOffset;
 
 		@Override
 		public void onPageSelected(int position) {
 			super.onPageSelected(position);
+			// Set title
+			setTitle(sItems.get(position).getFile().getName());
+
 			// Update the EditorFragment and invalidate the PlayerFragment
 			mEditorFragment = (EditorFragment) mPagerAdapter.getCreatedItem(position);
 			if (mEditorFragment != null) {
@@ -104,13 +113,22 @@ public class MainActivity extends AppCompatActivity
 
 		@Override
 		public void onPageScrolled(int position, float positionOffset, int positionOffsetPxs) {
-			final float previousOffset = mCurrentOffset;
-			mCurrentOffset = positionOffset;
+			final float previousOffset = mPositionOffset;
+			mPositionOffset = positionOffset;
+
+			// There can only be 2 pages visible at a time
+			if (mVisiblePositions.current == null || mVisiblePositions.current != position) {
+				mVisiblePositions.previous = mVisiblePositions.current;
+				mVisiblePositions.current = position;
+			}
 
 			// Re-invoke onPageScrollStateChanged when switched to a valid scroll offset
-			if (Math.abs(mCurrentOffset) >= MIN_SCROLL_OFFSET &&
+			if (Math.abs(mPositionOffset) >= MIN_SCROLL_OFFSET &&
 					Math.abs(previousOffset) < MIN_SCROLL_OFFSET) {
 				onPageScrollStateChanged(ViewPager.SCROLL_STATE_DRAGGING);
+			} else if (Math.abs(mPositionOffset) < MIN_SCROLL_OFFSET) {
+				// Hide previews for the visible positions
+				showPreviewsTemporarily(false);
 			}
 		}
 
@@ -119,7 +137,7 @@ public class MainActivity extends AppCompatActivity
 			switch (state) {
 				case ViewPager.SCROLL_STATE_DRAGGING:
 					// Ignore low offsets, to avoid invalid drags
-					if (Math.abs(mCurrentOffset) < MIN_SCROLL_OFFSET) {
+					if (Math.abs(mPositionOffset) < MIN_SCROLL_OFFSET) {
 						return;
 					}
 
@@ -128,10 +146,34 @@ public class MainActivity extends AppCompatActivity
 					if (player != null && player.getState() == Player.State.STARTED) {
 						player.pause();
 					}
+
+					// Show previews on the 2 visible editor fragments
+					showPreviewsTemporarily(true);
 					break;
 			}
 		}
 
+		private void showPreviewsTemporarily(boolean show) {
+			if (mVisiblePositions.current != null) {
+				EditorFragment editor = (EditorFragment) mPagerAdapter
+						.getCreatedItem(mVisiblePositions.current);
+				if (editor != null) {
+					editor.getPlayerFragment().showPreviewTemporarily(show);
+				}
+				if (mVisiblePositions.previous != null) {
+					editor = (EditorFragment) mPagerAdapter
+							.getCreatedItem(mVisiblePositions.previous);
+					if (editor != null) {
+						editor.getPlayerFragment().showPreviewTemporarily(show);
+					}
+				}
+			}
+		}
+
+	}
+
+	public View getProgressOverlay() {
+		return mProgressBarContainer;
 	}
 
 	@Override
@@ -151,6 +193,9 @@ public class MainActivity extends AppCompatActivity
 		} else {
 			sItems.clear();
 		}
+
+		// Init a ProgressBar (to be used by PlayerFragments)
+		mProgressBarContainer = getLayoutInflater().inflate(R.layout.progress_bar_overlay, null);
 
 		setContentView(R.layout.activity_main);
 
@@ -339,7 +384,7 @@ public class MainActivity extends AppCompatActivity
 		sItems.unregisterAllObservers();
 		if (isFinishing()) {
 			if (PlayerFragment.getPlayer() != null) {
-				PlayerFragment.getPlayer().release();
+				PlayerFragment.getPlayer().release(); // ToDo need to release earlier
 			}
 		}
 	}
