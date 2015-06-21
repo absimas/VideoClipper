@@ -31,6 +31,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Notes:
+ * A singleton. Will be created if it wasn't and re-created if it was released.
  * - Do not call {@link #setOnPreparedListener(OnPreparedListener)} and
  * {@link #setOnErrorListener(OnErrorListener)}. Instead use
  * {@link #addOnPreparedListener(OnPreparedListener)} and
@@ -56,7 +57,17 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	private Controls mControls;
 	private OnStateChangedListener mStateListener;
 
-	public Player() {
+	private static Player sPlayer;
+
+	public static Player getInstance() {
+		if (sPlayer == null || sPlayer.getState() == State.RELEASED) {
+			sPlayer = new Player();
+		}
+
+		return sPlayer;
+	}
+
+	private Player() {
 		setAudioStreamType(AudioManager.STREAM_MUSIC);
 		super.setOnPreparedListener(this);
 		super.setOnErrorListener(this);

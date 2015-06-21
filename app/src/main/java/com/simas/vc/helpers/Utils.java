@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.simas.vc;
+package com.simas.vc.helpers;
 
 import android.content.res.AssetManager;
 import android.content.res.Resources;
@@ -28,6 +28,10 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+
+import com.simas.vc.R;
+import com.simas.vc.VC;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;

@@ -20,7 +20,6 @@
 package com.simas.vc.editor.player;
 
 import android.os.Handler;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -28,7 +27,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 
 public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickListener,
 		View.OnTouchListener {
@@ -167,6 +166,8 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 		if (fromUser && getPlayer() != null) {
 			getPlayer().seekTo(progress);
+		} else {
+			setCurrent(progress);
 		}
 	}
 

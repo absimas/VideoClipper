@@ -23,15 +23,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.widget.LinearLayout;
-import com.simas.vc.Utils;
-
-import org.w3c.dom.Node;
+import com.simas.vc.helpers.Utils;
 
 // ToDo abstractize with an adapter?
 // ToDo abstract click listener in TreeParser

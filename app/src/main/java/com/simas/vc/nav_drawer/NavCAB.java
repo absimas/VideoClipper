@@ -39,7 +39,7 @@ import java.util.List;
 // ToDo you could possibly duplicate an in-progress item => should prevent copying non-valid items
 // ToDo however removing invalid or "stuck" items should still be available, so deleting should be always possible
 	// ToDo deleted progressing item, should have it's parse processes cancelled.
-
+// ToDo clicking back when CAB is open. closes the drawer while it should only close the CAB.
 /**
  * Navigation Contextual Action Bar (CAB) which is displayed when the user long clicks an item.
  * Provides additional actions like selection, duplication and removal.

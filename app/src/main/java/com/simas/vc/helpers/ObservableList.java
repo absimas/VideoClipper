@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.simas.vc;
+package com.simas.vc.helpers;
 
 import android.support.annotation.NonNull;
 import com.simas.vc.nav_drawer.NavItem;
@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public final class ObservableSynchronizedList extends ArrayList<NavItem> {
+public final class ObservableList extends ArrayList<NavItem> {
 
 	private final TreeMap<String, Observer> mObservers = new TreeMap<>();
 

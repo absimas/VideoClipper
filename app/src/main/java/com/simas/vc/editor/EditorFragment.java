@@ -27,8 +27,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import com.simas.vc.DelayedHandler;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.DelayedHandler;
+import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.editor.tree_view.TreeParser;
@@ -46,6 +46,7 @@ import java.util.Map;
 public class EditorFragment extends Fragment {
 
 	private static final String STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN = "previous_tree_visibility";
+	private static final String STATE_PREVIOUS_ITEM = "previous_item";
 	private final String TAG = getClass().getName();
 
 	private TreeParser mTreeParser;
@@ -76,7 +77,7 @@ public class EditorFragment extends Fragment {
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle state) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
 		final View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
@@ -122,6 +123,13 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
 		mDataMap.put(Data.DURATION, actions.findViewById(R.id.duration_value));
 		mDataMap.put(Data.STREAMS, actions.findViewById(R.id.stream_container));
+
+		if (savedState != null) {
+			NavItem previousItem = savedState.getParcelable(STATE_PREVIOUS_ITEM);
+			if (previousItem != null) {
+				setItem(previousItem);
+			}
+		}
 
 		mDelayedHandler.resume();
 
@@ -173,6 +181,7 @@ public class EditorFragment extends Fragment {
 					updateFields();
 					break;
 				case INPROGRESS:
+					// ToDo Show progress for all editor here
 //					mPlayerFragment.setProgressVisible(true);
 					break;
 			}
@@ -187,6 +196,7 @@ public class EditorFragment extends Fragment {
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+		outState.putParcelable(STATE_PREVIOUS_ITEM, mItem);
 		if (mTreeParser != null) {
 			outState.putIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN,
 					mTreeParser.getVisibleChildren());
@@ -201,6 +211,7 @@ public class EditorFragment extends Fragment {
 	 * Update fields to match {@link #mItem}.
 	 */
 	private void updateFields() {
+		Log.e(TAG, "update fields" + getActivity());
 		if (getActivity() == null) return;
 
 		final NavItem item = getItem();
@@ -224,7 +235,6 @@ public class EditorFragment extends Fragment {
 				getPlayerFragment().post(new Runnable() {
 					@Override
 					public void run() {
-						getPlayerFragment().getPreview().setImageBitmap((item.getPreview()));
 						getPlayerFragment().setItem(item);
 					}
 				});

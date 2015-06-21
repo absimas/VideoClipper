@@ -21,12 +21,11 @@ package com.simas.vc.pager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.ViewGroup;
 
 import com.simas.vc.MainActivity;
-import com.simas.vc.ObservableSynchronizedList;
+import com.simas.vc.helpers.ObservableList;
 import com.simas.vc.editor.EditorFragment;
 
 // ToDo copy FragmentStatePagerAdapter code and re-use mFragments instead of making 2 separate arrays
@@ -39,7 +38,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 	public PagerAdapter(FragmentManager fm) {
 		super(fm);
 		final String PAGER_OBSERVER = "pager_observer";
-		MainActivity.sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+		MainActivity.sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onChanged() {
 				notifyDataSetChanged();

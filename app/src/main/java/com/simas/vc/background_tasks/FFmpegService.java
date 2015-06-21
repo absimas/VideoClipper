@@ -30,7 +30,7 @@ import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.R;
 import java.io.BufferedReader;

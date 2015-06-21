@@ -29,7 +29,7 @@ import com.simas.vc.MainActivity;
 import com.simas.vc.VCException;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.background_tasks.FFmpeg;
@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+// ToDo NavItem should probly be renamed. No longer only for Navigation.
 // ToDo instead of re-parsing duplicate attrs perhaps they should be copied (just like the preview)
 
 public class NavItem implements Parcelable, Cloneable {

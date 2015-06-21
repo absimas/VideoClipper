@@ -30,7 +30,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.widget.LinearLayout;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 
 /**
  * Notes:

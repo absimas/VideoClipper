@@ -22,6 +22,7 @@ import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -35,6 +36,7 @@ import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
 import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.file_chooser.FileChooser;
+import com.simas.vc.helpers.ObservableList;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
@@ -67,7 +69,7 @@ public class MainActivity extends AppCompatActivity
 	 * {@link NavDrawerFragment}, {@link com.simas.vc.nav_drawer.NavAdapter},
 	 * {@link PagerAdapter} and individual {@link NavItem}s.
 	 */
-	public static ObservableSynchronizedList sItems = new ObservableSynchronizedList();
+	public static ObservableList sItems = new ObservableList();
 
 	public boolean isConcatenatable() {
 		if (sItems == null) {
@@ -185,7 +187,7 @@ public class MainActivity extends AppCompatActivity
 		if (savedInstanceState != null) {
 			ArrayList<NavItem> items = savedInstanceState.getParcelableArrayList(STATE_ITEMS);
 			if (items != null) {
-				sItems = new ObservableSynchronizedList();
+				sItems = new ObservableList();
 				sItems.addAll(items);
 			} else {
 				sItems.clear();
@@ -224,7 +226,7 @@ public class MainActivity extends AppCompatActivity
 
 		// First item needs explicit selection via the scroll listener
 		final String FIRST_ITEM_OBSERVER = "Zfirst_item_observer";
-		sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+		sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onChanged() {
 				if (sItems.size() == 1) {
@@ -256,15 +258,17 @@ public class MainActivity extends AppCompatActivity
 //		});
 
 //		// ToDo default item test
-//		new Handler().postDelayed(new Runnable() {
-//			@Override
-//			public void run() {
-//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//				mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//			}
-//		}, 1000);
+		if (sItems.size() == 0) {
+			new Handler().postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+				}
+			}, 1000);
+		}
 	}
 
 	public EditorFragment getEditorFragment() {
@@ -368,7 +372,7 @@ public class MainActivity extends AppCompatActivity
 
 
 		final String CONCAT_OBSERVER_TAG = "concatenation_observer";
-		sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+		sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onChanged() {
 				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());

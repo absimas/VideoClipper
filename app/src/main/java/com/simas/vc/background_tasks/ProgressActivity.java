@@ -25,14 +25,11 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
-import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 import java.io.File;
 
 /**

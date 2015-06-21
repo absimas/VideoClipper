@@ -25,7 +25,7 @@ import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.FileAttributes;
-import com.simas.vc.ArgumentBuilder;
+import com.simas.vc.helpers.ArgumentBuilder;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.R;
 import com.simas.vc.attributes.VideoStream;
@@ -38,7 +38,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import static com.simas.vc.Utils.*;
+import static com.simas.vc.helpers.Utils.*;
 
 /**
  * Connects to FFprobe library via JNI inside of a separate process.

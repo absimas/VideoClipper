@@ -31,9 +31,9 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 
 import com.simas.vc.MainActivity;
-import com.simas.vc.ObservableSynchronizedList;
+import com.simas.vc.helpers.ObservableList;
 import com.simas.vc.R;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 import com.simas.vc.VC;
 
 // ToDo choosing a failed item is permitted and the editor doesn't get updated.
@@ -110,7 +110,7 @@ public class NavAdapter extends BaseAdapter {
 
 		// Register a listener on the sItems
 		final String NAV_ADAPTER_OBSERVER = "nav_adapter_observer";
-		MainActivity.sItems.registerDataSetObserver(new ObservableSynchronizedList.Observer() {
+		MainActivity.sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onChanged() {
 				notifyDataSetChanged();

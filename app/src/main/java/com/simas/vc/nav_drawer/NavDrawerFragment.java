@@ -18,8 +18,6 @@
  */
 package com.simas.vc.nav_drawer;
 
-import android.content.Context;
-import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.app.Activity;
 import android.support.v7.app.ActionBar;
@@ -36,7 +34,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -44,7 +41,7 @@ import com.simas.vc.MainActivity;
 import com.simas.vc.R;
 import com.simas.vc.VC;
 import com.simas.vc.file_chooser.FileChooser;
-import com.simas.vc.Utils;
+import com.simas.vc.helpers.Utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
