@@ -54,7 +54,7 @@
 	<string name="timeline_arrow_descriptor">arrow</string>
 	<string name="timeline_line_descriptor">line</string>
 	<string name="ok">OKAY</string>
-	<string name="action_add_item">ADD ITEM</string>
+	<string name="action_add_item">Add item</string>
 	<string name="preview_image_description">preview image</string>
 	<string name="header_image_description">header image</string>
 	<string name="file_type_image_description">File type image</string>
@@ -64,7 +64,7 @@
 	<string name="nav_context_menu_action_duplicate">Duplicate</string>
 	<string name="nav_context_menu_action_select_all">Select all</string>
 	<string name="nav_context_menu_action_select_none">Select none</string>
-	<string name="action_concat">CONCATENATE</string>
+	<string name="action_concat">Merge</string>
 	<string name="clipping">Clipping videos…</string>
 	<string name="initialising">Initialising…</string>
 	<string name="vc_working">Video Clipper is working…</string>
@@ -114,4 +114,5 @@
 	<string name="error_smiley">Dead smiley</string>
 	<string name="zero_time">00:00:00</string>
 	<string name="video_preview">Video preview</string>
+	<string name="retry_image">Retry…</string>
 </resources>

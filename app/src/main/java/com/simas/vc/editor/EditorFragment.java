@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+// ToDo show progress when first loading the item and when waiting for its preview update
+
 /**
  * Fragment containing the information about the opened NavItem, as well as actions that can be
  * invoked. The fragment doesn't save its state because {@link #mItem} is a <b>shared</b>
@@ -53,6 +55,7 @@ public class EditorFragment extends Fragment {
 	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
 	private NavItem mItem;
+	private View mContainer;
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
@@ -78,7 +81,7 @@ public class EditorFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
-		final View rootView = inflater.inflate(R.layout.fragment_editor, container, false);
+		mContainer = inflater.inflate(R.layout.fragment_editor, container, false);
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
 
@@ -117,7 +120,7 @@ public class EditorFragment extends Fragment {
 			}
 		});
 
-		View actions = rootView.findViewById(R.id.editor_actions);
+		View actions = mContainer.findViewById(R.id.editor_actions);
 		mDataMap.put(Data.ACTIONS, actions);
 		mDataMap.put(Data.FILENAME, actions.findViewById(R.id.filename_value));
 		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
@@ -133,7 +136,18 @@ public class EditorFragment extends Fragment {
 
 		mDelayedHandler.resume();
 
-		return rootView;
+		return mContainer;
+	}
+
+	private View getContainer() {
+		return mContainer;
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		// Redraw the container when the activity is resumed, e.g. going back from a sleep
+		if (getContainer() != null) getContainer().requestLayout();
 	}
 
 	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {
@@ -211,7 +225,6 @@ public class EditorFragment extends Fragment {
 	 * Update fields to match {@link #mItem}.
 	 */
 	private void updateFields() {
-		Log.e(TAG, "update fields" + getActivity());
 		if (getActivity() == null) return;
 
 		final NavItem item = getItem();

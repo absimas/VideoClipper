@@ -19,9 +19,14 @@
 
 package com.simas.vc.editor.player;
 
+import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -29,8 +34,17 @@ import android.widget.TextView;
 import com.simas.vc.R;
 import com.simas.vc.helpers.Utils;
 
-public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickListener,
-		View.OnTouchListener {
+/**
+ * Controls have a circular connection with {@link Player}. The player is only called when:
+ * <ul>
+ *  <li>Manual seek (from user)</li>
+ *  <li>Play/Pause button is pressed</li>
+ *  <li>SeekBar update is called and it needs to know the current {@link Player}'s position.</li>
+ * </ul>
+ * If in any of above circumstances the player is not connected, nothing will be done.
+ */
+public class Controls extends Fragment
+		implements SeekBar.OnSeekBarChangeListener, View.OnClickListener, View.OnTouchListener {
 
 	private static final int SHOW_DURATION = 3000;
 	private static final int CURRENT_TIME_RECHECK_INTERVAL = 300;
@@ -41,21 +55,28 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	 */
 	private PlayClickOverrider mPlayClickOverrider;
 	private Player mPlayer;
-	private final RelativeLayout mContainer;
-	private final SeekBar mSeekBar;
-	private final ImageView mPlayButton;
-	private final TextView mCurrentTime, mDuration;
+	private RelativeLayout mContainer;
+	private SeekBar mSeekBar;
+	private ImageView mPlayButton;
+	private TextView mCurrentTime, mDuration;
+	private View mProgressContainer;
 	private final Handler mVisibilityHandler = new Handler();
 	private final Handler mSeekHandler = new Handler();
 
-	public Controls(View container) {
-		mContainer = (RelativeLayout) container.findViewById(R.id.player_controls);
+	@Nullable
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		mContainer = (RelativeLayout) inflater
+				.inflate(R.layout.fragment_player_controls, container, false);
 		mSeekBar = (SeekBar) mContainer.findViewById(R.id.seek_bar);
 		mSeekBar.setOnSeekBarChangeListener(this);
 		mPlayButton = (ImageView) mContainer.findViewById(R.id.play_button);
 		mPlayButton.setOnClickListener(this);
 		mCurrentTime = (TextView) mContainer.findViewById(R.id.current_time);
 		mDuration = (TextView) mContainer.findViewById(R.id.duration);
+		mProgressContainer = mContainer.findViewById(R.id.progress_bar_container);
+
+		return mContainer;
 	}
 
 	/**
@@ -106,9 +127,9 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 					}
 				}
 			}, CURRENT_TIME_RECHECK_INTERVAL);
-			mPlayButton.setImageResource(R.drawable.ic_action_error);
+			mPlayButton.setImageResource(R.drawable.ic_action_pause);
 		} else {
-			mPlayButton.setImageResource(R.drawable.ic_action_play_dark);
+			mPlayButton.setImageResource(R.drawable.ic_action_play);
 		}
 	}
 
@@ -132,9 +153,7 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 	 * If container is disabled, do nothing.
 	 */
 	public void hide() {
-		synchronized (mContainer) {
-			mContainer.setVisibility(View.INVISIBLE);
-		}
+		mContainer.setVisibility(View.INVISIBLE);
 		// When controls are hidden, children can't receive any touch events
 		setChildrenTouchListener(null);
 	}
@@ -147,11 +166,21 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		mDuration.setOnTouchListener(listener);
 	}
 
-	public boolean isVisible() {
+	public boolean isShown() {
 		return mContainer.getVisibility() == View.VISIBLE;
 	}
 
+	/**
+	 * This will overlay the controls with a {@link android.widget.ProgressBar}. To reveal the
+	 * controls, this must be hidden once again. By default the loading overlay is hidden.
+	 * @param visible    true if the overlay should be shown, false otherwise
+	 */
+	public void setLoading(boolean visible) {
+		mProgressContainer.setVisibility((visible) ? View.VISIBLE : View.GONE);
+	}
+
 	public void reset() {
+		setLoading(false);
 		setCurrent(0);
 		setDuration(0);
 		setPlaying(false);
@@ -162,8 +191,11 @@ public class Controls implements SeekBar.OnSeekBarChangeListener, View.OnClickLi
 		return getCurrent() == 0 && getDuration() == 0;
 	}
 
+
+
 	@Override
 	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+		// If user invoked a seek, apply it to the player
 		if (fromUser && getPlayer() != null) {
 			getPlayer().seekTo(progress);
 		} else {

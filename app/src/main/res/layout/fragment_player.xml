@@ -38,64 +38,31 @@
 		android:layout_height="match_parent"
 		android:contentDescription="@string/video_preview"/>
 
-    <RelativeLayout
-        android:id="@+id/player_controls"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-	    android:visibility="invisible">
-        <ImageButton
-	        android:src="@drawable/ic_action_play_dark"
-            android:id="@+id/play_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:contentDescription="@string/player_play_button"/>
-
-	    <LinearLayout
-		    android:layout_width="match_parent"
-		    android:layout_height="wrap_content"
-		    android:layout_alignParentBottom="true"
-		    android:orientation="horizontal">
-		    <TextView
-			    android:textColor="#FFF"
-			    android:text="@string/zero_time"
-			    android:id="@+id/current_time"
-			    android:layout_width="wrap_content"
-			    android:layout_height="match_parent"
-			    android:textStyle="bold"
-			    android:gravity="center_vertical"
-			    android:paddingLeft="5dp"
-			    android:paddingRight="5dp"/>
-
-		    <SeekBar
-			    style="?android:attr/progressBarStyleHorizontal"
-			    android:id="@+id/seek_bar"
-			    android:layout_width="0dip"
-			    android:layout_weight="1"
-			    android:layout_height="32dip"
-			    android:progress="0"
-			    android:max="0"/>
-
-		    <TextView
-			    android:textColor="#FFF"
-			    android:text="@string/zero_time"
-				android:id="@+id/duration"
-			    android:layout_width="wrap_content"
-			    android:layout_height="match_parent"
-				android:textStyle="bold"
-				android:gravity="center_vertical"
-				android:paddingLeft="5dp"
-				android:paddingRight="5dp"/>
-	    </LinearLayout>
-    </RelativeLayout>
-
-	<ImageView
-		android:background="#000"
-		android:id="@+id/error_image"
+	<fragment
+		android:id="@+id/controls"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:src="@drawable/fail"
-		android:visibility="gone"
-		android:contentDescription="@string/error_smiley"/>
-	<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
+		android:name="com.simas.vc.editor.player.Controls"/>
+
+	<RelativeLayout
+		android:id="@+id/error_overlay"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:visibility="invisible">
+		<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
+		<ImageView
+			android:background="#000"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:src="@drawable/fail"
+			android:contentDescription="@string/error_smiley"/>
+		<ImageButton
+			android:id="@+id/retry"
+			android:src="@drawable/ic_action_replay"
+			android:layout_width="50dp"
+			android:layout_height="50dp"
+			android:scaleType="centerCrop"
+			android:layout_centerInParent="true"
+			android:contentDescription="@string/retry_image"/>
+	</RelativeLayout>
 </RelativeLayout>

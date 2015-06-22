@@ -1,0 +1,71 @@
+<!--
+  ~ Copyright (c) 2015. Simas Abramovas
+  ~
+  ~ This file is part of VideoClipper.
+  ~
+  ~ VideoClipper is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ VideoClipper is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
+  -->
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="visible">
+    <ImageButton
+        android:src="@drawable/ic_action_play"
+        android:id="@+id/play_button"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:scaleType="centerCrop"
+        android:layout_centerInParent="true"
+        android:contentDescription="@string/player_play_button"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal">
+        <TextView
+            android:textColor="#FFF"
+            android:text="@string/zero_time"
+            android:id="@+id/current_time"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"/>
+
+        <SeekBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:id="@+id/seek_bar"
+            android:layout_width="0dip"
+            android:layout_weight="1"
+            android:layout_height="32dip"
+            android:progress="0"
+            android:max="0"/>
+
+        <TextView
+            android:textColor="#FFF"
+            android:text="@string/zero_time"
+            android:id="@+id/duration"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"/>
+    </LinearLayout>
+
+	<include layout="@layout/progress_bar_overlay"/>
+</RelativeLayout>

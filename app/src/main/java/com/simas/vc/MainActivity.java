@@ -71,22 +71,97 @@ public class MainActivity extends AppCompatActivity
 	 */
 	public static ObservableList sItems = new ObservableList();
 
-	public boolean isConcatenatable() {
-		if (sItems == null) {
-			// Adapter not available yet
-			return false;
-		} else if (sItems.size() < 2) {
-			// There must be at least 2 videos to concatenate
-			return false;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		// Always reset observers when (re-)creating the activity
+		sItems.unregisterAllObservers();
+		// Restore items if available, otherwise make sure the list is empty
+		if (savedInstanceState != null) {
+			ArrayList<NavItem> items = savedInstanceState.getParcelableArrayList(STATE_ITEMS);
+			if (items != null) {
+				sItems = new ObservableList();
+				sItems.addAll(items);
+			} else {
+				sItems.clear();
+			}
 		} else {
-			// Loop and look for invalid items
-			for (NavItem item : sItems) {
-				if (item.getState() != NavItem.State.VALID) {
-					return false;
+			sItems.clear();
+		}
+
+		// Init a ProgressBar (to be used by PlayerFragments)
+		mProgressBarContainer = getLayoutInflater().inflate(R.layout.progress_bar_overlay, null);
+
+		setContentView(R.layout.activity_main);
+
+		/* Toolbar */
+		mToolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(mToolbar);
+//		addTooltips();
+
+		/* Pager */
+		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+
+		mPagerAdapter = new PagerAdapter(getSupportFragmentManager());
+		mPagerScrollListener = new PagerScrollListener();
+		mViewPager.addOnPageChangeListener(mPagerScrollListener);
+		mViewPager.setAdapter(mPagerAdapter);
+		// This is to avoid a black screen flash when the SurfaceView is setting up another window
+		// https://code.google.com/p/gmaps-api-issues/issues/detail?id=4639#c2
+		mViewPager.requestTransparentRegion(mViewPager);
+
+		/* Drawer */
+		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
+				.findFragmentById(R.id.navigation_drawer);
+		mNavDrawerFragment.setUp(R.id.navigation_drawer,
+				(DrawerLayout) findViewById(R.id.drawer_layout));
+
+
+		// First item needs explicit selection via the scroll listener
+		final String FIRST_ITEM_OBSERVER = "first_item_observer";
+		sItems.registerDataSetObserver(new ObservableList.Observer() {
+			@Override
+			public void onChanged() {
+				if (sItems.size() == 1) {
+					sItems.unregisterDataSetObserver(FIRST_ITEM_OBSERVER);
+					mPagerScrollListener.onPageSelected(0);
+					mPagerScrollListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
 				}
 			}
+		}, FIRST_ITEM_OBSERVER);
+
+		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
+//		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
+//			@Override
+//			public void onChanged() {
+//				super.onChanged();
+//				// Connect drawer list and pager adapters
+//				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
+//				ListView lv = mNavDrawerFragment.getListView();
+//				// Make sure we're not in CAB mode (multiple selections)
+//				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
+//					// Make sure the editor's item is the same as the currently checked one
+//					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+//					if (mEditorFragment != null &&
+//							mEditorFragment.getItem() != checkedItem) {
+//						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
+//					}
+//				}
+//			}
+//		});
+
+//		// ToDo default item test
+		if (sItems.size() == 0) {
+			new Handler().postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+				}
+			}, 1000);
 		}
-		return true;
 	}
 
 	private class PagerScrollListener extends ViewPager.SimpleOnPageChangeListener {
@@ -174,105 +249,12 @@ public class MainActivity extends AppCompatActivity
 
 	}
 
-	public View getProgressOverlay() {
-		return mProgressBarContainer;
-	}
-
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		// Always reset observers when (re-)creating the activity
-		sItems.unregisterAllObservers();
-		// Restore items if available, otherwise make sure the list is empty
-		if (savedInstanceState != null) {
-			ArrayList<NavItem> items = savedInstanceState.getParcelableArrayList(STATE_ITEMS);
-			if (items != null) {
-				sItems = new ObservableList();
-				sItems.addAll(items);
-			} else {
-				sItems.clear();
-			}
-		} else {
-			sItems.clear();
-		}
-
-		// Init a ProgressBar (to be used by PlayerFragments)
-		mProgressBarContainer = getLayoutInflater().inflate(R.layout.progress_bar_overlay, null);
-
-		setContentView(R.layout.activity_main);
-
-		/* Toolbar */
-		mToolbar = (Toolbar) findViewById(R.id.toolbar);
-		setSupportActionBar(mToolbar);
-//		addTooltips();
-
-		/* Pager */
-		mViewPager = (ViewPager) findViewById(R.id.view_pager);
-
-		mPagerAdapter = new PagerAdapter(getSupportFragmentManager());
-		mPagerScrollListener = new PagerScrollListener();
-		mViewPager.addOnPageChangeListener(mPagerScrollListener);
-		mViewPager.setAdapter(mPagerAdapter);
-		// This is to avoid a black screen flash when the SurfaceView is setting up another window
-		// https://code.google.com/p/gmaps-api-issues/issues/detail?id=4639#c2
-		mViewPager.requestTransparentRegion(mViewPager);
-
-		/* Drawer */
-		mNavDrawerFragment = (NavDrawerFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.navigation_drawer);
-		mNavDrawerFragment.setUp(R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
-
-
-		// First item needs explicit selection via the scroll listener
-		final String FIRST_ITEM_OBSERVER = "Zfirst_item_observer";
-		sItems.registerDataSetObserver(new ObservableList.Observer() {
-			@Override
-			public void onChanged() {
-				if (sItems.size() == 1) {
-					sItems.unregisterDataSetObserver(FIRST_ITEM_OBSERVER);
-					mPagerScrollListener.onPageSelected(0);
-					mPagerScrollListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
-				}
-			}
-		}, FIRST_ITEM_OBSERVER);
-
-		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
-//		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
-//			@Override
-//			public void onChanged() {
-//				super.onChanged();
-//				// Connect drawer list and pager adapters
-//				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
-//				ListView lv = mNavDrawerFragment.getListView();
-//				// Make sure we're not in CAB mode (multiple selections)
-//				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
-//					// Make sure the editor's item is the same as the currently checked one
-//					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
-//					if (mEditorFragment != null &&
-//							mEditorFragment.getItem() != checkedItem) {
-//						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
-//					}
-//				}
-//			}
-//		});
-
-//		// ToDo default item test
-		if (sItems.size() == 0) {
-			new Handler().postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-				}
-			}, 1000);
-		}
-	}
-
 	public EditorFragment getEditorFragment() {
 		return mEditorFragment;
+	}
+
+	public View getProgressOverlay() {
+		return mProgressBarContainer;
 	}
 
 	@Override
@@ -311,6 +293,24 @@ public class MainActivity extends AppCompatActivity
 		});
 		// Force re-draw
 		getToolbar().requestLayout();
+	}
+
+	public boolean isConcatenatable() {
+		if (sItems == null) {
+			// Adapter not available yet
+			return false;
+		} else if (sItems.size() < 2) {
+			// There must be at least 2 videos to concatenate
+			return false;
+		} else {
+			// Loop and look for invalid items
+			for (NavItem item : sItems) {
+				if (item.getState() != NavItem.State.VALID) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	@Override

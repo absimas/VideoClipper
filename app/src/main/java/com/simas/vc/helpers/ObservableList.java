@@ -26,10 +26,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
+/**
+ * Note that the observers aren't guaranteed to be called in the sequence that they were added.
+ */
 public final class ObservableList extends ArrayList<NavItem> {
 
-	private final TreeMap<String, Observer> mObservers = new TreeMap<>();
+	private final ConcurrentHashMap<String, Observer> mObservers = new ConcurrentHashMap<>();
 
 	/**
 	 * Register an observer, replacing any previous one with the same tag.
@@ -58,8 +63,7 @@ public final class ObservableList extends ArrayList<NavItem> {
 	 * Notify all observers.
 	 */
 	public synchronized void notifyChanged() {
-		NavigableMap<String, Observer> descendingMap = mObservers.descendingMap();
-		for (Observer observer : descendingMap.values()) {
+		for (Observer observer : mObservers.values()) {
 			observer.onChanged();
 		}
 	}

@@ -24,6 +24,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.Map;
@@ -50,7 +52,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	}
 
 	private State mState = State.IDLE;
-	private final String TAG = getClass().getName();
+	private static final String TAG = "Player";
 	private final CopyOnWriteArraySet<OnPreparedListener> mPreparedListeners =
 			new CopyOnWriteArraySet<>();
 	private final CopyOnWriteArraySet<OnErrorListener> mErrorListeners = new CopyOnWriteArraySet<>();

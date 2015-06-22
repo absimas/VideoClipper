@@ -412,6 +412,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	@Override
 	public void onChosen(File file) {
+		// ToDo item doesn't exist error (shit happens)
 		final NavItem item = new NavItem(file);
 		// Enable concat action when state validates
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
