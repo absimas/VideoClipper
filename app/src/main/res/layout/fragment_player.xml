@@ -18,13 +18,15 @@
   -->
 <RelativeLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:id="@+id/player_container"
 	android:focusableInTouchMode="true"
 	android:focusable="true"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="#000">
-    <SurfaceView
+	android:background="@color/player_container_bg"
+	tools:context=".PlayerFragment">
+	<SurfaceView
 	    android:id="@+id/player_surface"
 	    android:layout_centerInParent="true"
         android:layout_width="match_parent"
@@ -32,7 +34,7 @@
 
 	<!--Preview overlay to hide the surface. Invisible by default.-->
 	<ImageView
-		android:background="#000"
+		android:background="@color/player_container_bg"
 		android:id="@+id/preview"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
@@ -42,19 +44,19 @@
 		android:id="@+id/controls"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:name="com.simas.vc.editor.player.Controls"/>
+		android:name="com.simas.vc.editor.player.Controls"
+		tools:layout="@layout/fragment_player_controls"/>
 
 	<RelativeLayout
 		android:id="@+id/error_overlay"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:visibility="invisible">
-		<!--ToDo dead smiley image preferably with the tongue sticking out :D-->
 		<ImageView
-			android:background="#000"
+			android:background="@color/player_container_bg"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
-			android:src="@drawable/fail"
+			android:src="@drawable/dead_smiley"
 			android:contentDescription="@string/error_smiley"/>
 		<ImageButton
 			android:id="@+id/retry"

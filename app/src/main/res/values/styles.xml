@@ -23,6 +23,10 @@
 		<item name="colorPrimary">@color/primary</item>
 		<item name="colorPrimaryDark">@color/primary_dark</item>
 
+		<!--<item name="android:windowBackground">@color/windowBackground</item>-->
+		<!--&lt;!&ndash;<item name="android:background">@color/windowBackground</item>&ndash;&gt;-->
+		<!--<item name="android:colorBackground">@color/windowBackground</item>-->
+
 		<!--CAB uses the primary color-->
 		<item name="actionModeBackground">@color/primary</item>
 		<item name="android:actionModeBackground">@color/primary</item>

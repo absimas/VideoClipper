@@ -18,7 +18,7 @@
  */
 package com.simas.vc.editor;
 
-import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -27,6 +27,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.simas.vc.MainActivity;
 import com.simas.vc.helpers.DelayedHandler;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
@@ -56,6 +58,7 @@ public class EditorFragment extends Fragment {
 
 	private NavItem mItem;
 	private View mContainer;
+	private View mProgressOverlay;
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
@@ -82,6 +85,9 @@ public class EditorFragment extends Fragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
 		mContainer = inflater.inflate(R.layout.fragment_editor, container, false);
+		// Overlay a ProgressBar when preparing the PlayerFragment for the first time
+		mProgressOverlay = mContainer.findViewById(R.id.editor_progress_overlay);
+
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
 
@@ -91,34 +97,26 @@ public class EditorFragment extends Fragment {
 			@Override
 			public void onLayoutChange(View v, int left, int top, int right, int bottom,
 			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+				int size = Math.max(playerContainer.getWidth(), playerContainer.getHeight());
+				if (size <= 0) return;
 				playerContainer.removeOnLayoutChangeListener(this);
-				// Set width to be equal to height (or the other way round)
+
 				ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
-				int width = playerContainer.getWidth();
-				int height = playerContainer.getHeight();
-				if (getResources().getConfiguration()
-						.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-					if (height <= 0) {
-						Log.w(TAG, "Height is 0 in landscape! Using screen's height...");
-						params.width = params.height = Utils.getScreenSize().getHeight();
-					} else {
-						params.height = height;
-						//noinspection SuspiciousNameCombination
-						params.width = height;
+				params.width = size;
+				params.height = size;
+				playerContainer.setLayoutParams(params);
+
+				// Hide the progress bar when the player container has been properly drawn
+				playerContainer.post(new Runnable() {
+					@Override
+					public void run() {
+						mProgressOverlay.setVisibility(View.GONE);
 					}
-				} else {
-					if (width <= 0) {
-						Log.w(TAG, "Width is 0 in portrait! Using screen's width...");
-						params.width = params.height = Utils.getScreenSize().getWidth();
-					} else {
-						params.width = width;
-						//noinspection SuspiciousNameCombination
-						params.height = width;
-					}
-				}
-				playerContainer.invalidate();
+				});
 			}
 		});
+
+		mDelayedHandler.resume();
 
 		View actions = mContainer.findViewById(R.id.editor_actions);
 		mDataMap.put(Data.ACTIONS, actions);
@@ -134,8 +132,6 @@ public class EditorFragment extends Fragment {
 			}
 		}
 
-		mDelayedHandler.resume();
-
 		return mContainer;
 	}
 
@@ -143,11 +139,15 @@ public class EditorFragment extends Fragment {
 		return mContainer;
 	}
 
+	private int getContainerSize() {
+		return Math.max(getContainer().getWidth(), getContainer().getHeight());
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
 		// Redraw the container when the activity is resumed, e.g. going back from a sleep
-		if (getContainer() != null) getContainer().requestLayout();
+//		if (getContainer() != null) getContainer().requestLayout();
 	}
 
 	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {

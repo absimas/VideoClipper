@@ -33,6 +33,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -54,7 +55,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	/* Instance state variables */
 	private static final String STATE_ITEM = "state_item";
 	private static final String STATE_CONNECTED = "state_connected";
-	private static final String STATE_FULLSCREEN = "state_fullscreen";
 	private static final String STATE_SEEK_POS = "state_seek_pos";
 	private static final String STATE_DURATION = "state_duration";
 	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
@@ -62,7 +62,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	/* Full screen variables */
 	private boolean mFullscreen;
-	private LinearLayout.LayoutParams mDefaultContainerParams;
+	private ViewGroup.LayoutParams mDefaultContainerParams;
 	private ViewGroup mDefaultContainerParent;
 
 	private final String TAG = getClass().getName();
@@ -170,44 +170,26 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			if (seekPosition != -1) {
 				mControls.setCurrent(seekPosition);
 			}
-		}
 
-		getContainer().addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-			@Override
-			public void onLayoutChange(View v, int left, int top, int right, int bottom,
-			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-				getContainer().removeOnLayoutChangeListener(this);
-
-				if (savedState != null) {
-					// Reconnect the player
-					if (savedState.getBoolean(STATE_CONNECTED, false)) {
-						connectPlayer();
-
-						// Re-scale the surface if the Player was connected to this fragment
-						invalidateSurface();
-					}
-
-					// Playing
-					if (savedState.getBoolean(STATE_PLAYING)) {
-						initializeAndStartPlayer();
-					} else {
-						updateSeek();
-					}
-
-					// Fullscreen
-					if (savedState.getBoolean(STATE_FULLSCREEN, false) && !isFullscreen()) {
-						toggleFullscreen();
-					}
-
-					// Controls
-					if (savedState.getBoolean(STATE_CONTROLS_VISIBLE, false)) {
-						getControls().show();
-					} else {
-						getControls().hide();
-					}
-				}
+			// Connect fragment to player
+			if (savedState.getBoolean(STATE_CONNECTED, false)) {
+				connectPlayer();
 			}
-		});
+
+			// Controls
+			if (savedState.getBoolean(STATE_CONTROLS_VISIBLE, false)) {
+				getControls().show();
+			} else {
+				getControls().hide();
+			}
+
+			// Playing
+			if (savedState.getBoolean(STATE_PLAYING, false)) {
+				initializeAndStartPlayer();
+			} else {
+				updateSeek();
+			}
+		}
 
 		getContainer().post(new Runnable() {
 			@Override
@@ -219,6 +201,14 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		return mContainer;
 	}
 
+	/**
+	 * Return the container's size. It doesn't necessarily need to be fully measured, only 1 of
+	 * the dimensions (width/height) is needed because the container is a square.
+	 */
+	private int getContainerSize() {
+		return Math.max(getContainer().getWidth(), getContainer().getWidth());
+	}
+
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
@@ -228,9 +218,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// Connected
 		outState.putBoolean(STATE_CONNECTED, getPlayer().getControls() == getControls());
 
-		// Fullscreen
-		outState.putBoolean(STATE_FULLSCREEN, isFullscreen());
-		
 		// Controls visibility
 		outState.putBoolean(STATE_CONTROLS_VISIBLE, getControls().isShown());
 
@@ -251,7 +238,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	void toggleFullscreen() {
 		final ViewGroup root = (ViewGroup) getActivity().findViewById(android.R.id.content);
-		// Find progress overlay and remove it from parent
 		final View progressOverlay = (getActivity() instanceof MainActivity) ?
 				((MainActivity)getActivity()).getProgressOverlay() : null;
 		if (progressOverlay != null) {
@@ -320,7 +306,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				// Expand or collapse the PlayerView
 				if (isFullscreen()) {
 					// Save current params
-					mDefaultContainerParams = new LinearLayout
+					mDefaultContainerParams = new ViewGroup
 							.LayoutParams(getContainer().getLayoutParams());
 
 					// Remove from current parent
@@ -385,7 +371,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			}
 		};
 
-		// If player is currently preparing, delay toggling fullscreen
 		if (getPlayer().getState() == Player.State.PREPARING) {
 			getPlayer().addOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 				@Override
@@ -478,6 +463,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		if (previous != newItem) {
 			/* New item needs re-initialization */
 			setInitialized(false);
+			updateSeek();
 			if (previous != null) {
 				getControls().reset();
 			}
@@ -562,6 +548,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				// The video is already playing, do nothing
 				break;
 			case PREPARED: case PAUSED:
+				invalidateSurface();
 				updateSeek();
 				setInitialized(true);
 				getPlayer().start();
@@ -718,7 +705,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * Update surface's dimensions to correspond to the video loaded on{@link Player}.
 	 */
 	private void invalidateSurface() {
-		Log.e(TAG, "invalidate surface");
 		// The container should be resized too
 		getContainer().setRight(0);
 		getContainer().setLeft(0);
@@ -729,21 +715,15 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			public void run() {
 				// iw/ih - input, cw/ch - container, w/h - final output sizes
 				int w, h;
-				int cw = getContainer().getWidth(), ch = getContainer().getHeight();
-				if (cw == 0 || ch == 0) {
-					// If container still has 0 width or height use the video's dimensions
-					w = iw;
-					h = ih;
+				int cs = getContainerSize();
+				if (iw > ih) {
+					double modifier = (double) cs / iw;
+					w = cs;
+					h = (int) (ih * modifier);
 				} else {
-					if (iw > ih) {
-						double modifier = (double) cw / iw;
-						w = cw;
-						h = (int) (ih * modifier);
-					} else {
-						double modifier = (double) ch / ih;
-						h = ch;
-						w = (int) (iw * modifier);
-					}
+					double modifier = (double) cs / ih;
+					h = cs;
+					w = (int) (iw * modifier);
 				}
 
 				// Rescale the surface to fit the prepared video
@@ -752,18 +732,16 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				params.height = h;
 
 				// Re-draw with the new dimensions
-				mSurfaceView.requestLayout();
+				mSurfaceView.setLayoutParams(params);
 			}
 		};
-		// If container's height or width are 0 or it has no parent, wait for it drawn/added
-		if (getContainer().getWidth() <= 0 || getContainer().getHeight() <= 0 ||
-				getContainer().getParent() == null) {
+		// If container's size is 0 or it has no parent, wait for it to be measured
+		if (getContainerSize() <= 0 || getContainer().getParent() == null) {
 			getContainer().addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
 				@Override
 				public void onLayoutChange(View v, int left, int top, int right, int bottom,
 				                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-					if (getContainer().getWidth() > 0 && getContainer().getHeight() > 0 &&
-							getContainer().getParent() != null) {
+					if (getContainerSize() > 0) {
 						getContainer().removeOnLayoutChangeListener(this);
 						containerUpdater.run();
 					}

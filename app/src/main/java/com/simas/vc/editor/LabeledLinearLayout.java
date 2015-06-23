@@ -198,9 +198,13 @@ public class LabeledLinearLayout extends LinearLayout {
 
 	@Override
 	public void setPadding(int left, int top, int right, int bottom) {
-		// Padding is always increased to fit the text
-		super.setPadding((int) mLabelHeight, (int) mLabelHeight,
-				(int) mLabelHeight, (int) mLabelHeight);
+		if (!isInEditMode()) {
+			// Padding is always increased to fit the text
+			super.setPadding((int) mLabelHeight, (int) mLabelHeight,
+					(int) mLabelHeight, (int) mLabelHeight);
+		} else {
+			super.setPadding(left, top, right, bottom);
+		}
 	}
 
 	@Override

@@ -204,7 +204,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		if (getControls() != null) {
 			getControls().setCurrent(0);
 			switch (getState()) {
-				case ERROR: case IDLE: case INITIALIZED:
+				case IDLE: case INITIALIZED: case ERROR:
 					break;
 				default:
 					getControls().setDuration(getDuration());

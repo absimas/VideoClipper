@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.simas.vc.editor.player;
 
 import android.os.Bundle;
