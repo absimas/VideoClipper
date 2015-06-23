@@ -174,6 +174,7 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 	public synchronized void reset() {
 		super.reset();
 		setState(State.IDLE);
+		mDataSource = null;
 		if (getControls() != null) {
 			getControls().setPlaying(false);
 		}

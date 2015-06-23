@@ -18,17 +18,13 @@
  */
 package com.simas.vc.editor;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import com.simas.vc.MainActivity;
 import com.simas.vc.helpers.DelayedHandler;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
@@ -39,8 +35,6 @@ import com.simas.vc.R;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-// ToDo show progress when first loading the item and when waiting for its preview update
 
 /**
  * Fragment containing the information about the opened NavItem, as well as actions that can be
@@ -195,8 +189,6 @@ public class EditorFragment extends Fragment {
 					updateFields();
 					break;
 				case INPROGRESS:
-					// ToDo Show progress for all editor here
-//					mPlayerFragment.setProgressVisible(true);
 					break;
 			}
 

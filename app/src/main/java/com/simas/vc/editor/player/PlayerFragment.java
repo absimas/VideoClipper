@@ -55,6 +55,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	/* Instance state variables */
 	private static final String STATE_ITEM = "state_item";
 	private static final String STATE_CONNECTED = "state_connected";
+	private static final String STATE_FULLSCREEN = "state_fullscreen";
 	private static final String STATE_SEEK_POS = "state_seek_pos";
 	private static final String STATE_DURATION = "state_duration";
 	private static final String STATE_CONTROLS_VISIBLE = "state_controls_visible";
@@ -189,6 +190,17 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			} else {
 				updateSeek();
 			}
+
+			if (savedState.getBoolean(STATE_FULLSCREEN, false)) {
+				getContainer().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+					@Override
+					public void onGlobalLayout() {
+						getContainer().getViewTreeObserver().removeGlobalOnLayoutListener(this);
+						toggleFullscreen();
+					}
+				});
+
+			}
 		}
 
 		getContainer().post(new Runnable() {
@@ -234,9 +246,14 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 		// Duration
 		outState.putInt(STATE_DURATION, mControls.getDuration());
+
+		// Fullscreen
+		outState.putBoolean(STATE_FULLSCREEN, isFullscreen());
 	}
 
 	void toggleFullscreen() {
+		// Disable touch listener (to prevent multiple toggles until done)
+		getContainer().setOnTouchListener(null);
 		final ViewGroup root = (ViewGroup) getActivity().findViewById(android.R.id.content);
 		final View progressOverlay = (getActivity() instanceof MainActivity) ?
 				((MainActivity)getActivity()).getProgressOverlay() : null;
@@ -366,6 +383,13 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 						if (progressOverlay != null) {
 							progressOverlay.setVisibility(View.INVISIBLE);
 						}
+						// Re-enable touch listener
+						getContainer().post(new Runnable() {
+							@Override
+							public void run() {
+								getContainer().setOnTouchListener(PlayerFragment.this);
+							}
+						});
 					}
 				});
 			}
@@ -495,6 +519,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	private void initializeAndStartPlayer() {
 		if (getItem() == null) return;
+		Log.e(TAG, "init and start");
 		// Overlay a ProgressBar over the controls while working
 		getControls().setLoading(true);
 
@@ -512,6 +537,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				getPlayer().reset();
 			}
 			try {
+				Log.e(TAG, "set source");
 				getPlayer().setDataSource(getItem().getFile().getPath());
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -523,6 +549,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			@Override
 			public void onPrepared(MediaPlayer mp) {
 				getPlayer().removeOnPreparedListener(this);
+				Log.e(TAG, "prep done");
 				// Update Controls and Player to correspond to the loaded video and the seek state
 				updateSeek();
 				setInitialized(true);
@@ -680,6 +707,10 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 //		if (what == Integer.MIN_VALUE || extra == Integer.MIN_VALUE) {
 //			return false;
 //		}
+
+		// Reset player and controls
+		getPlayer().reset();
+		getControls().reset();
 
 		if (mRetries < MAX_INITIALIZATION_RETRIES) {
 			Log.d(TAG, String.format("Retry number %d...", ++mRetries));
