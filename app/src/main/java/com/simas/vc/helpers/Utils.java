@@ -22,12 +22,15 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.simas.vc.R;
 import com.simas.vc.VC;
@@ -331,6 +334,22 @@ public class Utils {
 	public static boolean equals(@Nullable Object obj1, @Nullable Object obj2) {
 		if (obj1 == null || obj2 == null) return false;
 		return obj1.equals(obj2);
+	}
+
+	public static Bitmap screenshot(View v) {
+		Bitmap b = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(b);
+		v.draw(canvas);
+
+		return b;
+	}
+
+	public static Bitmap screenshot2(View v) {
+		v.setDrawingCacheEnabled(true);
+		Bitmap b = Bitmap.createBitmap(v.getDrawingCache());
+		v.setDrawingCacheEnabled(false);
+
+		return b;
 	}
 
 }

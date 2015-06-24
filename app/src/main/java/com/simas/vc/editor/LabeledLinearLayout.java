@@ -81,6 +81,7 @@ public class LabeledLinearLayout extends LinearLayout {
 	 */
 	private void init(@Nullable AttributeSet attrs) {
 		if (!isInEditMode()) {
+			setDrawingCacheEnabled(true);
 			// Initialize container paint
 			mContainerPaint.setStrokeWidth(0); // Hairline mode
 			mContainerPaint.setStyle(Paint.Style.STROKE);

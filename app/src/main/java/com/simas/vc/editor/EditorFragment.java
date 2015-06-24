@@ -189,6 +189,7 @@ public class EditorFragment extends Fragment {
 					updateFields();
 					break;
 				case INPROGRESS:
+					// ToDo ProgressOverlay MANDATORY here
 					break;
 			}
 

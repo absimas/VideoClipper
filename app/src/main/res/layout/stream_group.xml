@@ -18,13 +18,16 @@
   -->
 <com.simas.vc.editor.tree_view.TreeLinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:visibility="gone">
     <Button
+	    android:stateListAnimator="@null"
         android:id="@+id/group_title"
         android:gravity="start|center_vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+	    tools:ignore="UnusedAttribute"/>
 </com.simas.vc.editor.tree_view.TreeLinearLayout>

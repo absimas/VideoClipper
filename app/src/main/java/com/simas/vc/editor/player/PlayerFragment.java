@@ -154,6 +154,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 		/* Saved states */
 		if (savedState != null) {
+			// Connect fragment to player
+			if (savedState.getBoolean(STATE_CONNECTED, false)) {
+				connectPlayer();
+			}
+
 			final NavItem item = savedState.getParcelable(STATE_ITEM);
 			if (item != null) {
 				// Set item
@@ -169,12 +174,9 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			// Seek
 			int seekPosition = savedState.getInt(STATE_SEEK_POS, -1);
 			if (seekPosition != -1) {
-				mControls.setCurrent(seekPosition);
-			}
-
-			// Connect fragment to player
-			if (savedState.getBoolean(STATE_CONNECTED, false)) {
-				connectPlayer();
+				if (seekPosition != 0) {
+					mControls.setCurrent(seekPosition);
+				}
 			}
 
 			// Controls
@@ -242,10 +244,10 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		}
 
 		// Seek pos
-		outState.putInt(STATE_SEEK_POS, mControls.getCurrent());
+		outState.putInt(STATE_SEEK_POS, getControls().getCurrent());
 
 		// Duration
-		outState.putInt(STATE_DURATION, mControls.getDuration());
+		outState.putInt(STATE_DURATION, getControls().getDuration());
 
 		// Fullscreen
 		outState.putBoolean(STATE_FULLSCREEN, isFullscreen());
@@ -487,7 +489,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		if (previous != newItem) {
 			/* New item needs re-initialization */
 			setInitialized(false);
-			updateSeek();
 			if (previous != null) {
 				getControls().reset();
 			}
@@ -519,7 +520,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 	private void initializeAndStartPlayer() {
 		if (getItem() == null) return;
-		Log.e(TAG, "init and start");
 		// Overlay a ProgressBar over the controls while working
 		getControls().setLoading(true);
 
@@ -537,7 +537,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				getPlayer().reset();
 			}
 			try {
-				Log.e(TAG, "set source");
 				getPlayer().setDataSource(getItem().getFile().getPath());
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -549,7 +548,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			@Override
 			public void onPrepared(MediaPlayer mp) {
 				getPlayer().removeOnPreparedListener(this);
-				Log.e(TAG, "prep done");
 				// Update Controls and Player to correspond to the loaded video and the seek state
 				updateSeek();
 				setInitialized(true);
@@ -589,10 +587,12 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 * been prepared.
 	 */
 	private void updateSeek() {
-		if (getControls().isReset()) {
-			getPlayer().updateControls();
-		} else {
-			getPlayer().seekTo(getControls().getCurrent());
+		if (isConnected()) {
+			if (getControls().isReset()) {
+				getPlayer().updateControls();
+			} else {
+				getPlayer().seekTo(getControls().getCurrent());
+			}
 		}
 	}
 
@@ -619,7 +619,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	 */
 	private void connectPlayer() {
 		// If the player is already connected to this fragment's Controls don't re-connect it
-		if (getControls() != null && getPlayer().getControls() != getControls()) {
+		if (getPlayer().getControls() != getControls()) {
 			// Reset the previous MediaPlayer listeners and states
 			getPlayer().setDisplay(null);
 
@@ -647,6 +647,10 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			getControls().setPlayer(getPlayer());
 			getPlayer().setControls(getControls());
 		}
+	}
+
+	private boolean isConnected() {
+		return getPlayer().getControls() == getControls();
 	}
 
 	/**
