@@ -110,9 +110,9 @@ public class NavAdapter extends BaseAdapter {
 
 		// Register a listener on the sItems
 		final String NAV_ADAPTER_OBSERVER = "nav_adapter_observer";
-		MainActivity.sItems.registerDataSetObserver(new ObservableList.FancyObserver() {
+		MainActivity.sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
-			public void onChanged(int position) {
+			public void onChanged() {
 				notifyDataSetChanged();
 			}
 		}, NAV_ADAPTER_OBSERVER);

@@ -29,13 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ObservableList extends ArrayList<NavItem> {
 
-	private final ConcurrentHashMap<String, FancyObserver> mObservers = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<String, Observer> mObservers = new ConcurrentHashMap<>();
 
 	/**
 	 * Register an observer, replacing any previous one with the same tag.
 	 * @return true if a previous observer has been replaced, false otherwise
 	 */
-	public synchronized boolean registerDataSetObserver(FancyObserver observer, String tag) {
+	public synchronized boolean registerDataSetObserver(Observer observer, String tag) {
 		return mObservers.put(tag, observer) != null;
 	}
 
@@ -57,16 +57,22 @@ public final class ObservableList extends ArrayList<NavItem> {
 	/**
 	 * Notify all observers.
 	 */
-	public synchronized void notifyChanged(int position) {
-		for (FancyObserver observer : mObservers.values()) {
-			observer.onChanged(position);
+	public synchronized void notifyChanged() {
+		for (Observer observer : mObservers.values()) {
+			observer.onChanged();
+		}
+	}
+
+	public synchronized void notifyRemoved(int position) {
+		for (Observer observer : mObservers.values()) {
+			observer.onRemoved(position);
 		}
 	}
 
 	@Override
 	public boolean add(NavItem object) {
 		if (super.add(object)) {
-			notifyChanged(-1);
+			notifyChanged();
 			return true;
 		} else {
 			return false;
@@ -76,13 +82,13 @@ public final class ObservableList extends ArrayList<NavItem> {
 	@Override
 	public void add(int index, NavItem object) {
 		super.add(index, object);
-		notifyChanged(-1);
+		notifyChanged();
 	}
 
 	@Override
 	public boolean addAll(Collection<? extends NavItem> collection) {
 		if (super.addAll(collection)) {
-			notifyChanged(-1);
+			notifyChanged();
 			return true;
 		} else {
 			return false;
@@ -92,7 +98,7 @@ public final class ObservableList extends ArrayList<NavItem> {
 	@Override
 	public boolean addAll(int index, Collection<? extends NavItem> collection) {
 		if (super.addAll(index, collection)) {
-			notifyChanged(-1);
+			notifyChanged();
 			return true;
 		} else {
 			return false;
@@ -104,7 +110,7 @@ public final class ObservableList extends ArrayList<NavItem> {
 		int index = indexOf(object);
 		if (index != -1) {
 			super.remove(index);
-			notifyChanged(index);
+			notifyRemoved(index);
 			return true;
 		} else {
 			return false;
@@ -114,18 +120,13 @@ public final class ObservableList extends ArrayList<NavItem> {
 	@Override
 	public NavItem remove(int index) {
 		NavItem removed = super.remove(index);
-		notifyChanged(index);
+		notifyRemoved(index);
 		return removed;
 	}
 
 	@Override
 	public boolean removeAll(@NonNull Collection<?> collection) {
-		if (super.removeAll(collection)) {
-			notifyChanged(-1);
-			return true;
-		} else {
-			return false;
-		}
+		throw new UnsupportedOperationException("Use clear() instead of removeAll()!");
 	}
 
 	@Override
@@ -140,12 +141,13 @@ public final class ObservableList extends ArrayList<NavItem> {
 
 		// If size changed, notify
 		if (size() != oldSize) {
-			notifyChanged(-1);
+			notifyRemoved(-1);
 		}
 	}
 
-	public interface FancyObserver {
-		void onChanged(int pos);
+	public static class Observer {
+		public void onChanged() {}
+		public void onRemoved(int position) {}
 	}
 
 }

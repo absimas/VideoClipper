@@ -44,6 +44,7 @@ import com.simas.vc.R;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.IOException;
 
+// ToDo try to seek as soon as play is called, perhaps a delay can be avoided
 // ToDo test onRotate state restoration. With multiple pages too.
 // ToDo SYSTEM_UI_FLAG_LOW_PROFILE is cancelled when top android menu is shown
 

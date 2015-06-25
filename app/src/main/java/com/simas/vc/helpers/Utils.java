@@ -337,17 +337,17 @@ public class Utils {
 	}
 
 	public static Bitmap screenshot(View v) {
-		Bitmap b = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
-		Canvas canvas = new Canvas(b);
-		v.draw(canvas);
+		v.setDrawingCacheEnabled(true);
+		Bitmap b = Bitmap.createBitmap(v.getDrawingCache());
+		v.setDrawingCacheEnabled(false);
 
 		return b;
 	}
 
 	public static Bitmap screenshot2(View v) {
-		v.setDrawingCacheEnabled(true);
-		Bitmap b = Bitmap.createBitmap(v.getDrawingCache());
-		v.setDrawingCacheEnabled(false);
+		Bitmap b = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(b);
+		v.draw(canvas);
 
 		return b;
 	}

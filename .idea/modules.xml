@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/libs/VersatileViewPager/VersatileViewPager.iml" filepath="$PROJECT_DIR$/libs/VersatileViewPager/VersatileViewPager.iml" />
       <module fileurl="file://$PROJECT_DIR$/VideoClipper.iml" filepath="$PROJECT_DIR$/VideoClipper.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libs/VersatileViewPager/versatileviewpager/versatileviewpager.iml" filepath="$PROJECT_DIR$/libs/VersatileViewPager/versatileviewpager/versatileviewpager.iml" />
     </modules>
   </component>
 </project>
