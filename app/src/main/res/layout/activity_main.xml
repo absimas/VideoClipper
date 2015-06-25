@@ -39,7 +39,7 @@
 		android:id="@+id/drawer_layout"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
-		<com.simas.vc.pager.ItemViewPager
+		<com.simas.versatileviewpager.VersatileViewPager
 			android:id="@+id/view_pager"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"/>
