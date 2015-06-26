@@ -20,6 +20,7 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -31,6 +32,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
+import android.view.Window;
 import android.widget.ListView;
 import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;

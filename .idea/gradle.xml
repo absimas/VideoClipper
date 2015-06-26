@@ -10,7 +10,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/VersatileViewPager" />
-            <option value="$PROJECT_DIR$/VersatileViewPager/versatileviewpager" />
+            <option value="$PROJECT_DIR$/VersatileViewPager/versatile_view_pager" />
             <option value="$PROJECT_DIR$/app" />
           </set>
         </option>

@@ -27,13 +27,16 @@ android {
 		targetSdkVersion 22
 		versionCode 1
 		versionName "1.0"
+		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 	}
-
 	buildTypes {
 		release {
 			minifyEnabled true
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 		}
+	}
+	packagingOptions {
+		exclude 'LICENSE.txt'
 	}
 
 	// Disable implicit Android.mk creation for all app variants
@@ -97,5 +100,10 @@ dependencies {
 	compile fileTree(dir: 'libs', include: ['*.jar'])
 	compile 'com.android.support:appcompat-v7:22.2.0'
 	compile 'com.android.support:support-v4:22.2.0'
-	compile project(':VersatileViewPager:versatileviewpager')
+	compile project(':VersatileViewPager:versatile_view_pager')
+	/* Test dependencies */
+	androidTestCompile 'com.android.support.test:runner:0.3'
+	androidTestCompile 'com.android.support.test:rules:0.3'
+	androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
+//	androidTestCompile 'com.android.support.test.uiautomator:uiautomator-v18:2.1.1'
 }

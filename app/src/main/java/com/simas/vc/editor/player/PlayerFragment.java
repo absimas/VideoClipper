@@ -18,6 +18,7 @@
  */
 package com.simas.vc.editor.player;
 
+import android.app.Activity;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
@@ -123,6 +124,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		super.onCreate(savedState);
 		// Make sure the player is initialized
 		getPlayer();
+	}
+
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
 	}
 
 	@Nullable
