@@ -31,9 +31,11 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -47,18 +49,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-// ToDo select video file -> select on drawer icon before parse completion -> if parse fails, progressBar still spins
-// ToDo can't play video (big buck) should just make player invalid, but now progressBar spins.
-// ToDo remove probe/mpeg process when item is removed!
-// ToDo this shouldn't contain methods like isConcatenatable. It's only a drawer. The items should also be moved outside the adapter.
-
 /**
  * Navigation drawer fragment that contains all added items. Also manages the CAB.
  */
 public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
 
-	private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";
-	private static final String STATE_ADAPTER_ITEMS = "adapter_items";
+	private static final String STATE_SELECTED_POSITION = "list_view_selected_position";
 	private static final String STATE_CAB = "cab_state";
 
 	/**
@@ -69,7 +65,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private static final String TAG = "NavDrawerFragment";
 
 	public static int sPreviewSize;
-	public NavAdapter adapter; // ToDo eventually move to a private adapter
 
 	/**
 	 * A pointer to the current callbacks instance (the Activity).
@@ -78,7 +73,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private ActionBarDrawerToggle mDrawerToggle;
 	private NavCAB mNavCAB;
 	private DrawerLayout mDrawerLayout;
-	private ListView mDrawerList;
+	private HeadlessListView mDrawerList;
+	private NavAdapter mAdapter;
 	private View mFragmentContainerView;
 	/**
 	 * Specific group of listeners that are notified about the open and close states of the drawer.
@@ -87,7 +83,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 			mDrawerStateListeners = new CopyOnWriteArrayList<>();
 
 	// States
-	private int mCurrentSelectedPosition = ListView.INVALID_POSITION;
+	private int mPreviousSelection = ListView.INVALID_POSITION;
 	private boolean mFromSavedInstanceState;
 	private boolean mUserLearnedDrawer;
 	public enum DrawerState {
@@ -98,7 +94,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	public NavDrawerFragment() {}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
@@ -108,8 +103,8 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		mUserLearnedDrawer = sp.getBoolean(PREF_USER_LEARNED_DRAWER, false);
 
 		if (savedInstanceState != null) {
-			mCurrentSelectedPosition = savedInstanceState.getInt(STATE_SELECTED_POSITION,
-					ListView.INVALID_POSITION);
+			mPreviousSelection = savedInstanceState
+					.getInt(STATE_SELECTED_POSITION, ListView.INVALID_POSITION);
 			mNavCAB = savedInstanceState.getParcelable(STATE_CAB);
 			mFromSavedInstanceState = true;
 		}
@@ -126,17 +121,12 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		if (fileChooser != null) {
 			fileChooser.setOnFileChosenListener(this);
 		}
-
-		// Select either the default item (0) or the last selected item.
-		if (mCurrentSelectedPosition != ListView.INVALID_POSITION) {
-			selectItem(mCurrentSelectedPosition);
-		}
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 	                         Bundle savedInstanceState) {
-		mDrawerList = (ListView) inflater
+		mDrawerList = (HeadlessListView) inflater
 				.inflate(R.layout.fragment_navigation_drawer, container, false);
 
 		final View header = createHeader(inflater, mDrawerList);
@@ -290,15 +280,20 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		getDrawerLayout().setDrawerListener(mDrawerToggle);
 
 		// The adapter needs a reference to the list its connected to
-		adapter = new NavAdapter(getActivity(), getListView());
-		getListView().setAdapter(adapter);
+		mAdapter = new NavAdapter(getActivity(), getListView());
+		getListView().setAdapter(mAdapter);
+
+		// Select either the default item (0) or the last selected item.
+		if (mPreviousSelection != ListView.INVALID_POSITION) {
+			selectItem(mPreviousSelection);
+		}
 
 		if (mNavCAB == null) {
 			// Newly created CAB
 			mNavCAB = new NavCAB(this);
 		} else {
 			// Previous CAB
-			mNavCAB.navDrawerFragment = this;
+			mNavCAB.mNavDrawerFragment = this;
 			getListView().post(new Runnable() {
 				@Override
 				public void run() {
@@ -347,7 +342,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					return false;
 				} else {
 					// Make sure a valid item has been clicked
-					boolean valid = (adapter.getItem(position - 1).getState() == NavItem.State.VALID);
+					boolean valid = (mAdapter.getItem(position - 1).getState() == NavItem.State.VALID);
 					if (!valid) return false;
 
 					// Need to enable multiple mode and force-check manually, so CAB is called
@@ -357,10 +352,20 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 				}
 			}
 		});
+
+//		// Scroll to previous ScrollY
+//		Log.e(TAG, "selection: " + mPreviousSelection);
+//		if (mFromSavedInstanceState && mPreviousSelection != ListView.INVALID_POSITION) {
+//			getListView().setSelection(mPreviousSelection);
+//		}
 	}
 
 	public void selectItem(int position) {
-		mCurrentSelectedPosition = position;
+		getListView().setSelectedPosition(position);
+		// Scroll to the selected item if in single mode
+		if (getListView().getChoiceMode() == AbsListView.CHOICE_MODE_SINGLE) {
+			getListView().setSelection(position);
+		}
 		// Notify the activity
 		mCallbacks.onNavigationDrawerItemSelected(position);
 	}
@@ -382,14 +387,14 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	}
 
 	@Override
-	public void onSaveInstanceState(Bundle out) {
-		super.onSaveInstanceState(out);
+	public void onSaveInstanceState(Bundle savedState) {
+		super.onSaveInstanceState(savedState);
 		// Save current ListView selection
-		out.putInt(STATE_SELECTED_POSITION, mCurrentSelectedPosition);
+		savedState.putInt(STATE_SELECTED_POSITION, getListView().getSelectedPosition());
 
 		// Save selected items (CAB)
 		if (mNavCAB != null) {
-			out.putParcelable(STATE_CAB, mNavCAB);
+			savedState.putParcelable(STATE_CAB, mNavCAB);
 		}
 	}
 
@@ -407,8 +412,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private Toolbar getToolbar() {
 		return ((MainActivity) getActivity()).getToolbar();
 	}
-
-	public static int num = 0; // ToDo remove after destination is available
 
 	@Override
 	public void onChosen(File file) {
@@ -453,16 +456,12 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 		void onNavigationDrawerItemSelected(int position);
 	}
 
-	public ListView getListView() {
+	public HeadlessListView getListView() {
 		return mDrawerList;
 	}
 
 	public DrawerLayout getDrawerLayout() {
 		return mDrawerLayout;
-	}
-
-	public int getCurrentlySelectedPosition() {
-		return mCurrentSelectedPosition;
 	}
 
 	public void addDrawerStateListener(DrawerLayout.DrawerListener listener) {

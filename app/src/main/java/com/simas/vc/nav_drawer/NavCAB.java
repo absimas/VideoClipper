@@ -22,11 +22,13 @@ import android.app.Activity;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.AbsListView;
+import android.widget.HeaderViewListAdapter;
 import android.widget.ListView;
 
 import com.simas.vc.MainActivity;
@@ -36,17 +38,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-// ToDo you could possibly duplicate an in-progress item => should prevent copying non-valid items
-// ToDo however removing invalid or "stuck" items should still be available, so deleting should be always possible
-	// ToDo deleted progressing item, should have it's parse processes cancelled.
-// ToDo clicking back when CAB is open. closes the drawer while it should only close the CAB.
 /**
  * Navigation Contextual Action Bar (CAB) which is displayed when the user long clicks an item.
  * Provides additional actions like selection, duplication and removal.
  */
 public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 
-	public NavDrawerFragment navDrawerFragment;
+	NavDrawerFragment mNavDrawerFragment;
 	public List<Integer> checkedPositions = new ArrayList<>();
 
 	private final String TAG = getClass().getName();
@@ -55,7 +53,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 	private Object mInitiallySelectedItem;
 
 	public NavCAB(NavDrawerFragment drawerFragment) {
-		navDrawerFragment = drawerFragment;
+		mNavDrawerFragment = drawerFragment;
 	}
 
 	@Override
@@ -91,10 +89,9 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 	@Override
 	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 		// Save the previously saved item pointer
-		int curSelection = navDrawerFragment.getCurrentlySelectedPosition();
+		int curSelection = getListView().getSelectedPosition();
+		Log.e(TAG, "list selected: " + curSelection);
 		if (curSelection != ListView.INVALID_POSITION) {
-			getListView().setAdapter(getAdapter());
-			// Wtf ListView what items are you using?? childs - ok, adapter - ok, lv - fucked
 			mInitiallySelectedItem = getListView().getItemAtPosition(curSelection);
 		}
 
@@ -153,7 +150,6 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 				// because the checked positions are sorted in a descending order
 				for (int position : checkedPositions) {
 					int adapterItemPos = position - getListView().getHeaderViewsCount();
-					// ToDo this might cause bshit because each remove notifies the adapter
 					MainActivity.sItems.remove(adapterItemPos);
 					mModifiedDataSet = true;
 				}
@@ -193,7 +189,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 					for (int i=0; i<getListView().getCount(); ++i) {
 						Object item = getListView().getItemAtPosition(i);
 						if (item == mInitiallySelectedItem) {
-							navDrawerFragment.selectItem(i);
+							mNavDrawerFragment.selectItem(i);
 							break;
 						}
 					}
@@ -205,24 +201,29 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 		});
 	}
 
-	private ListView getListView() {
-		return navDrawerFragment.getListView();
+	private HeadlessListView getListView() {
+		return mNavDrawerFragment.getListView();
 	}
 
 	private NavAdapter getAdapter() {
-		return navDrawerFragment.adapter;
+		if (getListView().getAdapter() instanceof HeaderViewListAdapter) {
+			HeaderViewListAdapter hvla = (HeaderViewListAdapter) getListView().getAdapter();
+			return (NavAdapter) hvla.getWrappedAdapter();
+		} else {
+			return (NavAdapter) getListView().getAdapter();
+		}
 	}
 
 	private Activity getActivity() {
-		return navDrawerFragment.getActivity();
+		return mNavDrawerFragment.getActivity();
 	}
 
 	private DrawerLayout getDrawer() {
-		return navDrawerFragment.getDrawerLayout();
+		return mNavDrawerFragment.getDrawerLayout();
 	}
 
 	private NavDrawerFragment getNavDrawerFragment() {
-		return navDrawerFragment;
+		return mNavDrawerFragment;
 	}
 
 	/* Parcelable */

@@ -20,7 +20,6 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,7 +31,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
-import android.view.Window;
 import android.widget.ListView;
 import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
@@ -47,10 +45,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-// ToDo when using preloaded items, in portrait mode whole player surfaces disappear but only
-		// after pager state saving. I.e. new items have proper preview until scrolled by 2
+// ToDo prevent copying ONLY non-valid items (other actions still available)
+	// removing invalid or "stuck" items should still be available
+// ToDo deleted progressing item, should have its parse processes cancelled
+	// not sure if possible but possibly send a cancel flag through jni
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
 // ToDo use dimensions in xml instead of hard-coded values
+// ToDo 3 items -> select and remove first -> selects last item then what it should have: second to last
+// ToDo surfaces disappearing again when in portrait and scroll to un-cached frags
+	// they just need a re-draw as they re-appear after stream root button is clicked.
+
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -64,8 +68,7 @@ public class MainActivity extends AppCompatActivity
 	private EditorFragment mEditorFragment;
 	private Toolbar mToolbar;
 	private ViewPager mViewPager;
-	private PagerScrollListener mPagerScrollListener;
-	private View mProgressBarContainer;
+	private View mProgressOverlay;
 	private MyPagerAdapter mPagerAdapter;
 	/**
 	 * A list that contains all the added items, shared throughout the app. It's used by
@@ -93,7 +96,7 @@ public class MainActivity extends AppCompatActivity
 		}
 
 		// Init a ProgressBar (to be used by PlayerFragments)
-		mProgressBarContainer = getLayoutInflater().inflate(R.layout.progress_bar_overlay, null);
+		mProgressOverlay = getLayoutInflater().inflate(R.layout.progress_bar_overlay, null);
 
 		setContentView(R.layout.activity_main);
 
@@ -105,8 +108,7 @@ public class MainActivity extends AppCompatActivity
 		/* Pager */
 		mViewPager = (ViewPager) findViewById(R.id.view_pager);
 		mPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
-		mPagerScrollListener = new PagerScrollListener();
-		mViewPager.addOnPageChangeListener(mPagerScrollListener);
+		mViewPager.addOnPageChangeListener(new PagerScrollListener());
 		mViewPager.setAdapter(mPagerAdapter);
 		// This is to avoid a black screen flash when the SurfaceView is setting up another window
 		// https://code.google.com/p/gmaps-api-issues/issues/detail?id=4639#c2
@@ -120,14 +122,14 @@ public class MainActivity extends AppCompatActivity
 				mPagerAdapter.onItemRemoved(position + 1);
 
 				// Update count and notify
-				mPagerAdapter.requestCount(MainActivity.sItems.size());
+				mPagerAdapter.setCount(MainActivity.sItems.size());
 			}
 
 			@Override
-			public void onChanged() {
-				super.onChanged();
+			public void onModified() {
+				super.onModified();
 				// Update count and notify
-				mPagerAdapter.requestCount(MainActivity.sItems.size());
+				mPagerAdapter.setCount(MainActivity.sItems.size());
 			}
 		}, PAGER_OBSERVER);
 
@@ -137,38 +139,35 @@ public class MainActivity extends AppCompatActivity
 		mNavDrawerFragment.setUp(R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
 
-		// First item needs explicit selection via the scroll listener
-		final String FIRST_ITEM_OBSERVER = "first_item_observer";
-		sItems.registerDataSetObserver(new ObservableList.Observer() {
-			@Override
-			public void onChanged() {
-				if (sItems.size() == 1) {
-					sItems.unregisterDataSetObserver(FIRST_ITEM_OBSERVER);
-					mPagerScrollListener.onPageSelected(0);
-					mPagerScrollListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
-				}
-			}
-		}, FIRST_ITEM_OBSERVER);
-
 		// Make sure editor item is == to the LV's current selection (e.g. on adapter data deletion)
-//		mNavDrawerFragment.adapter.registerDataSetObserver(new DataSetObserver() {
-//			@Override
-//			public void onChanged() {
-//				super.onChanged();
-//				// Connect drawer list and pager adapters
-//				Log.e(TAG, "Adapter size changed to: " + mNavDrawerFragment.adapter.getCount());
-//				ListView lv = mNavDrawerFragment.getListView();
-//				// Make sure we're not in CAB mode (multiple selections)
-//				if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
-//					// Make sure the editor's item is the same as the currently checked one
-//					Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
-//					if (mEditorFragment != null &&
-//							mEditorFragment.getItem() != checkedItem) {
-//						mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
-//					}
-//				}
-//			}
-//		});
+		final String EDITOR_AND_DRAWER_ITEM_MATCHER = "match_items_between_editor_and_drawer";
+		sItems.registerDataSetObserver(new ObservableList.Observer() {
+			private ListView lv = mNavDrawerFragment.getListView();
+			private Runnable mCheckItems = new Runnable() {
+				@Override
+				public void run() {
+					// Make sure we're not in CAB mode (multiple selections)
+					if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
+						// Make sure the editor's item is the same as the currently checked one
+						Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+						if (mEditorFragment != null && mEditorFragment.getItem() != checkedItem) {
+							mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
+						}
+					}
+				}
+			};
+			@Override
+			public void onModified() {
+				super.onModified();
+				mCheckItems.run();
+			}
+
+			@Override
+			public void onRemoved(int position) {
+				super.onRemoved(position);
+				mCheckItems.run();
+			}
+		}, EDITOR_AND_DRAWER_ITEM_MATCHER);
 
 //		// ToDo default item test
 		if (sItems.size() == 0) {
@@ -177,9 +176,9 @@ public class MainActivity extends AppCompatActivity
 				public void run() {
 					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
 					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/macbook.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/2.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/3.mp4"));
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/2.mp4"));
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/3.mp4"));
 				}
 			}, 1000);
 //			new Handler().postDelayed(new Runnable() {
@@ -214,14 +213,20 @@ public class MainActivity extends AppCompatActivity
 			super.onPageSelected(position);
 			// Update the EditorFragment and invalidate the PlayerFragment
 			if (position < 1) {
+				// Empty item selected
 				setTitle(getString(R.string.app_name));
 				mEditorFragment = null;
+				// Deselect ListView items
+				mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
 			} else if (position-1 < sItems.size()) {
+				// Normal item selected
 				setTitle(sItems.get(position - 1).getFile().getName());
 				mEditorFragment = (EditorFragment) mPagerAdapter.getItem(position);
 				if (mEditorFragment != null) {
 					mEditorFragment.getPlayerFragment().setInitialized(false);
 				}
+				// Select ListView item
+				mNavDrawerFragment.selectItem(position);
 			}
 		}
 
@@ -293,7 +298,7 @@ public class MainActivity extends AppCompatActivity
 	}
 
 	public View getProgressOverlay() {
-		return mProgressBarContainer;
+		return mProgressOverlay;
 	}
 
 	@Override
@@ -366,12 +371,23 @@ public class MainActivity extends AppCompatActivity
 			// Check the item in the drawer
 			lv.setItemChecked(position, true);
 
-			mNavDrawerFragment.setDrawerOpen(false);
-
-			// Open selected item in the view pager
-			int itemPosition = position - lv.getHeaderViewsCount();
-			// +1 to skip the empty view
-			mViewPager.setCurrentItem(itemPosition+1);
+			int itemPosInPager = position - lv.getHeaderViewsCount() + 1; // +1 to skip empty item
+			if (mViewPager.getCurrentItem() != itemPosInPager) {
+				// Open selected item in the view pager
+				mViewPager.setCurrentItem(itemPosInPager);
+				// Make sure the drawer is closed
+				mNavDrawerFragment.setDrawerOpen(false);
+				return;
+			}
+			// ToDo select last and delete 2 before last => last selected and drawer closes
+			// ToDo probly unnecessary
+			Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+			if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE &&
+					mEditorFragment != null &&
+					mEditorFragment.getItem() != checkedItem) {
+				// Close drawer only if a new item is selected in single choice mode
+				mNavDrawerFragment.setDrawerOpen(false);
+			}
 		}
 
 //		if (mEditorFragment != null && mEditorFragment.setItem(item)) {
@@ -414,7 +430,7 @@ public class MainActivity extends AppCompatActivity
 		final String CONCAT_OBSERVER_TAG = "concatenation_observer";
 		sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
-			public void onChanged() {
+			public void onModified() {
 				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
 			}
 		}, CONCAT_OBSERVER_TAG);
@@ -439,6 +455,8 @@ public class MainActivity extends AppCompatActivity
 		return super.onPrepareOptionsMenu(menu);
 	}
 
+	private static int sNum = 0; // ToDo remove after destination is available
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
@@ -447,7 +465,7 @@ public class MainActivity extends AppCompatActivity
 				String destination = Environment
 						.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getPath();
 				File output = new File(destination + File.separator +
-						"output" + (++NavDrawerFragment.num) + ".mp4");
+						"output" + (++sNum) + ".mp4");
 				if (output.exists()) {
 					//noinspection ResultOfMethodCallIgnored
 					output.delete();

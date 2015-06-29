@@ -59,7 +59,7 @@ public final class ObservableList extends ArrayList<NavItem> {
 	 */
 	public synchronized void notifyChanged() {
 		for (Observer observer : mObservers.values()) {
-			observer.onChanged();
+			observer.onModified();
 		}
 	}
 
@@ -146,7 +146,7 @@ public final class ObservableList extends ArrayList<NavItem> {
 	}
 
 	public static class Observer {
-		public void onChanged() {}
+		public void onModified() {}
 		public void onRemoved(int position) {}
 	}
 

@@ -33,10 +33,13 @@ import android.widget.ListView;
  * Class that invokes the {@code OnItemClickListener} directly if clicked on a header or a footer
  * view. This is to make sure that such views do not mess up the {@code mCheckState} of the
  * {@code AbsListView}. Particularly line 1127 of {@code AbsListView}.
+ * Furthermore this implements a {@link #setSelectedPosition(int)} to prevent save the selected
+ * position even after switching modes.
  */
 public class HeadlessListView extends ListView {
 
-	OnItemClickListener mItemClickListener;
+	private OnItemClickListener mItemClickListener;
+	private int mSelected = ListView.INVALID_POSITION;
 
 	public HeadlessListView(Context context) {
 		super(context);
@@ -75,6 +78,22 @@ public class HeadlessListView extends ListView {
 			// Otherwise let the parent handle it
 			return super.performItemClick(view, position, id);
 		}
+	}
+
+	/**
+	 * Set the position that's currently selected. It can only be changed via this method, therefore
+	 * changing the selection mode won't clear this.
+	 */
+	public void setSelectedPosition(int position) {
+		mSelected = position;
+	}
+
+	/**
+	 * Get the selection as set by the {@link #setSelectedPosition(int)}. Default value:
+	 * {@link ListView#INVALID_POSITION}.
+	 */
+	public int getSelectedPosition() {
+		return mSelected;
 	}
 
 }
