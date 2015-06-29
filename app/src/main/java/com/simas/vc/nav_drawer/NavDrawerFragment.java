@@ -64,8 +64,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 	private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
 	private static final String TAG = "NavDrawerFragment";
 
-	public static int sPreviewSize;
-
 	/**
 	 * A pointer to the current callbacks instance (the Activity).
 	 */
@@ -131,18 +129,20 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 		final View header = createHeader(inflater, mDrawerList);
 		// When available, fetch the item width and height
-		header.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-			@Override
-			public void onLayoutChange(View v, int left, int top, int right, int bottom,
-			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-				int width  = header.getWidth(),
-						height = header.getHeight();
-				if (width > 0 && height > 0) {
-					header.removeOnLayoutChangeListener(this);
-					sPreviewSize = (width > height) ? width : height;
+		if (MainActivity.sPreviewSize == 0) {
+			header.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+				@Override
+				public void onLayoutChange(View v, int left, int top, int right, int bottom,
+				                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+					int width = header.getWidth(),
+							height = header.getHeight();
+					if (width > 0 && height > 0) {
+						header.removeOnLayoutChangeListener(this);
+						MainActivity.sPreviewSize = (width > height) ? width : height;
+					}
 				}
-			}
-		});
+			});
+		}
 		getListView().addHeaderView(header);
 
 		return mDrawerList;

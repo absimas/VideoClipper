@@ -21,10 +21,13 @@ package com.simas.vc.editor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.simas.vc.MainActivity;
 import com.simas.vc.helpers.DelayedHandler;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
@@ -87,17 +90,12 @@ public class EditorFragment extends Fragment {
 
 		// Queue container modifications until it's measured
 		final View playerContainer = mPlayerFragment.getContainer();
-		playerContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+		final Runnable playerResize = new Runnable() {
 			@Override
-			public void onLayoutChange(View v, int left, int top, int right, int bottom,
-			                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-				int size = Math.max(playerContainer.getWidth(), playerContainer.getHeight());
-				if (size <= 0) return;
-				playerContainer.removeOnLayoutChangeListener(this);
-
+			public void run() {
 				ViewGroup.LayoutParams params = playerContainer.getLayoutParams();
-				params.width = size;
-				params.height = size;
+				params.width = MainActivity.sPlayerContainerSize;
+				params.height = MainActivity.sPlayerContainerSize;
 				playerContainer.setLayoutParams(params);
 
 				// Hide the progress bar when the player container has been properly drawn
@@ -108,7 +106,23 @@ public class EditorFragment extends Fragment {
 					}
 				});
 			}
-		});
+		};
+		if (MainActivity.sPlayerContainerSize != 0) {
+			playerResize.run();
+		} else {
+			playerContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+				@Override
+				public void onLayoutChange(View v, int left, int top, int right, int bottom,
+				                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+					int size = Math.max(playerContainer.getWidth(), playerContainer.getHeight());
+					if (size <= 0) return;
+					MainActivity.sPlayerContainerSize = size;
+					playerContainer.removeOnLayoutChangeListener(this);
+					playerResize.run();
+				}
+			});
+		}
+
 
 		mDelayedHandler.resume();
 
@@ -141,7 +155,7 @@ public class EditorFragment extends Fragment {
 	public void onResume() {
 		super.onResume();
 		// Redraw the container when the activity is resumed, e.g. going back from a sleep
-//		if (getContainer() != null) getContainer().requestLayout();
+		if (getContainer() != null) getContainer().requestLayout();
 	}
 
 	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {

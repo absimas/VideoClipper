@@ -186,13 +186,13 @@ public class NavItem implements Parcelable, Cloneable {
 		if (preview == null) {
 			Log.e(TAG, "Couldn't parse the preview!");
 			return null;
-		} else if (NavDrawerFragment.sPreviewSize == 0) {
+		} else if (MainActivity.sPreviewSize == 0) {
 			Log.e(TAG, "Preview size is unset! Using full size.");
 			return preview;
 		}
 
 		// Scale preview
-		Bitmap scaledPreview = scaleDown(preview, Utils.dpToPx(NavDrawerFragment.sPreviewSize));
+		Bitmap scaledPreview = scaleDown(preview, Utils.dpToPx(MainActivity.sPreviewSize));
 		// Recycle the un-scaled version
 		preview.recycle();
 

@@ -20,6 +20,7 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,6 +33,8 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
+
 import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
 import com.simas.vc.editor.player.PlayerFragment;
@@ -52,9 +55,7 @@ import java.util.ArrayList;
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
 // ToDo use dimensions in xml instead of hard-coded values
 // ToDo 3 items -> select and remove first -> selects last item then what it should have: second to last
-// ToDo surfaces disappearing again when in portrait and scroll to un-cached frags
-	// they just need a re-draw as they re-appear after stream root button is clicked.
-
+// ToDo should not display the stream root button if there aren't any (e.g. 3.mp4 no audio streams)
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -76,10 +77,15 @@ public class MainActivity extends AppCompatActivity
 	 * {@link MyPagerAdapter} and individual {@link NavItem}s.
 	 */
 	public static ObservableList sItems = new ObservableList();
+	public static int sPlayerContainerSize;
+	public static int sPreviewSize;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Reset player container and preview sizes when (re-)created
+		sPlayerContainerSize = 0;
+		sPreviewSize = 0;
 		// Always reset observers when (re-)creating the activity
 		sItems.unregisterAllObservers();
 		// Restore items if available, otherwise make sure the list is empty
@@ -150,7 +156,8 @@ public class MainActivity extends AppCompatActivity
 					if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
 						// Make sure the editor's item is the same as the currently checked one
 						Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
-						if (mEditorFragment != null && mEditorFragment.getItem() != checkedItem) {
+						if (getEditorFragment() != null &&
+								getEditorFragment().getItem() != checkedItem) {
 							mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
 						}
 					}
@@ -222,8 +229,8 @@ public class MainActivity extends AppCompatActivity
 				// Normal item selected
 				setTitle(sItems.get(position - 1).getFile().getName());
 				mEditorFragment = (EditorFragment) mPagerAdapter.getItem(position);
-				if (mEditorFragment != null) {
-					mEditorFragment.getPlayerFragment().setInitialized(false);
+				if (getEditorFragment() != null) {
+					getEditorFragment().getPlayerFragment().setInitialized(false);
 				}
 				// Select ListView item
 				mNavDrawerFragment.selectItem(position);
@@ -290,7 +297,6 @@ public class MainActivity extends AppCompatActivity
 				}
 			}
 		}
-
 	}
 
 	public EditorFragment getEditorFragment() {
@@ -383,34 +389,34 @@ public class MainActivity extends AppCompatActivity
 			// ToDo probly unnecessary
 			Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
 			if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE &&
-					mEditorFragment != null &&
-					mEditorFragment.getItem() != checkedItem) {
+					getEditorFragment() != null &&
+					getEditorFragment().getItem() != checkedItem) {
 				// Close drawer only if a new item is selected in single choice mode
 				mNavDrawerFragment.setDrawerOpen(false);
 			}
 		}
 
-//		if (mEditorFragment != null && mEditorFragment.setItem(item)) {
+//		if (getEditorFragment() != null && getEditorFragment().setItem(item)) {
 			// Close drawer if a new and non-null item is selected
 
 			// Hide/Show the Editor/Helper
-//			if (item == null && mEditorFragment.isVisible()) {
+//			if (item == null && getEditorFragment().isVisible()) {
 //				setTitle(getString(R.string.app_name));
 //
 //				// Hide if visible
 //				getSupportFragmentManager().beginTransaction()
 //						.setCustomAnimations(android.R.anim.fade_in, android.R.anim.slide_out_right)
-//						.hide(mEditorFragment)
+//						.hide(getEditorFragment())
 //						.commit();
 //
 //				View view = findViewById(R.id.no_items_notifier);
 //				Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
 //				fadeOut.setFillAfter(true);
 //				view.startAnimation(fadeOut);
-//			} else if ((item != null && !mEditorFragment.isVisible())) {
+//			} else if ((item != null && !getEditorFragment().isVisible())) {
 //				getSupportFragmentManager().beginTransaction()
 //						.setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.fade_out)
-//						.show(mEditorFragment)
+//						.show(getEditorFragment())
 //						.commit();
 //
 //				View view = findViewById(R.id.no_items_notifier);

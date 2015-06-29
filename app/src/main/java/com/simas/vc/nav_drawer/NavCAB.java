@@ -89,7 +89,7 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 	@Override
 	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 		// Save the previously saved item pointer
-		int curSelection = getListView().getSelectedPosition();
+		int curSelection = getListView().   getSelectedPosition();
 		Log.e(TAG, "list selected: " + curSelection);
 		if (curSelection != ListView.INVALID_POSITION) {
 			mInitiallySelectedItem = getListView().getItemAtPosition(curSelection);
