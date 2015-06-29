@@ -91,8 +91,12 @@ public class TreeParser {
 		mOverlay = (TreeOverlay) layout.findViewById(R.id.overlays);
 		mContainer = (LinearLayout) layout.findViewById(R.id.field_container);
 
-		createStreamList(attributes.getAudioStreams(), "Audio");
-		createStreamList(attributes.getVideoStreams(), "Video");
+		if (attributes.getAudioStreams().size() > 0) {
+			createStreamList(attributes.getAudioStreams(), "Audio");
+		}
+		if (attributes.getVideoStreams().size() > 0) {
+			createStreamList(attributes.getVideoStreams(), "Video");
+		}
 	}
 
 	private void createStreamList(List<? extends Stream> streams, String rootName) {
@@ -100,14 +104,12 @@ public class TreeParser {
 		mRoots.add(root);
 
 		// Stream button
-		// View
 		TreeLinearLayout rootView = (TreeLinearLayout) mInflater
 				.inflate(R.layout.stream_root, mContainer, false);
 		root.view = rootView;
 		rootView.setNode(root);
 		mContainer.addView(rootView);
 
-		// Values
 		// Values
 		TextView rootText = (TextView) rootView.findViewById(R.id.root_title);
 		rootText.setText(rootName);

@@ -39,10 +39,14 @@
 		android:id="@+id/drawer_layout"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
-		<com.simas.versatileviewpager.VersatileViewPager
-			android:id="@+id/view_pager"
+		<RelativeLayout
 			android:layout_width="match_parent"
-			android:layout_height="match_parent"/>
+			android:layout_height="match_parent">
+			<com.simas.versatileviewpager.VersatileViewPager
+				android:id="@+id/view_pager"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"/>
+		</RelativeLayout>
 
 <!--Used for player debugging-->
 		<!--<fragment android:id="@+id/editor_fragment"-->

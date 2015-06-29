@@ -58,6 +58,7 @@
         <TextView
             android:textColor="#FFF"
             android:text="@string/zero_time"
+            android:visibility="invisible"
             android:id="@+id/duration"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"

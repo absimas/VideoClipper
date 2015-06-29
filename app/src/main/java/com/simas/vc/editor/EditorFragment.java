@@ -150,13 +150,13 @@ public class EditorFragment extends Fragment {
 	private int getContainerSize() {
 		return Math.max(getContainer().getWidth(), getContainer().getHeight());
 	}
-
-	@Override
-	public void onResume() {
-		super.onResume();
-		// Redraw the container when the activity is resumed, e.g. going back from a sleep
-		if (getContainer() != null) getContainer().requestLayout();
-	}
+//
+//	@Override
+//	public void onResume() {
+//		super.onResume();
+//		// Redraw the container when the activity is resumed, e.g. going back from a sleep
+//		if (getContainer() != null) getContainer().requestLayout();
+//	}
 
 	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {
 		@Override

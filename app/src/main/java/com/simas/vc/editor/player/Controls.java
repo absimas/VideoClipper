@@ -96,8 +96,13 @@ public class Controls extends Fragment
 	}
 
 	public void setDuration(int msec) {
-		int secs = msec / 1000;
-		mDuration.setText(Utils.secsToTime(secs));
+		if (msec == 0) {
+			mDuration.setVisibility(View.INVISIBLE);
+		} else {
+			mDuration.setVisibility(View.VISIBLE);
+			int secs = msec / 1000;
+			mDuration.setText(Utils.secsToTime(secs));
+		}
 		mSeekBar.setMax(msec);
 	}
 

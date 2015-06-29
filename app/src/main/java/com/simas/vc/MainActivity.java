@@ -54,8 +54,7 @@ import java.util.ArrayList;
 	// not sure if possible but possibly send a cancel flag through jni
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
 // ToDo use dimensions in xml instead of hard-coded values
-// ToDo 3 items -> select and remove first -> selects last item then what it should have: second to last
-// ToDo should not display the stream root button if there aren't any (e.g. 3.mp4 no audio streams)
+// ToDo prepare 1st -> switch to 3rd -> switching from 2nd to 1st
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -176,7 +175,7 @@ public class MainActivity extends AppCompatActivity
 			}
 		}, EDITOR_AND_DRAWER_ITEM_MATCHER);
 
-//		// ToDo default item test
+		// ToDo default item test
 		if (sItems.size() == 0) {
 			new Handler().postDelayed(new Runnable() {
 				@Override
@@ -386,6 +385,7 @@ public class MainActivity extends AppCompatActivity
 				return;
 			}
 			// ToDo select last and delete 2 before last => last selected and drawer closes
+				// Because checking by position, should check either primaryItem or items as below
 			// ToDo probly unnecessary
 			Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
 			if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE &&

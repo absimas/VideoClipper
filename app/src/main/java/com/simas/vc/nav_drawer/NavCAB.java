@@ -22,7 +22,6 @@ import android.app.Activity;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.widget.DrawerLayout;
-import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -89,10 +88,9 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 	@Override
 	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 		// Save the previously saved item pointer
-		int curSelection = getListView().   getSelectedPosition();
-		Log.e(TAG, "list selected: " + curSelection);
-		if (curSelection != ListView.INVALID_POSITION) {
-			mInitiallySelectedItem = getListView().getItemAtPosition(curSelection);
+		mInitiallySelectedPosition = getListView().getSelectedPosition();
+		if (mInitiallySelectedPosition != ListView.INVALID_POSITION) {
+			mInitiallySelectedItem = getListView().getItemAtPosition(mInitiallySelectedPosition);
 		}
 
 		// When CAB is open, drawer is un-closeable
@@ -129,12 +127,12 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 					// Create a semi-deep item copy
 					NavItem navItem = new NavItem(getAdapter().getItem(adapterItemPos));
 					items.add(navItem);
-					mModifiedDataSet = true;
+							mModifiedDataSet = true;
 				}
 				// Add the list to other items in adapter
 				MainActivity.sItems.addAll(items);
 
-				mode.finish();
+				mode.finish(); // Invoke onDestroyActionMode
 				return true;
 			}
 			case R.id.nav_contextual_action_remove: {
@@ -146,16 +144,14 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 					}
 				});
 
-				// Remove positions from the end of the adapter list,
-				// because the checked positions are sorted in a descending order
+				// Remove positions from the end of the adapter list
 				for (int position : checkedPositions) {
 					int adapterItemPos = position - getListView().getHeaderViewsCount();
 					MainActivity.sItems.remove(adapterItemPos);
 					mModifiedDataSet = true;
 				}
 
-				// The following will clear the checked item array (invokes onDestroyActionMode)
-				mode.finish();
+				mode.finish(); // Invoke onDestroyActionMode
 				return true;
 			}
 			default:
@@ -186,19 +182,45 @@ public class NavCAB implements AbsListView.MultiChoiceModeListener, Parcelable {
 				// Revert to the previous selection (if anything was selected)
 				if (mInitiallySelectedItem != null) {
 					// Loop items to find the one with the correct id (if it's still there)
+					int newPosition = ListView.INVALID_POSITION;
 					for (int i=0; i<getListView().getCount(); ++i) {
 						Object item = getListView().getItemAtPosition(i);
 						if (item == mInitiallySelectedItem) {
-							mNavDrawerFragment.selectItem(i);
+							newPosition = i;
 							break;
 						}
 					}
+					if (newPosition != ListView.INVALID_POSITION) {
+						// The previously selected item was found, select it again
+						mNavDrawerFragment.selectItem(newPosition);
+					} else {
+						// Previously selected item was removed.
+						if (mInitiallySelectedPosition - getListView().getHeaderViewsCount()
+								< getAdapter().getCount() - 1) {
+							// There are enough items, select previously selected position
+							selectListItemImplicitly(mInitiallySelectedPosition);
+						} else if (getAdapter().getCount() > 0) {
+							// There are item, select the last one
+							selectListItemImplicitly(getAdapter().getCount());
+						} else {
+							// There are no items, don't select anything
+						}
+					}
 					mInitiallySelectedItem = null;
-					// Notify the adapter. Right now the previous item will be re-selected or gone
+					// Notify the adapter. The previous item will be re-selected or gone
 					getAdapter().notifyDataSetChanged();
 				}
 			}
 		});
+	}
+
+	/**
+	 * Selects ListView's item implicitly without invoking {@link NavDrawerFragment#selectItem(int)}
+	 */
+	private void selectListItemImplicitly(int position) {
+		getListView().setItemChecked(position, true);
+		getListView().setSelection(position);
+		getListView().setSelectedPosition(position);
 	}
 
 	private HeadlessListView getListView() {
