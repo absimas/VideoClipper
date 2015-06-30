@@ -54,7 +54,6 @@ public class EditorFragment extends Fragment {
 	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
 	private NavItem mItem;
-	private View mContainer;
 	private View mProgressOverlay;
 	private PlayerFragment mPlayerFragment;
 
@@ -67,6 +66,39 @@ public class EditorFragment extends Fragment {
 	 * the end of {@code onCreateView}.
 	 */
 	private DelayedHandler mDelayedHandler = new DelayedHandler(new Handler());
+
+
+	/**
+	 * For progress overlay to be hidden, multiple states must be fulfilled
+	 * ({@link #modifyProgressOverlayStates(boolean, ProgressStates)}). To save the states we use
+	 * a {@link com.simas.vc.helpers.Utils.FlagContainer} with respective bits set for each flag.
+	 * Flags have a specific value of 1, 2, 4, 8, etc. (as every bit does). They are specified at
+	 * {@link com.simas.vc.editor.EditorFragment.ProgressStates}.
+	 */
+	private Utils.FlagContainer mProgressOverlayStates = new Utils.FlagContainer();
+	/**
+	 * @see #mProgressOverlayStates
+	 */
+	private enum ProgressStates {
+		PLAYER_CONTAINER_DRAWN(1),
+		ITEM_VALID(2),
+		PLAYER_ITEM_SET(4);
+
+		private int mBit;
+
+		ProgressStates(int bit) {
+			mBit = bit;
+		}
+
+		public int getBit() {
+			return mBit;
+		}
+
+		public static int getCombinedBitValue() {
+			return (int) (Math.pow(2, values().length) - 1);
+		}
+
+	}
 
 	public EditorFragment() {}
 
@@ -81,9 +113,9 @@ public class EditorFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
-		mContainer = inflater.inflate(R.layout.fragment_editor, container, false);
+		View root = inflater.inflate(R.layout.fragment_editor, container, false);
 		// Overlay a ProgressBar when preparing the PlayerFragment for the first time
-		mProgressOverlay = mContainer.findViewById(R.id.editor_progress_overlay);
+		mProgressOverlay = root.findViewById(R.id.editor_progress_overlay);
 
 		mPlayerFragment = (PlayerFragment) getChildFragmentManager()
 				.findFragmentById(R.id.player_fragment);
@@ -98,11 +130,10 @@ public class EditorFragment extends Fragment {
 				params.height = MainActivity.sPlayerContainerSize;
 				playerContainer.setLayoutParams(params);
 
-				// Hide the progress bar when the player container has been properly drawn
 				playerContainer.post(new Runnable() {
 					@Override
 					public void run() {
-						mProgressOverlay.setVisibility(View.GONE);
+						modifyProgressOverlayStates(true, ProgressStates.PLAYER_CONTAINER_DRAWN);
 					}
 				});
 			}
@@ -126,7 +157,7 @@ public class EditorFragment extends Fragment {
 
 		mDelayedHandler.resume();
 
-		View actions = mContainer.findViewById(R.id.editor_actions);
+		View actions = root.findViewById(R.id.editor_actions);
 		mDataMap.put(Data.ACTIONS, actions);
 		mDataMap.put(Data.FILENAME, actions.findViewById(R.id.filename_value));
 		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
@@ -140,23 +171,8 @@ public class EditorFragment extends Fragment {
 			}
 		}
 
-		return mContainer;
+		return root;
 	}
-
-	private View getContainer() {
-		return mContainer;
-	}
-
-	private int getContainerSize() {
-		return Math.max(getContainer().getWidth(), getContainer().getHeight());
-	}
-//
-//	@Override
-//	public void onResume() {
-//		super.onResume();
-//		// Redraw the container when the activity is resumed, e.g. going back from a sleep
-//		if (getContainer() != null) getContainer().requestLayout();
-//	}
 
 	private NavItem.OnUpdatedListener mItemValidationListener = new NavItem.OnUpdatedListener() {
 		@Override
@@ -171,6 +187,7 @@ public class EditorFragment extends Fragment {
 							if (newValue == NavItem.State.VALID &&
 									oldValue == NavItem.State.INPROGRESS) {
 								updateFields();
+								modifyProgressOverlayStates(true, ProgressStates.ITEM_VALID);
 							}
 							break;
 					}
@@ -193,6 +210,10 @@ public class EditorFragment extends Fragment {
 			getItem().unregisterUpdateListener(mItemValidationListener);
 		}
 
+		// 2 flags will be re-set, remove them now to reveal the progress overlay
+		modifyProgressOverlayStates(false, ProgressStates.PLAYER_ITEM_SET);
+		modifyProgressOverlayStates(false, ProgressStates.ITEM_VALID);
+
 		mItem = newItem;
 
 		// Update fields and add listeners if the new item is not null
@@ -201,9 +222,10 @@ public class EditorFragment extends Fragment {
 			switch (getItem().getState()) {
 				case VALID:
 					updateFields();
+					modifyProgressOverlayStates(true, ProgressStates.ITEM_VALID);
 					break;
 				case INPROGRESS:
-					// ToDo ProgressOverlay MANDATORY here
+					modifyProgressOverlayStates(false, ProgressStates.ITEM_VALID);
 					break;
 			}
 
@@ -252,25 +274,44 @@ public class EditorFragment extends Fragment {
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				getPlayerFragment().post(new Runnable() {
-					@Override
-					public void run() {
-						getPlayerFragment().setItem(item);
-					}
-				});
-
 				filename.setText(item.getFile().getName());
 				size.setText(sizeStr);
 				duration.setText(durationStr);
 				streams.removeAllViews();
 				streams.addView(mTreeParser.layout);
 				actions.setVisibility(View.VISIBLE);
+
+				getPlayerFragment().post(new Runnable() {
+					@Override
+					public void run() {
+						getPlayerFragment().setItem(item);
+						modifyProgressOverlayStates(true, ProgressStates.PLAYER_ITEM_SET);
+					}
+				});
 			}
 		});
 	}
 
 	public NavItem getItem() {
 		return mItem;
+	}
+
+	/**
+	 * @see #mProgressOverlayStates
+	 */
+	private void modifyProgressOverlayStates(boolean fulfill, ProgressStates state) {
+		if (fulfill) {
+			if (!mProgressOverlayStates.addFlag(state.getBit())) {
+				Log.e(TAG, state.name() + " flag was already set.");
+			}
+			// If all flags set, hide the progress overlay
+			if (mProgressOverlayStates.getFlags() == ProgressStates.getCombinedBitValue()) {
+				mProgressOverlay.setVisibility(View.GONE);
+			}
+		} else {
+			mProgressOverlayStates.removeFlag(state.getBit());
+			mProgressOverlay.setVisibility(View.VISIBLE);
+		}
 	}
 
 	/**

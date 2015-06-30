@@ -38,7 +38,6 @@ import com.simas.vc.VC;
 
 // ToDo choosing a failed item is permitted and the editor doesn't get updated.
 	// should display an error message when selected but previous selection shouldn't be changed
-// ToDo test out new bitmap parcelling
 
 /**
  * Custom adapter for navigation list, that's located inside of the drawer.

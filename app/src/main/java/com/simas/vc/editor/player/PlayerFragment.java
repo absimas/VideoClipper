@@ -45,8 +45,6 @@ import com.simas.vc.R;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.IOException;
 
-// ToDo try to seek as soon as play is called, perhaps a delay can be avoided
-// ToDo test onRotate state restoration. With multiple pages too.
 // ToDo SYSTEM_UI_FLAG_LOW_PROFILE is cancelled when top android menu is shown
 
 public class PlayerFragment extends Fragment implements	View.OnTouchListener,
@@ -56,7 +54,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 	private static final int MAX_INITIALIZATION_RETRIES = 1;
 	/* Instance state variables */
 	private static final String STATE_ITEM = "state_item";
-	private static final String STATE_CONNECTED = "state_connected";
 	private static final String STATE_FULLSCREEN = "state_fullscreen";
 	private static final String STATE_SEEK_POS = "state_seek_pos";
 	private static final String STATE_DURATION = "state_duration";
@@ -161,11 +158,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 
 		/* Saved states */
 		if (savedState != null) {
-			// Connect fragment to player
-			if (savedState.getBoolean(STATE_CONNECTED, false)) {
-				connectPlayer();
-			}
-
 			final NavItem item = savedState.getParcelable(STATE_ITEM);
 			if (item != null) {
 				// Set item
@@ -208,7 +200,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 						toggleFullscreen();
 					}
 				});
-
 			}
 		}
 
@@ -235,9 +226,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		super.onSaveInstanceState(outState);
 		// NavItem
 		outState.putParcelable(STATE_ITEM, mItem);
-
-		// Connected
-		outState.putBoolean(STATE_CONNECTED, getPlayer().getControls() == getControls());
 
 		// Controls visibility
 		outState.putBoolean(STATE_CONTROLS_VISIBLE, getControls().isShown());
@@ -580,10 +568,12 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				// The video is already playing, do nothing
 				break;
 			case PREPARED: case PAUSED:
+				// While initializing the player, the fragment could be re-draw which means the
+						// surface needs to be invalidated too.
 				invalidateSurface();
 				updateSeek();
-				setInitialized(true);
 				getPlayer().start();
+				setInitialized(true);
 				break;
 		}
 		getControls().setLoading(false);
@@ -688,7 +678,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		return mControls;
 	}
 
-	public static Player getPlayer() {
+	private static Player getPlayer() {
 		return Player.getInstance();
 	}
 

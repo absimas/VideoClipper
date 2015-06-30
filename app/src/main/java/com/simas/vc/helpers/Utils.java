@@ -55,6 +55,39 @@ public class Utils {
 	public static final String VIDEO_MIME = "video";
 	private static final int IO_BUFFER_SIZE = 32768;
 
+	public static class FlagContainer {
+
+		private int mFlags;
+
+		public int getFlags() {
+			return mFlags;
+		}
+
+		/**
+		 * @return true if flags have been modified
+		 */
+		public boolean addFlag(int flags) {
+			return setFlags(flags, flags);
+		}
+
+		/**
+		 * @return true if flags have been modified
+		 */
+		public boolean removeFlag(int flags) {
+			return setFlags(0, flags);
+		}
+
+		/**
+		 * @return true if flags have been modified
+		 */
+		private boolean setFlags(int flags, int mask) {
+			int oldFlags = mFlags;
+			mFlags = (mFlags & ~mask) | (flags & mask);
+			return mFlags != oldFlags;
+		}
+
+	}
+
 	/**
 	 * Pipe bytes. Will close the streams after it's done.
 	 * @param is    InputStream, will be closed

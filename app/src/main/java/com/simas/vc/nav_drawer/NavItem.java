@@ -154,13 +154,19 @@ public class NavItem implements Parcelable, Cloneable {
 				setAttributes(attributes);
 
 				// Preview
-				Bitmap preview = parsePreview();
+				final Bitmap preview = parsePreview();
 				if (preview == null) {
 					setState(State.INVALID);
-					return;
+				} else {
+					setState(State.VALID);
+					// Update the preview on the UI thread
+					Utils.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							setPreview(preview);
+						}
+					});
 				}
-				setPreview(preview);
-				setState(State.VALID);
 			}
 		}).start();
 	}

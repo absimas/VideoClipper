@@ -20,7 +20,6 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -33,20 +32,16 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.Toast;
-
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
-import com.simas.vc.editor.player.PlayerFragment;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.helpers.ObservableList;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 
 // ToDo prevent copying ONLY non-valid items (other actions still available)
 	// removing invalid or "stuck" items should still be available
@@ -54,7 +49,6 @@ import java.util.ArrayList;
 	// not sure if possible but possibly send a cancel flag through jni
 // ToDo animate toolbar action item icons, i.e. rotate on click (use AnimationDrawable)
 // ToDo use dimensions in xml instead of hard-coded values
-// ToDo prepare 1st -> switch to 3rd -> switching from 2nd to 1st
 
 /**
  * Activity that contains all the top-level fragments and manages their transitions.
@@ -267,8 +261,8 @@ public class MainActivity extends AppCompatActivity
 					}
 
 					// Pause player
-					Player player = PlayerFragment.getPlayer();
-					if (player != null && player.getState() == Player.State.STARTED) {
+					Player player = Player.getInstance();
+					if (player.getState() == Player.State.STARTED) {
 						player.pause();
 					}
 
@@ -376,55 +370,18 @@ public class MainActivity extends AppCompatActivity
 			// Check the item in the drawer
 			lv.setItemChecked(position, true);
 
-			int itemPosInPager = position - lv.getHeaderViewsCount() + 1; // +1 to skip empty item
-			if (mViewPager.getCurrentItem() != itemPosInPager) {
-				// Open selected item in the view pager
-				mViewPager.setCurrentItem(itemPosInPager);
-				// Make sure the drawer is closed
-				mNavDrawerFragment.setDrawerOpen(false);
-				return;
-			}
-			// ToDo select last and delete 2 before last => last selected and drawer closes
-				// Because checking by position, should check either primaryItem or items as below
-			// ToDo probly unnecessary
 			Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+			// Make sure the item is not already selected in the current EditorFragment
 			if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE &&
-					getEditorFragment() != null &&
-					getEditorFragment().getItem() != checkedItem) {
-				// Close drawer only if a new item is selected in single choice mode
+					getEditorFragment() != null && getEditorFragment().getItem() != checkedItem) {
+				// Select item in pager
+				int itemPosInPager = position - lv.getHeaderViewsCount() + 1; // +1 for empty item
+				mViewPager.setCurrentItem(itemPosInPager);
+
+				// Close drawer
 				mNavDrawerFragment.setDrawerOpen(false);
 			}
 		}
-
-//		if (getEditorFragment() != null && getEditorFragment().setItem(item)) {
-			// Close drawer if a new and non-null item is selected
-
-			// Hide/Show the Editor/Helper
-//			if (item == null && getEditorFragment().isVisible()) {
-//				setTitle(getString(R.string.app_name));
-//
-//				// Hide if visible
-//				getSupportFragmentManager().beginTransaction()
-//						.setCustomAnimations(android.R.anim.fade_in, android.R.anim.slide_out_right)
-//						.hide(getEditorFragment())
-//						.commit();
-//
-//				View view = findViewById(R.id.no_items_notifier);
-//				Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
-//				fadeOut.setFillAfter(true);
-//				view.startAnimation(fadeOut);
-//			} else if ((item != null && !getEditorFragment().isVisible())) {
-//				getSupportFragmentManager().beginTransaction()
-//						.setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.fade_out)
-//						.show(getEditorFragment())
-//						.commit();
-//
-//				View view = findViewById(R.id.no_items_notifier);
-//				Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
-//				fadeOut.setFillAfter(true);
-//				view.startAnimation(fadeOut);
-//			}
-//		}
 	}
 
 	@Override

@@ -26,6 +26,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.simas.vc.helpers.Utils;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.Map;
@@ -95,6 +97,14 @@ public class Player extends MediaPlayer implements MediaPlayer.OnPreparedListene
 		if (getControls() != null) {
 			getControls().setPlaying(true);
 		}
+
+		// Seek to self to update the holder faster
+		Utils.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				seekTo(getCurrentPosition());
+			}
+		});
 	}
 
 	@Override
