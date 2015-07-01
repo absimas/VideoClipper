@@ -29,6 +29,8 @@ import com.simas.vc.helpers.ArgumentBuilder;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.R;
 import com.simas.vc.attributes.VideoStream;
+import com.simas.vc.helpers.Utils;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -88,23 +90,31 @@ public class FFprobe {
 				.add("-v quiet -print_format json")     // Output quietly in JSON
 						// Format entries to show
 				.add("-show_format -show_entries format=%s,%s,%s,%s,%s,%s",
-						VC.getStr(R.string.format_duration), VC.getStr(R.string.format_size),
-						VC.getStr(R.string.format_name), VC.getStr(R.string.format_long_name),
-						VC.getStr(R.string.format_filename),
-						VC.getStr(R.string.format_stream_count))
+						Utils.getString(R.string.format_duration),
+						Utils.getString(R.string.format_size),
+						Utils.getString(R.string.format_name),
+						Utils.getString(R.string.format_long_name),
+						Utils.getString(R.string.format_filename),
+						Utils.getString(R.string.format_stream_count))
 						// Stream entries to show
 				.add("-show_streams -show_entries stream=%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
-						VC.getStr(R.string.stream_name), VC.getStr(R.string.stream_long_name),
-						VC.getStr(R.string.stream_type), VC.getStr(R.string.stream_sample_rate),
-						VC.getStr(R.string.stream_channels), VC.getStr(R.string.stream_duration),
-						VC.getStr(R.string.stream_aspect_ratio), VC.getStr(R.string.stream_width),
-						VC.getStr(R.string.stream_height), VC.getStr(R.string.stream_tbn),
-						VC.getStr(R.string.stream_tbc), VC.getStr(R.string.stream_tbr),
-						VC.getStr(R.string.stream_codec_tag))
+						Utils.getString(R.string.stream_name),
+						Utils.getString(R.string.stream_long_name),
+						Utils.getString(R.string.stream_type),
+						Utils.getString(R.string.stream_sample_rate),
+						Utils.getString(R.string.stream_channels),
+						Utils.getString(R.string.stream_duration),
+						Utils.getString(R.string.stream_aspect_ratio),
+						Utils.getString(R.string.stream_width),
+						Utils.getString(R.string.stream_height),
+						Utils.getString(R.string.stream_tbn),
+						Utils.getString(R.string.stream_tbc),
+						Utils.getString(R.string.stream_tbr),
+						Utils.getString(R.string.stream_codec_tag))
 				.build();
 
 		if (cFFprobe(args, tmpFile.getPath()) != 0) {
-			throw new VCException(VC.getStr(R.string.ffprobe_fail));
+			throw new VCException(Utils.getString(R.string.ffprobe_fail));
 		}
 
 		BufferedReader reader = null;
@@ -134,7 +144,7 @@ public class FFprobe {
 			Log.i(TAG, "Parsed attributes: " + fa);
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new VCException(VC.getStr(R.string.ffprobe_fail));
+			throw new VCException(Utils.getString(R.string.ffprobe_fail));
 		} finally {
 			if (reader != null) {
 				try {
@@ -174,11 +184,11 @@ public class FFprobe {
 
 		// Format
 		FileAttributes fa = new FileAttributes(
-				getJSONString(format, VC.getStr(R.string.format_filename)),
-				getLong(format, VC.getStr(R.string.format_size)),
-				getJSONDouble(format, VC.getStr(R.string.format_duration)));
-		fa.setName(getJSONString(format, VC.getStr(R.string.format_name)))
-				.setLongName(getJSONString(format, VC.getStr(R.string.format_long_name)));
+				getJSONString(format, Utils.getString(R.string.format_filename)),
+				getLong(format, Utils.getString(R.string.format_size)),
+				getJSONDouble(format, Utils.getString(R.string.format_duration)));
+		fa.setName(getJSONString(format, Utils.getString(R.string.format_name)))
+				.setLongName(getJSONString(format, Utils.getString(R.string.format_long_name)));
 
 		// Streams
 		for (JSONObject jsonObj : jStream) {
@@ -189,27 +199,27 @@ public class FFprobe {
 			Stream stream;
 
 			// Codec name
-			String codecName = getJSONString(jsonObj, VC.getStr(R.string.stream_name));
+			String codecName = getJSONString(jsonObj, Utils.getString(R.string.stream_name));
 
 			switch (streamType) {
 				case AUDIO:
 					stream = new AudioStream(codecName)
 							.setChannelCount(getJSONInteger(jsonObj,
-									VC.getStr(R.string.stream_channels)))
+									Utils.getString(R.string.stream_channels)))
 							.setSampleRate(getJSONInteger(jsonObj,
-									VC.getStr(R.string.stream_sample_rate)));
+									Utils.getString(R.string.stream_sample_rate)));
 					break;
 				case VIDEO:
 					// Create VideoStream
-					Integer width = getJSONInteger(jsonObj, VC.getStr(R.string.stream_width));
-					Integer height = getJSONInteger(jsonObj, VC.getStr(R.string.stream_height));
+					Integer w = getJSONInteger(jsonObj, Utils.getString(R.string.stream_width));
+					Integer h = getJSONInteger(jsonObj, Utils.getString(R.string.stream_height));
 
-					stream = new VideoStream(width, height, codecName)
+					stream = new VideoStream(w, h, codecName)
 							.setAspectRatio(getJSONString(jsonObj,
-									VC.getStr(R.string.stream_aspect_ratio)))
-							.setTBN(getJSONString(jsonObj, VC.getStr(R.string.stream_tbn)))
-							.setTBC(getJSONString(jsonObj, VC.getStr(R.string.stream_tbc)))
-							.setTBR(getJSONString(jsonObj, VC.getStr(R.string.stream_tbr)));
+									Utils.getString(R.string.stream_aspect_ratio)))
+							.setTBN(getJSONString(jsonObj, Utils.getString(R.string.stream_tbn)))
+							.setTBC(getJSONString(jsonObj, Utils.getString(R.string.stream_tbc)))
+							.setTBR(getJSONString(jsonObj, Utils.getString(R.string.stream_tbr)));
 					break;
 				default:
 					continue;
@@ -220,10 +230,10 @@ public class FFprobe {
 			stream.setCodecName(codecName);
 
 			// Stream duration
-			Double duration = getJSONDouble(jsonObj, VC.getStr(R.string.stream_duration));
+			Double duration = getJSONDouble(jsonObj, Utils.getString(R.string.stream_duration));
 
 			// Codec tag (default is 0)
-			String tag = getJSONString(jsonObj, VC.getStr(R.string.stream_codec_tag));
+			String tag = getJSONString(jsonObj, Utils.getString(R.string.stream_codec_tag));
 			try {
 				stream.setCodecTag(Integer.decode(tag));
 			} catch (NumberFormatException e) {
@@ -232,7 +242,8 @@ public class FFprobe {
 			}
 
 			// Codec long name
-			stream.setCodecLongName(getJSONString(jsonObj, VC.getStr(R.string.stream_long_name)));
+			stream.setCodecLongName(getJSONString(jsonObj,
+					Utils.getString(R.string.stream_long_name)));
 
 			// Append to FileAttributes
 			fa.addStream(stream);
@@ -242,7 +253,7 @@ public class FFprobe {
 	}
 
 	private static StreamType getStreamType(JSONObject obj) {
-		String attributeType = getJSONString(obj, VC.getStr(R.string.stream_type));
+		String attributeType = getJSONString(obj, Utils.getString(R.string.stream_type));
 		if (attributeType != null) {
 			StreamType streamType;
 			try {

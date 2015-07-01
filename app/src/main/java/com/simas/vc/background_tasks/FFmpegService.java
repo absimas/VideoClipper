@@ -77,11 +77,24 @@ public class FFmpegService extends IntentService {
 		int duration = intent.getIntExtra(ARG_OUTPUT_DURATION, 0);
 
 		// Launch progress notifier
-		ProgressNotifier notifier = new ProgressNotifier(duration, output, progress);
-		notifier.execute();
+		final ProgressNotifier notifier = new ProgressNotifier(duration, output, progress);
+		Utils.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				// Must be execute on the UI thread
+				notifier.execute();
+			}
+		});
 		// Launch the process itself
-		int ffmpegResult = FFmpeg.cFFmpeg(args);
-		notifier.ffmpegCancel(ffmpegResult);
+		final int ffmpegResult = FFmpeg.cFFmpeg(args);
+		Utils.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				// Notifier cancelling must be run on the UI thread too,
+				// so it doesn't outrun the execution
+				notifier.ffmpegCancel(ffmpegResult);
+			}
+		});
 	}
 
 	@Override
@@ -171,9 +184,9 @@ public class FFmpegService extends IntentService {
 					mDisplayIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
 			mBuilder = new NotificationCompat.Builder(getApplicationContext());
-			mBuilder.setContentTitle(getString(R.string.vc_working))
-					.setTicker(getString(R.string.initialising))
-					.setContentText(getString(R.string.initialising))
+			mBuilder.setContentTitle(Utils.getString(R.string.vc_working))
+					.setTicker(Utils.getString(R.string.initialising))
+					.setContentText(Utils.getString(R.string.initialising))
 					.setSmallIcon(R.drawable.ic_action_merge)
 					.setContentIntent(pendingIntent)
 					.setPriority(NotificationCompat.PRIORITY_MAX);
@@ -246,7 +259,7 @@ public class FFmpegService extends IntentService {
 							if (secs == -1) {
 								// Use an indeterminate progress instead
 								mBuilder.setProgress(mDuration, 0, true);
-								mBuilder.setContentText(getString(R.string.clipping));
+								mBuilder.setContentText(Utils.getString(R.string.clipping));
 							} else {
 								mBuilder.setProgress(mDuration, secs, false);
 
@@ -258,7 +271,7 @@ public class FFmpegService extends IntentService {
 								}
 
 								mBuilder.setContentText(String.format("%s %s %s",
-										curDur, getString(R.string.out_of), mDurationTime));
+										curDur, Utils.getString(R.string.out_of), mDurationTime));
 							}
 							// Update display intent
 							mDisplayIntent.putExtra(ProgressActivity.ARG_CUR_DURATION,curDur);
@@ -268,7 +281,7 @@ public class FFmpegService extends IntentService {
 							mBuilder.setContentIntent(pIntent);
 
 							// Update notification text (initially it's "initialising")
-							mBuilder.setTicker(getString(R.string.clipping));
+							mBuilder.setTicker(Utils.getString(R.string.clipping));
 
 							// Update notification
 							NOTIFICATION_MANAGER.notify(INITIAL_ID, mBuilder.build());
@@ -362,10 +375,10 @@ public class FFmpegService extends IntentService {
 			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(),R.raw.fail);
 				mBuilder = new NotificationCompat.Builder(getApplicationContext());
-				mBuilder.setContentTitle(getString(R.string.vc_failed))
-						.setTicker(getString(R.string.vc_failed))
-						.setContentText(String.format(
-								getString(R.string.format_clipping_failed), mOutput.getName()))
+				mBuilder.setContentTitle(Utils.getString(R.string.vc_failed))
+						.setTicker(Utils.getString(R.string.vc_failed))
+						.setContentText(Utils
+								.getString(R.string.format_clipping_failed, mOutput.getName()))
 						.setSmallIcon(R.drawable.ic_action_error)
 						.setContentIntent(pendingIntent)
 						.setAutoCancel(true)
@@ -397,10 +410,10 @@ public class FFmpegService extends IntentService {
 			if (progressingFile == null || progressingFile.compareTo(mOutput) != 0) {
 				String str = String.format("android.resource://%s/%s", getPackageName(), R.raw.ok);
 				mBuilder = new NotificationCompat.Builder(getApplicationContext());
-				mBuilder.setContentTitle(getString(R.string.vc_finished))
-						.setTicker(getString(R.string.vc_finished))
-						.setContentText(String.format(
-								getString(R.string.format_click_to_open_video), mOutput.getName()))
+				mBuilder.setContentTitle(Utils.getString(R.string.vc_finished))
+						.setTicker(Utils.getString(R.string.vc_finished))
+						.setContentText(Utils.
+								getString(R.string.format_click_to_open_video, mOutput.getName()))
 						.setSmallIcon(R.drawable.ic_action_merge)
 						.setContentIntent(pendingIntent)
 						.setAutoCancel(true)

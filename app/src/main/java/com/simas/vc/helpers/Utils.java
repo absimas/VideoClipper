@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.Locale;
 
 /**
  * Helper methods
@@ -304,7 +305,7 @@ public class Utils {
 	 * @return string in the format of hh:mm:ss, 00:00:00 if given seconds are negative
 	 */
 	public static String secsToFullTime(int secs) {
-		if (secs < 0) return "0" + VC.getStr(R.string.second_short);
+		if (secs < 0) return "0" + Utils.getString(R.string.second_short);
 		int hours = secs / 3600;
 		int minutes = (secs % 3600) / 60;
 		int seconds = secs % 60;
@@ -313,15 +314,15 @@ public class Utils {
 		if (hours > 0) {
 			// If hours present, print minutes and seconds too
 			output = String.format("%d%s %d%s ",
-					hours, VC.getStr(R.string.hour_short),
-					minutes, VC.getStr(R.string.minute_short));
+					hours, Utils.getString(R.string.hour_short),
+					minutes, Utils.getString(R.string.minute_short));
 		} else if (minutes > 0) {
 			// If hours aren't present but minutes are, print them
-			output = String.format("%d%s ", minutes, VC.getStr(R.string.minute_short));
+			output = String.format("%d%s ", minutes, Utils.getString(R.string.minute_short));
 		}
 		// When not 0, seconds are always printed
 		if (seconds > 0) {
-			output += String.format("%d%s", seconds, VC.getStr(R.string.second_short));
+			output += String.format("%d%s", seconds, Utils.getString(R.string.second_short));
 		}
 
 		return output;
@@ -338,7 +339,7 @@ public class Utils {
 	public static String bytesToMb(Long bytes) {
 		if (bytes == null) bytes = 0L;
 		double mb = bytes / 1024.0 / 1024.0;
-		return String.format("%.2f %s", mb, VC.getStr(R.string.megabyte));
+		return String.format("%.2f %s", mb, Utils.getString(R.string.megabyte));
 	}
 
 	public static class Size {
@@ -385,4 +386,14 @@ public class Utils {
 		return b;
 	}
 
+	/**
+	 * Convenience method that uses the application context.
+	 */
+	public static String getString(int resId) {
+		return VC.getAppContext().getString(resId);
+	}
+
+	public static String getString(int resId, Object... formatArgs) {
+		return VC.getAppContext().getString(resId, formatArgs);
+	}
 }

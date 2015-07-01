@@ -233,21 +233,21 @@ public class ProgressActivity extends AppCompatActivity {
 				break;
 			case FINISHED:
 				if (mOutputFile != null) {
-					mMain.setText(String.format(getString(R.string.format_clipping_succeeded),
-							mOutputFile.getName()));
+					mMain.setText(Utils
+							.getString(R.string.format_clipping_succeeded, mOutputFile.getName()));
 				}
 				mInfo.setText(R.string.open_below);
 				break;
 			case ERROR:
 				// Include file path in the error if it's available
 				if (mOutputFile != null) {
-					mMain.setText(String.format(getString(R.string.format_clipping_failed),
-							mOutputFile.getName()));
+					mMain.setText(Utils
+							.getString(R.string.format_clipping_failed, mOutputFile.getName()));
 				} else {
-					mMain.setText(String.format(getString(R.string.format_clipping_failed),
-							getString(R.string.the_file)));
+					mMain.setText(Utils.getString(R.string.format_clipping_failed,
+							Utils.getString(R.string.the_file)));
 				}
-				mInfo.setText(getString(R.string.try_again));
+				mInfo.setText(Utils.getString(R.string.try_again));
 				break;
 		}
 	}

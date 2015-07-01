@@ -63,7 +63,7 @@ public class FFmpeg {
 			throws IOException, VCException {
 		// Check source count
 		if (items.size() < 2) {
-			throw new VCException(VC.getStr(R.string.at_least_2_videos));
+			throw new VCException(Utils.getString(R.string.at_least_2_videos));
 		}
 
 		// Fetch item validity and calculate total duration
@@ -82,6 +82,7 @@ public class FFmpeg {
 
 		// ToDo check stream counts
 
+		boolean needsResizing = false, needsFiltering = false;
 		VideoStream stream = null;
 		// Loop items
 		for (NavItem item : items) {
@@ -91,20 +92,24 @@ public class FFmpeg {
 					stream = videoStream;
 				} else {
 					if (streamsNeedResizing(stream, videoStream)) {
-						concatFilterWithScaleAndPadding(outputFile, progressFile, items, duration);
-						return;
+						needsResizing = true;
 					} else if (!streamsConcatenateableByDemuxing(stream, videoStream)) {
-						// VideoStreams have different fields, concat demuxer is not applicable
-						// Instead, use a filter
-						concatFilter(outputFile, progressFile, items, duration);
-						return;
+						needsFiltering = true;
 					}
 				}
 			}
 		}
 
-		// VideoStream check passed, use the concat demuxer
-		concatDemuxer(outputFile, progressFile, items, duration);
+		// Call the method based on the priorities. Resizing is the most important factor as it
+		// will use a filter, other use a filter without resizing. The most basic concatenation
+		// involves uses the concat demuxer.
+		if (needsResizing) {
+			concatFilterWithScaleAndPadding(outputFile, progressFile, items, duration);
+		} else if (needsFiltering) {
+			concatFilter(outputFile, progressFile, items, duration);
+		} else {
+			concatDemuxer(outputFile, progressFile, items, duration);
+		}
 	}
 
 	private static void concatDemuxer(@NonNull File outputFile, @NonNull File progressFile,
@@ -314,7 +319,6 @@ public class FFmpeg {
 		intent.putExtra(FFmpegService.ARG_OUTPUT_DURATION, duration);
 		context.startService(intent);
 	}
-
 
 	/**
 	 * Assumes that {@code streamsNeedResizing} returns false for these streams.

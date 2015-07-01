@@ -39,6 +39,7 @@ import com.simas.vc.background_tasks.FFmpeg;
 import com.simas.vc.editor.player.Player;
 import com.simas.vc.file_chooser.FileChooser;
 import com.simas.vc.helpers.ObservableList;
+import com.simas.vc.helpers.Utils;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.editor.EditorFragment;
 import com.simas.vc.nav_drawer.NavDrawerFragment;
@@ -214,7 +215,7 @@ public class MainActivity extends AppCompatActivity
 			// Update the EditorFragment and invalidate the PlayerFragment
 			if (position < 1) {
 				// Empty item selected
-				setTitle(getString(R.string.app_name));
+				setTitle(Utils.getString(R.string.app_name));
 				mEditorFragment = null;
 				// Deselect ListView items
 				mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
@@ -328,8 +329,9 @@ public class MainActivity extends AppCompatActivity
 							animator.start();
 						}
 					});
-					new Tooltip(MainActivity.this, concat, getString(R.string.help_concatenate));
-					new Tooltip(MainActivity.this, add, getString(R.string.help_add_item));
+					new Tooltip(MainActivity.this, concat, Utils
+							.getString(R.string.help_concatenate));
+					new Tooltip(MainActivity.this, add, Utils.getString(R.string.help_add_item));
 					mToolbar.removeOnLayoutChangeListener(this);
 				}
 			}
@@ -439,14 +441,14 @@ public class MainActivity extends AppCompatActivity
 				} catch (IOException e) {
 					Log.e(TAG, "Error!", e);
 					new AlertDialog.Builder(this)
-							.setTitle(getString(R.string.error))
+							.setTitle(Utils.getString(R.string.error))
 							.setMessage("Unrecoverable error! Please try again.")
 							.setPositiveButton("OK...", null)
 							.show();
 				} catch (VCException e) {
 					Log.e(TAG, "Error with " + e.getExtra(), e);
 					new AlertDialog.Builder(this)
-							.setTitle(getString(R.string.error))
+							.setTitle(Utils.getString(R.string.error))
 							.setMessage(e.getMessage())
 							.setPositiveButton("OK", null)
 							.show();

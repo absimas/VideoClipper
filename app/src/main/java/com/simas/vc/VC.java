@@ -48,12 +48,4 @@ public class VC extends Application {
 		return getAppContext().getResources();
 	}
 
-	public static AssetManager getAppAssets() {
-		return getAppContext().getAssets();
-	}
-
-	public static String getStr(int resourceId) {
-		return getAppResources().getString(resourceId);
-	}
-
 }
