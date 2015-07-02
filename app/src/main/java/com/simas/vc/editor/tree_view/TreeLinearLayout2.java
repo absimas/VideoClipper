@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.simas.vc.editor.tree_view;
 
 import android.annotation.SuppressLint;
@@ -24,13 +23,12 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-
 import com.simas.vc.helpers.Utils;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 // ToDo abstractize with an adapter?
@@ -47,6 +45,7 @@ public final class TreeLinearLayout2 extends LinearLayout {
 
 	private final String TAG = getClass().getName();
 	private static final int LEFT_MARGIN_PER_LEVEL = (int) Utils.dpToPx(15);
+	public static final int LEFT_SPACE_PER_LEVEL = (int) Utils.dpToPx(15);
 	private static final int LEFT_SPACE = 7;
 	private static final int LINE_COLOR = TreeOverlay.LINE_COLOR;
 	private static final Paint LINE_PAINT;
@@ -57,9 +56,10 @@ public final class TreeLinearLayout2 extends LinearLayout {
 		LINE_PAINT.setStrokeWidth(3);
 	}
 
-	private final int mLevel;
+	private final int mStartX;
 	private final boolean mLastSibling;
 	private final Integer[] mDrawnLevels;
+	private static final Map<Integer, Integer> LEVEL_START_X = new HashMap<>();
 
 	/**
 	 * ToDo
@@ -71,37 +71,36 @@ public final class TreeLinearLayout2 extends LinearLayout {
 	public TreeLinearLayout2(Context context, int level, boolean lastSibling,
 	                         @NonNull Set<Integer> drawnLevels) {
 		super(context);
-		mLevel = level;
 		mLastSibling = lastSibling;
 		mDrawnLevels = drawnLevels.toArray(new Integer[drawnLevels.size()]);
 
 		// Disable automatic drawing
 		setWillNotDraw(false);
+
+		int leftSpace = getPaddingLeft() + (level + 1) * LEFT_SPACE_PER_LEVEL;
+		setPadding(leftSpace, 0, 0, 0);
+
+		// Calculate the start x for this level
+		mStartX = (level) * LEFT_MARGIN_PER_LEVEL + (int) LINE_PAINT.getStrokeWidth() + leftSpace;
+		LEVEL_START_X.put(level, mStartX);
 	}
 
 	@Override
 	protected void onDraw(@NonNull Canvas canvas) {
 		super.onDraw(canvas);
 
-		int startX = (mLevel) * LEFT_MARGIN_PER_LEVEL + (int) LINE_PAINT.getStrokeWidth();
 		int stopX  = getPaddingLeft() - LEFT_SPACE;
-		startX += 24 * (mLevel + 1);
-		Log.e(TAG, "startX: " + startX + " stopX: " + stopX +
-				" leftPad: " + getPaddingLeft() + " real: " +
-				super.getPaddingLeft());
-
 		int mid = getHeight() / 2;
 
-		canvas.drawLine(startX, mid, stopX, mid, LINE_PAINT);
+		canvas.drawLine(mStartX, mid, stopX, mid, LINE_PAINT);
 
 		// If this is the last of the siblings, don't continue the sibling line
 		int stopY = (mLastSibling) ? mid : getHeight();
-		canvas.drawLine(startX, 0, startX, stopY, LINE_PAINT);
+		canvas.drawLine(mStartX, 0, mStartX, stopY, LINE_PAINT);
 
 		for (int level : mDrawnLevels) {
-			Log.e(TAG, "mLevel: " + mLevel + " draws for: " + level);
-			startX = (level) * LEFT_MARGIN_PER_LEVEL + (int) LINE_PAINT.getStrokeWidth();
-			startX += 24 * (level + 1);
+			// Get startX for this level from the static variable
+			final int startX = LEVEL_START_X.get(level);
 			canvas.drawLine(startX, 0, startX, getHeight(), LINE_PAINT);
 		}
 	}
@@ -115,12 +114,4 @@ public final class TreeLinearLayout2 extends LinearLayout {
 		}
 	}
 
-	@Override
-	public int getPaddingLeft() {
-		int paddingLeft = super.getPaddingLeft();
-		if (getChildCount() > 0) {
-			paddingLeft += getChildAt(getChildCount() - 1).getPaddingLeft();
-		}
-		return paddingLeft;
-	}
 }

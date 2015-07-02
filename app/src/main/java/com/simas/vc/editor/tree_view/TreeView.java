@@ -30,7 +30,9 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 // ToDo TreeLinearLayout private inner class of this one
@@ -137,17 +139,10 @@ public class TreeView extends LinearLayout {
 		// Add the container to the TreeView
 		addView(container);
 
-		// Container's left margin needs to fill the space the parent made, to look like a child
-		/**
-		 * This can cause problems, if the container contains children with padding.
-		 * E.g. a Button inside a TreeLinearLayout. For that reason, TreeLinearLayout has it's
-		 * getPaddingLeft() overridden to return combined (child's and parent's) padding
-		 */
-		LayoutParams parentParams = (LayoutParams) parent.getLayoutParams();
-		LayoutParams containerParams = (LayoutParams) container.getLayoutParams();
-		int leftSpace = (level+1) * mRoot.getPaddingLeft() + parent.getPaddingLeft() +
-				parentParams.leftMargin + containerParams.leftMargin;
-		container.setPadding(leftSpace, 0, 0, 0);
+		// Add the left padding of the parent to this child's container. This way, we notify the
+		// child about the spacing of its parent
+		int leftSpace = parent.getPaddingLeft();
+		container.setPadding(container.getPaddingLeft() + leftSpace, 0, 0, 0);
 
 		// Loop this node's children
 		for (int i=0; i<childrenCount; ++i) {
