@@ -16,20 +16,12 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with VideoClipper. If not, see <http://www.gnu.org/licenses/>.
   -->
-<FrameLayout
-
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/stream_tree"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <LinearLayout
-        android:id="@+id/field_container"
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
-    <com.simas.vc.editor.tree_view.TreeOverlay
-        android:id="@+id/overlays"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-</FrameLayout>
+<Button
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:stateListAnimator="@null"
+	android:id="@+id/root_title"
+	android:gravity="start|center_vertical"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	tools:ignore="UnusedAttribute"/>

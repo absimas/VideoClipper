@@ -158,9 +158,9 @@ public class TreeParser {
 				}
 			});
 
-			// Children (fields)
+			// Children (attributes)
 			int groupLeftPadding = groupText.getPaddingLeft() + groupView.getPaddingLeft();
-			int childCount = stream.fields.size();
+			int childCount = stream.attributes.size();
 			for (int j=0; j<childCount; ++j) {
 				final Node child = new Node(2);
 				group.children.add(child);
@@ -177,9 +177,9 @@ public class TreeParser {
 				TextView keyView = (TextView) childView.findViewById(R.id.key);
 				TextView valueView = (TextView) childView.findViewById(R.id.value);
 
-				Integer keyIndex = stream.fields.keyAt(j);
-				String key = stream.getKeyPriorities().get(keyIndex);
-				Object value = stream.fields.valueAt(j);
+				Integer keyIndex = stream.attributes.keyAt(j);
+				String key = stream.getAttributePriorities().get(keyIndex);
+				Object value = stream.attributes.valueAt(j);
 
 				keyView.setText(key);
 				valueView.setText(String.valueOf(value));
@@ -211,7 +211,7 @@ public class TreeParser {
 	}
 
 	/**
-	 * Sets the visiblity of the children.
+	 * Sets the visibility of the children.
 	 * @return true if all children's visibility has been set successfully, false otherwise
 	 */
 	public boolean setVisibleChildren(@Nullable ArrayList<Integer> visibleChildren) {

@@ -322,7 +322,7 @@ public class FFmpeg {
 
 	/**
 	 * Assumes that {@code streamsNeedResizing} returns false for these streams.
-	 * Check if the required fields match for both {@code VideoAttributes}. The required fields are:
+	 * Check if the required attributes match for both {@code VideoAttributes}. The required attributes are:
 	 * <ul>
 	 *     <li>
 	 *         Width

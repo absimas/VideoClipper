@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Class containing field values for a specific file.
- * Required fields are specified as the constructor parameters. The setters used in the
+ * Class containing attribute values for a specific file.
+ * Required attributes are specified as the constructor parameters. The setters used in the
  * constructor should throw exceptions if an invalid value is given.
  */
 public class FileAttributes implements Parcelable {

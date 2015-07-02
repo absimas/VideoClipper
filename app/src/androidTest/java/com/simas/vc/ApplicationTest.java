@@ -19,6 +19,7 @@
 package com.simas.vc;
 
 import android.test.InstrumentationTestCase;
+import junit.framework.Assert;
 
 /**
  * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
@@ -30,7 +31,7 @@ public class ApplicationTest extends InstrumentationTestCase {
 	}
 
 	public void test() {
-		assertTrue(true);
+		Assert.assertTrue(true);
 	}
 
 }

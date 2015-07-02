@@ -19,12 +19,6 @@
 <menu
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto">
-	<!--<item-->
-		<!--android:id="@+id/action_add_item"-->
-		<!--android:title="@string/action_add_item"-->
-		<!--app:showAsAction="ifRoom"-->
-		<!--app:actionLayout="@layout/action_add_item"/>-->
-
 	<item
 		android:id="@+id/action_concat"
 		android:title="@string/action_concat"

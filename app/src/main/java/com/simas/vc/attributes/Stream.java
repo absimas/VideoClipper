@@ -34,35 +34,35 @@ import java.util.List;
 // ToDo use resources instead of strings in VCException in Stream classes
 
 /**
- * Class containing field values for any typed stream.
- * Required fields are specified as the constructor parameters. The setters used in the
+ * Class containing attribute values for any typed stream.
+ * Required attributes are specified as the constructor parameters. The setters used in the
  * constructor should throw exceptions if an invalid value is given.
  */
 public abstract class Stream implements Parcelable {
 
-	public static final String FIELD_CODEC_NAME = "Cocec name";
-	public static final String FIELD_CODEC_LONG_NAME = "Codec long name";
-	public static final String FIELD_DURATION = "Duration";
-	private static final String FIELD_CODEC_TAG = "Codec tag";
+	public static final String ATTRIBUTE_CODEC_NAME = "Cocec name";
+	public static final String ATTRIBUTE_CODEC_LONG_NAME = "Codec long name";
+	public static final String ATTRIBUTE_DURATION = "Duration";
+	private static final String ATTRIBUTE_CODEC_TAG = "Codec tag";
 
 	/**
 	 * Values are displayed to the user in a specific order. This order is saved in an ArrayList.
 	 * Index 0 will be displayed first.
 	 */
-	public static final List<String> KEY_PRIORITIES = new ArrayList<String>() {{
-		add(FIELD_CODEC_NAME);
-		add(FIELD_CODEC_LONG_NAME);
-		add(FIELD_DURATION);
+	public static final List<String> ATTRIBUTE_PRIORITIES = new ArrayList<String>() {{
+		add(ATTRIBUTE_CODEC_NAME);
+		add(ATTRIBUTE_CODEC_LONG_NAME);
+		add(ATTRIBUTE_DURATION);
 	}};
 
 	/**
-	 * Fields that are displayable to the user.
+	 * Attributes that are displayable to the user.
 	 */
-	public SerializableSparseArray<Object> fields = new SerializableSparseArray<>();
+	public SerializableSparseArray<Object> attributes = new SerializableSparseArray<>();
 	/**
-	 * Fields that are for programming purposes only.
+	 * Attributes that are for programming purposes only.
 	 */
-	private HashMap<String, Object> mFields = new HashMap<>();
+	private HashMap<String, Object> mAttributes = new HashMap<>();
 
 	protected Stream(String codecName) throws VCException {
 
@@ -73,70 +73,70 @@ public abstract class Stream implements Parcelable {
 	}
 
 	public String getCodecName() {
-		return (String) getValue(FIELD_CODEC_NAME);
+		return (String) getValue(ATTRIBUTE_CODEC_NAME);
 	}
 
 	public String getCodecLongName() {
-		return (String) getValue(FIELD_CODEC_LONG_NAME);
+		return (String) getValue(ATTRIBUTE_CODEC_LONG_NAME);
 	}
 
 	public Double getDuration() {
-		return (Double) getValue(FIELD_DURATION);
+		return (Double) getValue(ATTRIBUTE_DURATION);
 	}
 
 	public Integer getCodecTag() {
-		return (Integer) mFields.get(FIELD_CODEC_TAG);
+		return (Integer) mAttributes.get(ATTRIBUTE_CODEC_TAG);
 	}
 
 	public Stream setCodecName(String codecName) throws VCException {
 		if (TextUtils.isEmpty(codecName)) throw new VCException("Streams must have a codec!");
-		setValue(FIELD_CODEC_NAME, codecName);
+		setValue(ATTRIBUTE_CODEC_NAME, codecName);
 		return this;
 	}
 
 	public Stream setCodecLongName(String codecLongName) {
-		setValue(FIELD_CODEC_LONG_NAME, codecLongName);
+		setValue(ATTRIBUTE_CODEC_LONG_NAME, codecLongName);
 		return this;
 	}
 
 	public Stream setDuration(Double duration) {
-		setValue(FIELD_DURATION, duration);
+		setValue(ATTRIBUTE_DURATION, duration);
 		return this;
 	}
 
 
 	public Stream setCodecTag(Integer codecTag) {
-		mFields.put(FIELD_CODEC_TAG, codecTag);
+		mAttributes.put(ATTRIBUTE_CODEC_TAG, codecTag);
 		return this;
 	}
 
-	public List<String> getKeyPriorities() {
-		return KEY_PRIORITIES;
+	public List<String> getAttributePriorities() {
+		return ATTRIBUTE_PRIORITIES;
 	}
 
 	/**
 	 * Convenience method that decides whether the value should be put into a public {@code
-	 * fields} sparse array or the private {@code mFields} HashMap.
+	 * attributes} sparse array or the private {@code mAttributes} HashMap.
 	 */
 	protected void setValue(String key, Object value) {
-		int keyIndex = getKeyPriorities().indexOf(key);
+		int keyIndex = getAttributePriorities().indexOf(key);
 		if (keyIndex == -1) {
-			mFields.put(key, value);
+			mAttributes.put(key, value);
 		} else {
-			fields.put(keyIndex, value);
+			attributes.put(keyIndex, value);
 		}
 	}
 
 	/**
-	 * Determines whether the request item is located in the public {@code fields} sparse array
-	 * or the private {@code mFields} HashMap and returns it.
+	 * Determines whether the request item is located in the public {@code attributes} sparse array
+	 * or the private {@code mAttributes} HashMap and returns it.
 	 */
 	protected Object getValue(String key) {
-		int keyIndex = getKeyPriorities().indexOf(key);
+		int keyIndex = getAttributePriorities().indexOf(key);
 		if (keyIndex == -1) {
-			return mFields.get(key);
+			return mAttributes.get(key);
 		} else {
-			return fields.get(keyIndex);
+			return attributes.get(keyIndex);
 		}
 	}
 
@@ -149,8 +149,8 @@ public abstract class Stream implements Parcelable {
 	/* Parcelable */
 
 	public void writeToParcel(Parcel out, int flags) {
-		out.writeSerializable(fields);
-		out.writeSerializable(mFields);
+		out.writeSerializable(attributes);
+		out.writeSerializable(mAttributes);
 	}
 
 	public static final Parcelable.Creator<Stream> CREATOR = new Parcelable
@@ -172,9 +172,9 @@ public abstract class Stream implements Parcelable {
 
 	protected Stream(Parcel in) {
 		//noinspection unchecked
-		fields = (SerializableSparseArray<Object>) in.readSerializable();
+		attributes = (SerializableSparseArray<Object>) in.readSerializable();
 		//noinspection unchecked
-		mFields = (HashMap<String, Object>) in.readSerializable();
+		mAttributes = (HashMap<String, Object>) in.readSerializable();
 	}
 
 	public int describeContents() {

@@ -34,7 +34,7 @@ import java.io.File;
 
 /**
  * Displays the progress inside of an {@code Activity} that is customized to look like a dialog.
- * Note that broadcasts aren't sent when the screen is locked so the activity fields aren't updated.
+ * Note that broadcasts aren't sent when the screen is locked so the activity attributes aren't updated.
  */
 public class ProgressActivity extends AppCompatActivity {
 
@@ -123,7 +123,7 @@ public class ProgressActivity extends AppCompatActivity {
 		if (newType != null && mType != newType) {
 			updateLayout(newType);
 		}
-		// Update fields
+		// Update attributes
 		updateFields(intent);
 	}
 
@@ -172,7 +172,7 @@ public class ProgressActivity extends AppCompatActivity {
 	}
 
 	private void updateFields(@NonNull Intent intent) {
-		// Common fields
+		// Common attributes
 		// Output file name (update if changed)
 		File outputFile = (File) intent.getSerializableExtra(ARG_OUTPUT_FILE);
 		if (outputFile != null && !outputFile.equals(mOutputFile)) {

@@ -28,6 +28,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.simas.vc.MainActivity;
+import com.simas.vc.editor.tree_view.TreeAdapter;
+import com.simas.vc.editor.tree_view.TreeView;
 import com.simas.vc.helpers.DelayedHandler;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
@@ -37,6 +39,7 @@ import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,7 +61,7 @@ public class EditorFragment extends Fragment {
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
-		ACTIONS, FILENAME, DURATION, SIZE, STREAMS, AUDIO_STREAMS, VIDEO_STREAMS
+		ACTIONS, FILENAME, DURATION, SIZE, STREAMS, AUDIO_STREAMS, TREE, VIDEO_STREAMS
 	}
 	private Map<Data, View> mDataMap = new HashMap<>();
 	/**
@@ -163,6 +166,7 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
 		mDataMap.put(Data.DURATION, actions.findViewById(R.id.duration_value));
 		mDataMap.put(Data.STREAMS, actions.findViewById(R.id.stream_container));
+		mDataMap.put(Data.TREE, actions.findViewById(R.id.tree_view));
 
 		if (savedState != null) {
 			NavItem previousItem = savedState.getParcelable(STATE_PREVIOUS_ITEM);
@@ -197,7 +201,7 @@ public class EditorFragment extends Fragment {
 	};
 
 	/**
-	 * Set the item. Editor fields will be changed once the item has been validated.
+	 * Set the item. Editor attributes will be changed once the item has been validated.
 	 * @return true if the item was changed, false otherwise
 	 */
 	public boolean setItem(final NavItem newItem) {
@@ -216,7 +220,7 @@ public class EditorFragment extends Fragment {
 
 		mItem = newItem;
 
-		// Update fields and add listeners if the new item is not null
+		// Update attributes and add listeners if the new item is not null
 		if (getItem() != null) {
 			// Present the new item if it's ready, otherwise wait for it
 			switch (getItem().getState()) {
@@ -251,7 +255,7 @@ public class EditorFragment extends Fragment {
 	}
 
 	/**
-	 * Update fields to match {@link #mItem}.
+	 * Update attributes to match {@link #mItem}.
 	 */
 	private void updateFields() {
 		if (getActivity() == null) return;
@@ -268,17 +272,26 @@ public class EditorFragment extends Fragment {
 		final String sizeStr = Utils.bytesToMb(attributes.getSize());
 		final String durationStr = Utils.secsToFullTime(attributes.getDuration().intValue());
 
-		mTreeParser = new TreeParser(getActivity(), attributes);
-		mTreeParser.setVisibleChildren(mPreviouslyVisibleTreeChildren);
+		List<Object> data = new ArrayList<>(2);
+		data.add(getItem().getAttributes().getAudioStreams());
+		data.add(getItem().getAttributes().getVideoStreams());
+
+		TreeView treeView = (TreeView) mDataMap.get(Data.TREE);
+		TreeAdapter treeAdapter = new TreeAdapter(data);
+		treeView.setAdapter(treeAdapter);
+
+//		mTreeParser = new TreeParser(getActivity(), attributes);
+//		mTreeParser.setVisibleChildren(mPreviouslyVisibleTreeChildren);
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				filename.setText(item.getFile().getName());
-				size.setText(sizeStr);
-				duration.setText(durationStr);
-				streams.removeAllViews();
-				streams.addView(mTreeParser.layout);
+
+//				filename.setText(item.getFile().getName());
+//				size.setText(sizeStr);
+//				duration.setText(durationStr);
+//				streams.removeAllViews();
+//				streams.addView(mTreeParser.layout);
 				actions.setVisibility(View.VISIBLE);
 
 				getPlayerFragment().post(new Runnable() {

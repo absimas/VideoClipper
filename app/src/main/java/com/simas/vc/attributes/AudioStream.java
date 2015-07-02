@@ -23,24 +23,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Class containing field values for a specific audio stream.
- * Required fields are specified as the constructor parameters. The setters used in the
+ * Class containing attribute values for a specific audio stream.
+ * Required attributes are specified as the constructor parameters. The setters used in the
  * constructor should throw exceptions if an invalid value is given.
  */
 public class AudioStream extends Stream {
 
-	public static final String FIELD_CHANNEL_COUNT = "Channel count";
-	public static final String FIELD_SAMPLE_RATE = "Sample rate";
+	public static final String ATTRIBUTE_CHANNEL_COUNT = "Channel count";
+	public static final String ATTRIBUTE_SAMPLE_RATE = "Sample rate";
 
 	/**
 	 * Values are displayed to the user in a specific order. This order is saved in an ArrayList.
 	 * Index 0 will be displayed first.
 	 */
-	public static final List<String> KEY_PRIORITIES = new ArrayList<String>() {{
-		addAll(Stream.KEY_PRIORITIES);
-		add(FIELD_DURATION);
-		add(FIELD_CHANNEL_COUNT);
-		add(FIELD_SAMPLE_RATE);
+	public static final List<String> ATTRIBUTE_PRIORITIES = new ArrayList<String>() {{
+		addAll(Stream.ATTRIBUTE_PRIORITIES);
+		add(ATTRIBUTE_DURATION);
+		add(ATTRIBUTE_CHANNEL_COUNT);
+		add(ATTRIBUTE_SAMPLE_RATE);
 	}};
 
 	public AudioStream(String codecName) throws VCException {
@@ -48,24 +48,24 @@ public class AudioStream extends Stream {
 	}
 
 	public Integer getChannelCount() {
-		return (Integer) getValue(FIELD_CHANNEL_COUNT);
+		return (Integer) getValue(ATTRIBUTE_CHANNEL_COUNT);
 	}
 	public Integer getSampleRate() {
-		return (Integer) getValue(FIELD_SAMPLE_RATE);
+		return (Integer) getValue(ATTRIBUTE_SAMPLE_RATE);
 	}
 
 	public AudioStream setChannelCount(Integer channelCount) {
-		setValue(FIELD_CHANNEL_COUNT, channelCount);
+		setValue(ATTRIBUTE_CHANNEL_COUNT, channelCount);
 		return this;
 	}
 	public AudioStream setSampleRate(Integer sampleRate) {
-		setValue(FIELD_CHANNEL_COUNT, sampleRate);
+		setValue(ATTRIBUTE_CHANNEL_COUNT, sampleRate);
 		return this;
 	}
 
 	@Override
-	public List<String> getKeyPriorities() {
-		return KEY_PRIORITIES;
+	public List<String> getAttributePriorities() {
+		return ATTRIBUTE_PRIORITIES;
 	}
 
 	@Override

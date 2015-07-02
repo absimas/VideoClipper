@@ -175,11 +175,12 @@ public class MainActivity extends AppCompatActivity
 			new Handler().postDelayed(new Runnable() {
 				@Override
 				public void run() {
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/macbook.mp4"));
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/2.mp4"));
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/3.mp4"));
+					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/Serenity.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/macbook.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/2.mp4"));
+//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/3.mp4"));
 				}
 			}, 1000);
 //			new Handler().postDelayed(new Runnable() {
