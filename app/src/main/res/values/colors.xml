@@ -61,4 +61,6 @@
 	<color name="primary_dark">#455A64</color>
 	<color name="nav_item_selected">#757575</color>
 	<color name="nav_item_checked">#616161</color>
+	<color name="stupid_button">#DDDDDD</color>
+	<color name="stupid_button_pressed">#999999</color>
 </resources>

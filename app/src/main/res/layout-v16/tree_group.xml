@@ -20,6 +20,7 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:id="@+id/root_title"
+	android:background="@drawable/stupid_button"
 	android:stateListAnimator="@null"
 	android:gravity="start|center_vertical"
 	android:layout_width="match_parent"

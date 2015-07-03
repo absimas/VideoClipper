@@ -26,14 +26,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import com.simas.vc.R;
 import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.nav_drawer.NavItem;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +42,8 @@ public class AttributeTreeAdapter extends TreeAdapter {
 	private final String TAG = getClass().getName();
 	private final List<Object> mData = new ArrayList<>(2);;
 	private final NavItem mItem;
+	private final Object SELECTED = new Object();
+	private Map<Object, View> mSelectedChildren = new HashMap<>();
 
 	public AttributeTreeAdapter(NavItem item) {
 		mItem = item;
@@ -56,7 +56,7 @@ public class AttributeTreeAdapter extends TreeAdapter {
 	public int getChildCount(int level, Object node) {
 		switch (level) {
 			case 0:
-				List<?> data = (List<?>) mData;
+				List<?> data = mData;
 				return data.size();
 			case 1:
 				// Can either be List<AudioStream> or List<VideoStream>
@@ -94,11 +94,15 @@ public class AttributeTreeAdapter extends TreeAdapter {
 		}
 	}
 
-	/**
-	 * Children views of a specific node. Added in
-	 * {@link #getNodeView(int, int, Object, Object, ViewGroup)}
-	 */
-	private Map<Object, List<View>> mNodeChildrenView = new HashMap<>();
+	private void selectView(final View view, final Object parentNode) {
+		view.post(new Runnable() {
+			@Override
+			public void run() {
+				mSelectedChildren.put(parentNode, view);
+				view.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.DARKEN);
+			}
+		});
+	}
 
 	@Override
 	View getNodeView(int level, int position, final Object node,
@@ -121,32 +125,23 @@ public class AttributeTreeAdapter extends TreeAdapter {
 				// If this audio/video stream is selected, add a color filter to the view
 				if (mItem.getSelectedAudioStream() == node ||
 						mItem.getSelectedVideoStream() == node) {
-					view.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.DARKEN);
+					selectView(view, parentNode);
 				}
-
-				// Create the child views array for this node (if it doesn't exist)
-				List<View> childViews = mNodeChildrenView.get(parentNode);
-				if (childViews == null) {
-					childViews = new ArrayList<>();
-					mNodeChildrenView.put(parentNode, childViews);
-				}
-
-				// Add the child view to the array
-				childViews.add(view);
 
 				// Register a listener that will select this stream in the item and deselect all
 				// the other views of this parent
 				view.setOnLongClickListener(new View.OnLongClickListener() {
 					@Override
 					public boolean onLongClick(View v) {
-						// Remove the selection on other views of this parentNode
-						List<View> childViews = mNodeChildrenView.get(parentNode);
-						for (View view : childViews) {
-							view.getBackground().clearColorFilter();
+						// Find this parent's selected view
+						View selected = mSelectedChildren.get(parentNode);
+						if (selected != null) {
+							// Remove the color filter
+							selected.getBackground().clearColorFilter();
 						}
-						// Add the color filter on the (newly) selected view
-						v.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.DARKEN);
 
+						// Add the color filter on the (newly) selected view
+						selectView(v, parentNode);
 
 						// Select stream in NavItem
 						if (node instanceof AudioStream) {

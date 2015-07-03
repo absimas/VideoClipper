@@ -18,6 +18,7 @@
  */
 package com.simas.vc.editor.tree_view;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,21 +37,27 @@ public abstract class TreeAdapter {
 	private final String TAG = getClass().getName();
 	private TreeView mTreeView;
 	private LayoutInflater mInflater;
+	private Context mContext;
 
 	final void connect(TreeView treeView) {
 		mTreeView = treeView;
-		mInflater = LayoutInflater.from(mTreeView.getContext());
+		mContext = mTreeView.getContext();
+		mInflater = LayoutInflater.from(getContext());
 	}
 
 	final void disconnect() {
 		mTreeView = null;
 		mInflater = null;
+		mContext = null;
 	}
 
 	protected final LayoutInflater getInflater() {
 		return mInflater;
 	}
 
+	protected final Context getContext() {
+		return mContext;
+	}
 
 	/**
 	 * Get the children node count for the given node. Node's that can't have any child must
