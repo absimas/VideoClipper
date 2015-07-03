@@ -18,28 +18,28 @@
  */
 package com.simas.vc.editor.tree_view;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.TextView;
-
 import com.simas.vc.R;
-import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.attributes.Stream;
 import com.simas.vc.helpers.Utils;
-
 import java.util.List;
 
 /**
- * ToDo talk about how levels are used to determine everything instead of instanceof
- * ToDo talk how this can have multiple root nodes which makes it a multiple tree view
+ * The most important things to note about this adapter, are these:
+ * <ul>
+ *  <li>Root nodes are located in the 0th level</li>
+ *  <li>The parent of the root nodes is {@code null}</li>
+ * </ul>
+ * Levels and parent nodes are used to distinguish between the tree branches.
+ * The tree can have multiple root branches, which sort of makes the TreeView a MultipleTreeView.
  */
 public class TreeAdapter {
 
+	private final String TAG = getClass().getName();
 	private TreeView mTreeView;
 	private LayoutInflater mInflater;
 	private Object mData;
@@ -63,55 +63,48 @@ public class TreeAdapter {
 	}
 
 	/**
-	 * Get the root node count
-	 * @return the count of root nodes
+	 * Get the children node count for the given node. Node's that can't have any child must
+	 * return -1 instead of a 0.
+	 * @param level   tree level in which the children reside.
+	 * @param node    node whose children count must be returned. (null for root)
 	 */
-	public int getRootNodeCount() {
-		List<?> data = (List<?>) mData;
-		return data.size();
-	}
-
-	/**
-	 * Get the children node count for the given parent
-	 * @param level         tree level in which the parent's children reside.
-	 * @param parentNode    parent whose children count must be returned.
-	 */
-	public int getChildrenNodeCount(int level, int position, Object parentNode) {
+	public int getChildCount(int level, Object node) {
 		switch (level) {
 			case 0:
+				List<?> data = (List<?>) mData;
+				return data.size();
+			case 1:
 				// Can either be List<AudioStream> or List<VideoStream>
 				// However, we don't really care about the real type, we just need the size
-				List<?> streams = (List<?>) parentNode;
+				List<?> streams = (List<?>) node;
 				return streams.size();
-			case 1:
-				Stream stream = (Stream) parentNode;
+			case 2:
+				Stream stream = (Stream) node;
 				return stream.attributes.size();
+			case 3:
+				// No node at this level can have any children
+				return -1;
 			default:
 				return 0;
 		}
 	}
 
 	/**
-	 * Get the object that represents the root node
-	 */
-	public Object getRootNode(int position) {
-		List<?> data = (List<?>) mData;
-		return data.get(position);
-	}
-
-	/**
 	 * Return object that represents the node
 	 * @param level         level in which the node resides
 	 * @param position      position of the node among other siblings
-	 * @param parentNode    parent of this node
+	 * @param parentNode    parent of this node (null for root nodes)
 	 * @return object representing the node at the given position in the parent
 	 */
-	public Object getChildNode(int level, int position, Object parentNode) {
+	public Object getNode(int level, int position, Object parentNode) {
 		switch (level) {
 			case 0:
+				List<?> data = (List<?>) mData;
+				return data.get(position);
+			case 1:
 				List<?> streams = (List<?>) parentNode;
 				return streams.get(position);
-			case 1:
+			case 2:
 				Stream stream = (Stream) parentNode;
 				Integer keyIndex = stream.attributes.keyAt(position);
 				String key = stream.getAttributePriorities().get(keyIndex);
@@ -123,39 +116,35 @@ public class TreeAdapter {
 		}
 	}
 
-	View getRootNodeView(int position, ViewGroup parent) {
-		TextView root = (TextView) getInflater().inflate(R.layout.tree_group, parent, false);
-		if (position == 0) {
-			root.setText(Utils.getString(R.string.audio));
-		} else if (position == 1) {
-			root.setText(Utils.getString(R.string.video));
-		} else {
-			throw new IllegalArgumentException("Too many root leaves detected!");
-		}
-
-		return root;
-	}
-
 	/**
 	 * Return the view for the given node
-	 * @param level     tree level in which the leaf resides. (0 for root)
-	 * @param leaf      leaf whose view must be returned
-	 * @return leaf's view representation
+	 * @param level     tree level in which the leaf resides.
+	 * @param node      node whose view must be returned
+	 * @return node's view representation
 	 */
-	View getChildNodeView(int level, int position, Object leaf, ViewGroup parent) {
+	View getNodeView(int level, int position, Object node, ViewGroup parent) {
 		View view;
 		switch (level) {
 			case 0:
 				view = getInflater().inflate(R.layout.tree_group, parent, false);
-				((TextView) view).setText(String.valueOf(position));
+				TextView root = (TextView) view;
+				if (position == 0) {
+					root.setText(Utils.getString(R.string.audio));
+				} else if (position == 1) {
+					root.setText(Utils.getString(R.string.video));
+				}
 				break;
 			case 1:
+				view = getInflater().inflate(R.layout.tree_group, parent, false);
+				((TextView) view).setText(String.valueOf(position));
+				break;
+			case 2:
 				view = getInflater().inflate(R.layout.tree_child, parent, false);
 				TextView key = (TextView) view.findViewById(R.id.key);
 				TextView value = (TextView) view.findViewById(R.id.value);
 
 				@SuppressWarnings("unchecked")
-				Pair<String, Object> attribute = (Pair<String, Object>) leaf;
+				Pair<String, Object> attribute = (Pair<String, Object>) node;
 				key.setText(attribute.first);
 				value.setText(String.valueOf(attribute.second));
 				break;

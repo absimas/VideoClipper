@@ -34,7 +34,6 @@ import com.simas.vc.helpers.DelayedHandler;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.editor.player.PlayerFragment;
-import com.simas.vc.editor.tree_view.TreeParser;
 import com.simas.vc.nav_drawer.NavItem;
 import com.simas.vc.R;
 import java.util.ArrayList;
@@ -49,19 +48,15 @@ import java.util.Map;
  */
 public class EditorFragment extends Fragment {
 
-	private static final String STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN = "previous_tree_visibility";
 	private static final String STATE_PREVIOUS_ITEM = "previous_item";
 	private final String TAG = getClass().getName();
-
-	private TreeParser mTreeParser;
-	private ArrayList<Integer> mPreviouslyVisibleTreeChildren;
 
 	private NavItem mItem;
 	private View mProgressOverlay;
 	private PlayerFragment mPlayerFragment;
 
 	private enum Data {
-		ACTIONS, FILENAME, DURATION, SIZE, STREAMS, AUDIO_STREAMS, TREE, VIDEO_STREAMS
+		ACTIONS, FILENAME, DURATION, SIZE, STREAM_TREE
 	}
 	private Map<Data, View> mDataMap = new HashMap<>();
 	/**
@@ -104,16 +99,6 @@ public class EditorFragment extends Fragment {
 	}
 
 	public EditorFragment() {}
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		if (savedInstanceState != null) {
-			mPreviouslyVisibleTreeChildren = savedInstanceState
-					.getIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN);
-		}
-	}
-
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
 		View root = inflater.inflate(R.layout.fragment_editor, container, false);
@@ -165,8 +150,7 @@ public class EditorFragment extends Fragment {
 		mDataMap.put(Data.FILENAME, actions.findViewById(R.id.filename_value));
 		mDataMap.put(Data.SIZE, actions.findViewById(R.id.size_value));
 		mDataMap.put(Data.DURATION, actions.findViewById(R.id.duration_value));
-		mDataMap.put(Data.STREAMS, actions.findViewById(R.id.stream_container));
-		mDataMap.put(Data.TREE, actions.findViewById(R.id.tree_view));
+		mDataMap.put(Data.STREAM_TREE, actions.findViewById(R.id.tree_view));
 
 		if (savedState != null) {
 			NavItem previousItem = savedState.getParcelable(STATE_PREVIOUS_ITEM);
@@ -244,10 +228,6 @@ public class EditorFragment extends Fragment {
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putParcelable(STATE_PREVIOUS_ITEM, mItem);
-		if (mTreeParser != null) {
-			outState.putIntegerArrayList(STATE_PREVIOUSLY_VISIBLE_TREE_CHILDREN,
-					mTreeParser.getVisibleChildren());
-		}
 	}
 
 	public PlayerFragment getPlayerFragment() {
@@ -262,36 +242,29 @@ public class EditorFragment extends Fragment {
 
 		final NavItem item = getItem();
 		final FileAttributes attributes = item.getAttributes();
+		final TreeView treeView = (TreeView) mDataMap.get(Data.STREAM_TREE);
+		final View actions = mDataMap.get(Data.ACTIONS);
+
+		/* Update text fields */
 		final TextView filename = (TextView) mDataMap.get(Data.FILENAME);
 		final TextView size = (TextView) mDataMap.get(Data.SIZE);
 		final TextView duration = (TextView) mDataMap.get(Data.DURATION);
-		final ViewGroup streams = (ViewGroup) mDataMap.get(Data.STREAMS);
-		final View actions = mDataMap.get(Data.ACTIONS);
 
-		// Prep strings
-		final String sizeStr = Utils.bytesToMb(attributes.getSize());
-		final String durationStr = Utils.secsToFullTime(attributes.getDuration().intValue());
+		filename.setText(item.getFile().getName());
+		size.setText(Utils.bytesToMb(attributes.getSize()));
+		duration.setText(Utils.secsToFullTime(attributes.getDuration().intValue()));
 
+		/* Parse attributes to a TreeView*/
 		List<Object> data = new ArrayList<>(2);
-		data.add(getItem().getAttributes().getAudioStreams());
-		data.add(getItem().getAttributes().getVideoStreams());
-
-		TreeView treeView = (TreeView) mDataMap.get(Data.TREE);
+		// Order is important here so the TreeAdapter can distinguish the types properly!
+		data.add(attributes.getAudioStreams());
+		data.add(attributes.getVideoStreams());
 		TreeAdapter treeAdapter = new TreeAdapter(data);
 		treeView.setAdapter(treeAdapter);
-
-//		mTreeParser = new TreeParser(getActivity(), attributes);
-//		mTreeParser.setVisibleChildren(mPreviouslyVisibleTreeChildren);
 
 		getActivity().runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-
-//				filename.setText(item.getFile().getName());
-//				size.setText(sizeStr);
-//				duration.setText(durationStr);
-//				streams.removeAllViews();
-//				streams.addView(mTreeParser.layout);
 				actions.setVisibility(View.VISIBLE);
 
 				getPlayerFragment().post(new Runnable() {

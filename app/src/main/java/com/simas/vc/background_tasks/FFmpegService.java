@@ -91,7 +91,7 @@ public class FFmpegService extends IntentService {
 			@Override
 			public void run() {
 				// Notifier cancelling must be run on the UI thread too,
-				// so it doesn't outrun the execution
+				// so it doesn't overlap the execution
 				notifier.ffmpegCancel(ffmpegResult);
 			}
 		});
