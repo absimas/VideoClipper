@@ -27,8 +27,10 @@ import android.util.Log;
 
 import com.simas.vc.MainActivity;
 import com.simas.vc.VCException;
+import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.FileAttributes;
 import com.simas.vc.R;
+import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.VC;
 import com.simas.vc.attributes.Stream;
@@ -43,6 +45,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
 // ToDo NavItem should probly be renamed. No longer only for Navigation.
 // ToDo instead of re-parsing duplicate attrs perhaps they should be copied (just like the preview)
 
+/**
+ * By default first audio and video streams are selected. Later they can fetched with {@link
+ * #getSelectedAudioStream()} and {@link #getSelectedVideoStream()} and they can be modified with
+ * {@link #setSelectedAudioStream(AudioStream)} and {@link #setSelectedVideoStream(VideoStream)}
+ */
 public class NavItem implements Parcelable, Cloneable {
 
 	private final String TAG = getClass().getName();
@@ -66,6 +73,8 @@ public class NavItem implements Parcelable, Cloneable {
 	 * Attributes fetched with FFprobe
 	 */
 	private FileAttributes mAttributes;
+	private AudioStream mSelectedAudioStream;
+	private VideoStream mSelectedVideoStream;
 
 	/**
 	 * Thread-safe list holding all the update listeners. These can be called from a <b>non-UI
@@ -131,6 +140,42 @@ public class NavItem implements Parcelable, Cloneable {
 		}
 	}
 
+	public void setSelectedAudioStream(AudioStream selectedStream) {
+		// Look for the given audio stream
+		for (AudioStream stream : getAttributes().getAudioStreams()) {
+			if (stream == selectedStream) {
+				// If found, select it and quit
+				mSelectedAudioStream = stream;
+				return;
+			}
+		}
+		// If wasn't found throw
+		throw new IllegalStateException("No streams have been selected! Are you sure you're " +
+				"passing a stream that belongs to the attributes of this item?");
+	}
+
+	public void setSelectedVideoStream(VideoStream selectedStream) {
+		// Look for the given audio stream
+		for (VideoStream stream : getAttributes().getVideoStreams()) {
+			if (stream == selectedStream) {
+				// If found, select it and quit
+				mSelectedVideoStream = stream;
+				return;
+			}
+		}
+		// If wasn't found throw
+		throw new IllegalStateException("No streams have been selected! Are you sure you're " +
+				"passing a stream that belongs to the attributes of this item?");
+	}
+
+	public AudioStream getSelectedAudioStream() {
+		return mSelectedAudioStream;
+	}
+
+	public VideoStream getSelectedVideoStream() {
+		return mSelectedVideoStream;
+	}
+
 	/**
 	 * {@code mFile} must be set before this is called.
 	 */
@@ -152,6 +197,13 @@ public class NavItem implements Parcelable, Cloneable {
 					return;
 				}
 				setAttributes(attributes);
+				// By default, select first audio and first video streams (if they exist)
+				if (attributes.getAudioStreams().size() > 0) {
+					setSelectedAudioStream(attributes.getAudioStreams().get(0));
+				}
+				if (attributes.getVideoStreams().size() > 0) {
+					setSelectedVideoStream(attributes.getVideoStreams().get(0));
+				}
 
 				// Preview
 				final Bitmap preview = parsePreview();

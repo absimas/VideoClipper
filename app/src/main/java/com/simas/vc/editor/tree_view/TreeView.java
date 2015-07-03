@@ -29,7 +29,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -41,6 +40,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+// ToDo expand(View) and collapse(View) methods that pass a view, whose container is then found
+	// and the listener called. This would enable button listeners to reside in the adapter
 /**
  * This layout adds the children views as soon as an adapter is connected. It does not re-use the
  * views because of the possible diversity of the types (and the lines of code :)).<br/><br/>
@@ -224,26 +225,21 @@ public class TreeView extends LinearLayout {
 				new TreeLinearLayout(getContext(), level, last, pos == 0 && last, mDrawnLevels);
 		// Hide all but root nodes
 		if (level > 0) {
-			container.setVisibility(VISIBLE);
+			container.setVisibility(GONE);
 		}
 
 		// Add this node's view to the container
-		View content = getAdapter().getNodeView(level, pos, node, container);
+		View content = getAdapter().getNodeView(level, pos, node, parentNode, container);
 		container.addView(content);
 
 		// Add an expander listener if this node has something to expand
 		if (childrenCount > 0) {
 			// Intercept touches from content and send them to container
+			// ToDo shouldn't touch content
 			content.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					mNodeClickListener.onClick(container);
-				}
-			});
-			content.setOnLongClickListener(new OnLongClickListener() {
-				@Override
-				public boolean onLongClick(View v) {
-					return false;
 				}
 			});
 			// Listen to touches on the container too

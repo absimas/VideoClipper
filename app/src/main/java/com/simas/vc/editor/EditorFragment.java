@@ -28,6 +28,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.simas.vc.MainActivity;
+import com.simas.vc.editor.tree_view.AttributeTreeAdapter;
 import com.simas.vc.editor.tree_view.TreeAdapter;
 import com.simas.vc.editor.tree_view.TreeView;
 import com.simas.vc.helpers.DelayedHandler;
@@ -255,11 +256,7 @@ public class EditorFragment extends Fragment {
 		duration.setText(Utils.secsToFullTime(attributes.getDuration().intValue()));
 
 		/* Parse attributes to a TreeView*/
-		List<Object> data = new ArrayList<>(2);
-		// Order is important here so the TreeAdapter can distinguish the types properly!
-		data.add(attributes.getAudioStreams());
-		data.add(attributes.getVideoStreams());
-		TreeAdapter treeAdapter = new TreeAdapter(data);
+		TreeAdapter treeAdapter = new AttributeTreeAdapter(item);
 		treeView.setAdapter(treeAdapter);
 
 		getActivity().runOnUiThread(new Runnable() {
