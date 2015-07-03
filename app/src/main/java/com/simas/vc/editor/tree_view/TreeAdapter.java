@@ -156,14 +156,3 @@ public class TreeAdapter {
 	}
 
 }
-
-
-
-
-
-
-
-
-
-
-

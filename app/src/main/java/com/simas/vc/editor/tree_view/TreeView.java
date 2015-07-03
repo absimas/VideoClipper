@@ -205,7 +205,7 @@ public class TreeView extends LinearLayout {
 	 * @param parent         child's parent view (null for root nodes)
 	 */
 	private void loopChildNodes(int level, int pos, Object parentNode, boolean last,
-	                            @Nullable ViewGroup parent) {
+	                            ViewGroup parent) {
 		// Node we're currently looping
 		Object node = getAdapter().getNode(level, pos, parentNode);
 		// Current node's children count
@@ -224,7 +224,7 @@ public class TreeView extends LinearLayout {
 				new TreeLinearLayout(getContext(), level, last, pos == 0 && last, mDrawnLevels);
 		// Hide all but root nodes
 		if (level > 0) {
-			container.setVisibility(GONE);
+			container.setVisibility(VISIBLE);
 		}
 
 		// Add this node's view to the container
@@ -240,6 +240,12 @@ public class TreeView extends LinearLayout {
 					mNodeClickListener.onClick(container);
 				}
 			});
+			content.setOnLongClickListener(new OnLongClickListener() {
+				@Override
+				public boolean onLongClick(View v) {
+					return false;
+				}
+			});
 			// Listen to touches on the container too
 //			content.setOnClickListener(mNodeClickListener);
 		}
@@ -247,12 +253,24 @@ public class TreeView extends LinearLayout {
 		// Add the container to the TreeView
 		addView(container);
 
-		// Add the left padding of the parent to this child's container. This way, we notify the
-		// child about the spacing of its parent.
-		if (parent != null) { // Root nodes don't have additional padding.
-			int leftSpace = parent.getPaddingLeft() + parent.getChildAt(0).getPaddingLeft();
-			container.setPadding(container.getPaddingLeft() + leftSpace, 0, 0, 0);
+		// Node's padding left should be equal to parent's padding left
+		switch (level) {
+			case 0:
+				// Root nodes don't have a padding therefore no padding needs to be added
+				break;
+			case 1:
+				// First level node's need to fetch the parent's padding. However since the
+				// parent's (root's) full left padding can't be fetched only via the paddingLeft,
+				// we need to check its content too
+				int leftSpace = parent.getPaddingLeft() + parent.getChildAt(0).getPaddingLeft();
+				container.setPadding(container.getPaddingLeft() + leftSpace, 0, 0, 0);
+				break;
+			default:
+				// Other level children can fetch the parent's left padding normally
+				container.setPadding(container.getPaddingLeft() + parent.getPaddingLeft(), 0, 0, 0);
+				break;
 		}
+
 
 		// Loop this node's children
 		for (int i=0; i<childrenCount; ++i) {
