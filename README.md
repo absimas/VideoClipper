@@ -51,7 +51,7 @@ When first compiling this library you need to complete a few steps:
 ## Functionality
 Currently the app can accomplish the following:
 - Parse a chosen video file
-- Display the parsed streams in a tree fashion
+- Display the parsed streams and their attributes in a tree fashion
 - Concatenate multiple videos (re-size and re-encode if necessary)
 
 ## Expansion
