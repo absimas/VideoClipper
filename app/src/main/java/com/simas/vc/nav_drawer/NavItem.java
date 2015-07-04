@@ -76,6 +76,10 @@ public class NavItem implements Parcelable, Cloneable {
 	private FileAttributes mAttributes;
 	private AudioStream mSelectedAudioStream;
 	private VideoStream mSelectedVideoStream;
+	/**
+	 * Exception message that caused this item to enter an {@link State#INVALID} state.
+	 */
+	volatile private String mError;
 
 	/**
 	 * Thread-safe list holding all the update listeners. These can be called from a <b>non-UI
@@ -213,6 +217,15 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	/**
+	 * Fetches the error message that occurred and made the item enter an {@link State#INVALID}
+	 * state. Only a single call is permitted, subsequent calls will return null.
+	 * @return null if no such exception had occurred or if the exception was already fetched
+	 */
+	public String getError() {
+		return mError;
+	}
+
+	/**
 	 * {@code mFile} must be set before this is called.
 	 */
 	private void parseItem() {
@@ -223,13 +236,9 @@ public class NavItem implements Parcelable, Cloneable {
 				FileAttributes attributes = null;
 				try {
 					attributes = FFprobe.parseAttributes(getFile());
-				} catch (VCException e) {
+				} catch (final VCException e) {
 					Log.e(TAG, "Attribute parse error:", e);
-					new AlertDialog.Builder(VC.getAppContext()) // ToDo what context to use here?
-							.setTitle(Utils.getString(R.string.error))
-							.setMessage(e.getMessage())
-							.setPositiveButton("OK", null)
-							.show();
+					mError = e.getMessage();
 				}
 				if (attributes == null) {
 					setState(State.INVALID);

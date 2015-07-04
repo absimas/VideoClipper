@@ -20,6 +20,7 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Environment;
@@ -370,8 +371,29 @@ public class MainActivity extends AppCompatActivity
 			return false;
 		} else {
 			// Loop and look for invalid items
-			for (NavItem item : sItems) {
-				if (item.getState() != NavItem.State.VALID) {
+			for (final NavItem item : sItems) {
+				if (item.getState() == NavItem.State.INPROGRESS) {
+					// If a progressing item is found, wait for it to load and try again
+					item.registerUpdateListener(new NavItem.OnUpdatedListener() {
+						@Override
+						public void onUpdated(NavItem.ItemAttribute attr, Object old, Object newV) {
+							// The reason we also allow invalid state, is because if a 3rd item
+							// becomes invalid, the first two can still be concatenated
+							if (newV == NavItem.State.VALID || newV == NavItem.State.INVALID)  {
+								item.unregisterUpdateListener(this);
+								// At this moment, the state is disabled, so only notify if changed
+								if (isConcatenatable()) {
+									Utils.runOnUiThread(new Runnable() {
+										@Override
+										public void run() {
+											getToolbar().getMenu()
+													.findItem(R.id.action_concat).setEnabled(true);
+										}
+									});
+								}
+							}
+						}
+					});
 					return false;
 				}
 			}
@@ -412,11 +434,16 @@ public class MainActivity extends AppCompatActivity
 		boolean result = super.onCreateOptionsMenu(menu);
 		getMenuInflater().inflate(R.menu.menu_main, menu);
 
-
 		final String CONCAT_OBSERVER_TAG = "concatenation_observer";
 		sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onModified() {
+				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
+			}
+
+			@Override
+			public void onRemoved(int position) {
+				super.onRemoved(position);
 				getToolbar().getMenu().findItem(R.id.action_concat).setEnabled(isConcatenatable());
 			}
 		}, CONCAT_OBSERVER_TAG);
@@ -504,17 +531,33 @@ public class MainActivity extends AppCompatActivity
 		final NavItem item = new NavItem(file);
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
 			@Override
-			public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
-			                      final Object newValue) {
+			public void onUpdated(NavItem.ItemAttribute attribute, Object old, Object newValue) {
 				if (newValue == NavItem.State.INVALID) {
 					Utils.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							// Display a toast notifying of the error if item parsing failed
-							Toast.makeText(VC.getAppContext(),
-									Utils.getString(R.string.format_parse_failed,
-											item.getFile().getName()), Toast.LENGTH_LONG)
-									.show();
+							// If an exception was throw we can fetch the message via the NavItem
+							if (item.getError() != null) {
+								try {
+									new AlertDialog.Builder(MainActivity.this)
+											.setTitle(Utils.getString(R.string.error))
+											.setMessage(item.getError())
+											.setPositiveButton("OK", null)
+											.show();
+								} catch (Exception ignored) {
+									// If an error occurs while showing a dialog, the context may
+									// be dead, instead show a toast (The truth will be revealed!)
+									Toast.makeText(VC.getAppContext(),
+											item.getError(), Toast.LENGTH_LONG).show();
+								}
+							} else {
+								// If an error was not registered, we just display a toast warning
+								Toast.makeText(VC.getAppContext(),
+										Utils.getString(R.string.format_parse_failed,
+												item.getFile().getName()), Toast.LENGTH_LONG)
+										.show();
+							}
+
 							// If an invalid state was reached, remove this item from the drawer
 							MainActivity.sItems.remove(item);
 						}
