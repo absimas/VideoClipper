@@ -100,6 +100,7 @@ public class EditorFragment extends Fragment {
 	}
 
 	public EditorFragment() {}
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedState) {
 		View root = inflater.inflate(R.layout.fragment_editor, container, false);

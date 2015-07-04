@@ -57,7 +57,6 @@ public class FFmpegService extends IntentService {
 			((PowerManager) VC.getAppContext().getSystemService(POWER_SERVICE))
 					.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG);
 
-
 	// Argument keys
 	public static final String ARG_EXEC_ARGS = "argc_n_argv";
 	public static final String ARG_OUTPUT_FILE = "output_file";
@@ -81,17 +80,16 @@ public class FFmpegService extends IntentService {
 		Utils.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				// Must be execute on the UI thread
+				// AsyncTasks should be executed on the UI thread
 				notifier.execute();
 			}
 		});
 		// Launch the process itself
 		final int ffmpegResult = FFmpeg.cFFmpeg(args);
+		// Notifier cancelling must be run on the UI thread too, so it doesn't overlap the execution
 		Utils.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				// Notifier cancelling must be run on the UI thread too,
-				// so it doesn't overlap the execution
 				notifier.ffmpegCancel(ffmpegResult);
 			}
 		});

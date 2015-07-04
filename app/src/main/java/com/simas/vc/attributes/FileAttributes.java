@@ -36,6 +36,7 @@ public class FileAttributes implements Parcelable {
 	private Long mSize = 0l;
 	private List<AudioStream> mAudioStreams = new ArrayList<>();
 	private List<VideoStream> mVideoStreams = new ArrayList<>();
+	private List<Stream> mStreams = new ArrayList<>();
 	private Double mDuration;
 
 	public FileAttributes(String filename, Long size, Double duration) throws VCException {
@@ -70,8 +71,13 @@ public class FileAttributes implements Parcelable {
 	public List<AudioStream> getAudioStreams() {
 		return mAudioStreams;
 	}
+
 	public List<VideoStream> getVideoStreams() {
 		return mVideoStreams;
+	}
+
+	public List<Stream> getStreams() {
+		return mStreams;
 	}
 
 
@@ -100,6 +106,8 @@ public class FileAttributes implements Parcelable {
 	}
 
 	public FileAttributes addStream(Stream stream) {
+		// Combined streams to be able too look up by index
+		mStreams.add(stream);
 		if (stream instanceof AudioStream) {
 			mAudioStreams.add((AudioStream) stream);
 		} else {
@@ -128,6 +136,7 @@ public class FileAttributes implements Parcelable {
 		out.writeValue(mSize);
 		out.writeList(mAudioStreams);
 		out.writeList(mVideoStreams);
+		out.writeList(mStreams);
 	}
 
 	public static final Parcelable.Creator<FileAttributes> CREATOR
@@ -146,10 +155,15 @@ public class FileAttributes implements Parcelable {
 		mLongName = (String) in.readValue(String.class.getClassLoader());
 		mName = (String) in.readValue(String.class.getClassLoader());
 		mSize = (Long) in.readValue(Long.class.getClassLoader());
+		// Audio
 		mAudioStreams = new ArrayList<>();
 		in.readList(mAudioStreams, AudioStream.class.getClassLoader());
+		// Video
 		mVideoStreams = new ArrayList<>();
 		in.readList(mVideoStreams, VideoStream.class.getClassLoader());
+		// Combined, indexed
+		mStreams = new ArrayList<>();
+		in.readList(mStreams, Stream.class.getClassLoader());
 	}
 
 	public int describeContents() {

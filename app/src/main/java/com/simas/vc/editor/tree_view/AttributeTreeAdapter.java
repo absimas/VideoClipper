@@ -42,7 +42,6 @@ public class AttributeTreeAdapter extends TreeAdapter {
 	private final String TAG = getClass().getName();
 	private final List<Object> mData = new ArrayList<>(2);;
 	private final NavItem mItem;
-	private final Object SELECTED = new Object();
 	private Map<Object, View> mSelectedChildren = new HashMap<>();
 
 	public AttributeTreeAdapter(NavItem item) {

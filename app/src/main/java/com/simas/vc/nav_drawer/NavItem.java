@@ -18,6 +18,7 @@
  */
 package com.simas.vc.nav_drawer;
 
+import android.app.AlertDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Parcel;
@@ -89,16 +90,15 @@ public class NavItem implements Parcelable, Cloneable {
 		FAIL_IMAGE = BitmapFactory.decodeResource(VC.getAppResources(), R.drawable.fail);
 	}
 
-	// ToDo document extension lists
-	private static final List<String> VALID_AUDIO_EXTENSIONS = new ArrayList<String>() { {
-//		add("mp3");
-	}};
-
 	private static final List<String> VALID_VIDEO_EXTENSIONS = new ArrayList<String>() { {
 		add("mp4");
 		add("mkv");
 		add("avi");
 		add("divx");
+	}};
+
+	private static final List<String> VALID_AUDIO_EXTENSIONS = new ArrayList<String>() { {
+//		add("mp3");
 	}};
 
 	private static final List<String> VALID_PICTURE_EXTENSIONS = new ArrayList<String>() { {
@@ -177,6 +177,42 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	/**
+	 * @return -1 if there is no selected audio stream.
+	 * @throws IllegalStateException if the selected stream cannot be found in file
+	 */
+	public int getSelectedAudioStreamIndex() {
+		if (getSelectedAudioStream() != null) {
+			int index = getAttributes().getStreams().indexOf(getSelectedAudioStream());
+
+			if (index < 0){
+				throw new IllegalStateException("The selected audio stream wasn't found!");
+			}
+
+			return index;
+		} else {
+			return -1;
+		}
+	}
+
+	/**
+	 * @return -1 if there is no selected video stream.
+	 * @throws IllegalStateException if the selected stream cannot be found in file
+	 */
+	public int getSelectedVideoStreamIndex() {
+		if (getSelectedVideoStream() != null) {
+			int index = getAttributes().getStreams().indexOf(getSelectedVideoStream());
+
+			if (index < 0){
+				throw new IllegalStateException("The selected video stream wasn't found!");
+			}
+
+			return index;
+		} else {
+			return -1;
+		}
+	}
+
+	/**
 	 * {@code mFile} must be set before this is called.
 	 */
 	private void parseItem() {
@@ -188,9 +224,12 @@ public class NavItem implements Parcelable, Cloneable {
 				try {
 					attributes = FFprobe.parseAttributes(getFile());
 				} catch (VCException e) {
-					e.printStackTrace();
-					// ToDo VCException's should create a log of error messages not single errors
-					// ToDo display to user
+					Log.e(TAG, "Attribute parse error:", e);
+					new AlertDialog.Builder(VC.getAppContext()) // ToDo what context to use here?
+							.setTitle(Utils.getString(R.string.error))
+							.setMessage(e.getMessage())
+							.setPositiveButton("OK", null)
+							.show();
 				}
 				if (attributes == null) {
 					setState(State.INVALID);
@@ -348,6 +387,8 @@ public class NavItem implements Parcelable, Cloneable {
 		out.writeSerializable(mType);
 		out.writeParcelable(mAttributes, flags);
 		out.writeSerializable(mState);
+		out.writeParcelable(mSelectedAudioStream, flags);
+		out.writeParcelable(mSelectedVideoStream, flags);
 	}
 
 	public static final Parcelable.Creator<NavItem> CREATOR = new Parcelable.Creator<NavItem>() {
@@ -365,6 +406,8 @@ public class NavItem implements Parcelable, Cloneable {
 		mType = (Type) in.readSerializable();
 		mAttributes = in.readParcelable(Stream.class.getClassLoader());
 		mState = (State) in.readSerializable();
+		mSelectedAudioStream = in.readParcelable(AudioStream.class.getClassLoader());
+		mSelectedVideoStream = in.readParcelable(VideoStream.class.getClassLoader());
 		// Re-Parse the preview
 		mPreview = parsePreview();
 	}
@@ -379,6 +422,8 @@ public class NavItem implements Parcelable, Cloneable {
 		mAttributes = otherItem.mAttributes;
 		mFile = otherItem.mFile;
 		mState = otherItem.mState;
+		mSelectedAudioStream = otherItem.mSelectedAudioStream;
+		mSelectedVideoStream = otherItem.mSelectedVideoStream;
 		// Use the existing preview
 		mPreview = otherItem.mPreview;
 	}

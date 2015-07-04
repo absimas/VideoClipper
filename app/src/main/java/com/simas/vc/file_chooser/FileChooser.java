@@ -54,6 +54,7 @@ public class FileChooser extends DialogFragment
 		implements AdapterView.OnItemClickListener, DialogInterface.OnKeyListener {
 
 	public static final String TAG = "FileChooser";
+	public static final String ARG_FROM_TOOLBAR = "from_toolbar";
 	private LayoutInflater mInflater;
 	private FileChooserAdapter mAdapter;
 	private OnFileChosenListener mChoiceListener;
@@ -154,7 +155,7 @@ public class FileChooser extends DialogFragment
 			} else {
 				getDialog().dismiss();
 				if (mChoiceListener != null) {
-					mChoiceListener.onChosen(file);
+					mChoiceListener.onFileChosen(file);
 				}
 			}
 		}
@@ -309,7 +310,7 @@ public class FileChooser extends DialogFragment
 	}
 
 	public interface OnFileChosenListener {
-		void onChosen(File file);
+		void onFileChosen(File file);
 	}
 
 }

@@ -38,7 +38,8 @@ import java.util.List;
 
 // ToDo rename concat to merge (including the action) or not?
 // ToDo VCException use res instead of hardcoded string
-// ToDo detect audio and video stream indexes and only then send them to the filters for processing
+// ToDo ignore mjpeg streams
+// ToDo ignore files without video or audio streams
 
 /**
  * Contains the convenience methods that might call {@code FFmpegService} to do furhter work via
@@ -80,22 +81,18 @@ public class FFmpeg {
 		// Prepare a tmp file for progress output
 		File progressFile = File.createTempFile("vc-pg", null);
 
-		// ToDo check stream counts
-
 		boolean needsResizing = false, needsFiltering = false;
 		VideoStream stream = null;
 		// Loop items
 		for (NavItem item : items) {
-			// Loop streams
-			for (VideoStream videoStream : item.getAttributes().getVideoStreams()) {
-				if (stream == null) {
-					stream = videoStream;
-				} else {
-					if (streamsNeedResizing(stream, videoStream)) {
-						needsResizing = true;
-					} else if (!streamsConcatenateableByDemuxing(stream, videoStream)) {
-						needsFiltering = true;
-					}
+			VideoStream vs = item.getSelectedVideoStream();
+			if (stream == null) {
+				stream = vs;
+			} else {
+				if (streamsNeedResizing(stream, vs)) {
+					needsResizing = true;
+				} else if (!streamsConcatenateableByDemuxing(stream, vs)) {
+					needsFiltering = true;
 				}
 			}
 		}
@@ -180,16 +177,17 @@ public class FFmpeg {
 		// Use the biggest width and height from all items as output dimensions
 		for (int i=0; i<itemCount; ++i) {
 			NavItem item = items.get(i);
-			VideoStream vs = item.getAttributes().getVideoStreams().get(0);
+			VideoStream vs = item.getSelectedVideoStream();
 			if (vs.getWidth() > ow) ow = vs.getWidth();
 			if (vs.getHeight() > oh) oh = vs.getHeight();
 		}
 
 		String[] inputs = new String[itemCount*2];
 		String scaleFilters = "", padFilters = "", streams = "";
+		int audioStreamCount = 0, videoStreamCount = 0;
 		for (int i=0; i<itemCount; ++i) {
 			NavItem item = items.get(i);
-			VideoStream vs = item.getAttributes().getVideoStreams().get(0);
+			VideoStream vs = item.getSelectedVideoStream();
 			/* Input dimensions */
 			int iw = vs.getWidth();
 			int ih = vs.getHeight();
@@ -200,8 +198,16 @@ public class FFmpeg {
 
 			// If width and height already match the output's, then only set the SAR and save stream
 			if (iw == ow && ih == oh) {
-				// Streams // [i:video_stream] [i:audio_stream]
-				streams += String.format("[%d:%d][%d:%d]", i, 0, i, 1);
+				int selectedVideoStreamIndex = item.getSelectedVideoStreamIndex();
+				if (selectedVideoStreamIndex >= 0) {
+					streams += String.format("[%d:%d]", i, selectedVideoStreamIndex);
+					++videoStreamCount;
+				}
+				int selectedAudioStreamIndex = item.getSelectedAudioStreamIndex();
+				if (selectedAudioStreamIndex >= 0) {
+					streams += String.format("[%d:%d]", i, selectedAudioStreamIndex);
+					++audioStreamCount;
+				}
 			} else {
 				/* Scale */
 				// Use the bigger dimension and preserve the other
@@ -212,16 +218,30 @@ public class FFmpeg {
 				} else {
 					scaleW = ow;
 				}
-				// (,)[i:streamID]scale=w:h[vi]
-				scaleFilters += String.format("%s[%d:%d]scale=%d:%d[v%d]",
-						(scaleFilters.isEmpty()) ? "" : ',', i, 0, scaleW, scaleH, i);
 
-				// Pad // (,)[vi]pad=w:h:topx:topy[vi]
-				padFilters += String.format("%s[v%d]pad=%d:%d:(%d-iw)/2:(%d-ih)/2[v%d]",
-						(padFilters.isEmpty()) ? "" : ',', i, ow, oh, ow, oh, i);
+				// Apply scale and padding filters to the selected video stream
+				int selectedVideoStreamIndex = item.getSelectedVideoStreamIndex();
+				if (selectedVideoStreamIndex >= 0) {
+					// (,)[i:streamID]scale=w:h[vi]
+					scaleFilters += String.format("%s[%d:%d]scale=%d:%d[v%d]",
+							(scaleFilters.isEmpty()) ? "" : ',', i, selectedVideoStreamIndex,
+							scaleW, scaleH, i);
 
-				// Streams // [vi] [i:audio_stream]
-				streams += String.format("[v%d][%d:%d]", i, i, 1);
+					// Pad // (,)[vi]pad=w:h:topx:topy[vi]
+					padFilters += String.format("%s[v%d]pad=%d:%d:(%d-iw)/2:(%d-ih)/2[v%d]",
+							(padFilters.isEmpty()) ? "" : ',', i, ow, oh, ow, oh, i);
+
+					// Video output identifier
+					streams += String.format("[v%d]", i);
+					++videoStreamCount;
+				}
+
+				// Specify the audio stream
+				int selectedAudioStreamIndex = item.getSelectedAudioStreamIndex();
+				if (selectedAudioStreamIndex >= 0) {
+					streams += String.format("[%d:%d]", i, selectedAudioStreamIndex);
+					++audioStreamCount;
+				}
 			}
 		}
 
@@ -238,16 +258,15 @@ public class FFmpeg {
 				.add("-progress")
 				.addSpaced("%s", progressFile.getPath())
 				.addSpaced(inputs)                          // List of sources
-				/* Filters (scale,pad,setsar,concat) */
+				/* Filters (scale,pad,concat) */
 				.add("-filter_complex")
-				.add("%s%s%sconcat=n=%d:v=1:a=1[v][a]",
-						scaleFilters, padFilters, streams, itemCount)
+				.add("%s%s%sconcat=n=%d:v=%d:a=%d[v][a]",
+						scaleFilters, padFilters, streams, itemCount,
+						1, 1)
 				.add("-map [v] -map [a]")
 				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file
 				.build();
-
-		Log.e(TAG, Arrays.toString(args));
 
 		// Call service
 		Context context = VC.getAppContext();
@@ -275,9 +294,8 @@ public class FFmpeg {
 			-map '[v]' -map '[a]' \
 			'output.mp4'
 		 */
-		// ToDo 0:0 0:1 fails if these streams don't match file's audio/video stream indexes
 
-		int itemCount = items.size();
+		int itemCount = items.size(), audioStreamCount = 0, videoStreamCount = 0;
 		String[] inputs = new String[itemCount*2];
 		String streams = "";
 		for (int i=0; i<itemCount; ++i) {
@@ -285,13 +303,16 @@ public class FFmpeg {
 			inputs[i*2] = "-i";
 			inputs[i*2 + 1] = item.getFile().getPath();
 
-			streams += String.format("[%d:%d][%d:%d]", i, 0, i, 1);
-			// Loop item streams
-//			List<Stream> streams = item.getAttributes().getStreams();
-//			int streamCount = streams.size();
-//			for (int s=0; s<2; ++i) {
-//
-//			}
+			int selectedAudioStreamIndex = item.getSelectedAudioStreamIndex();
+			if (selectedAudioStreamIndex >= 0) {
+				streams += String.format("[%d:%d]", i, selectedAudioStreamIndex);
+				++audioStreamCount;
+			}
+			int selectedVideoStreamIndex = item.getSelectedVideoStreamIndex();
+			if (selectedVideoStreamIndex >= 0) {
+				streams += String.format("[%d:%d]", i, selectedVideoStreamIndex);
+				++videoStreamCount;
+			}
 		}
 
 		// ToDo avoid experimental codecs by using external libs (libfdk_aac is one of them)
@@ -304,7 +325,8 @@ public class FFmpeg {
 				.addSpaced(inputs)                          // List of sources
 				/* Concat filter */
 				.add("-filter_complex")
-				.add("%sconcat=n=%d:v=1:a=1[v][a]", streams, itemCount)
+				.add("%sconcat=n=%d:v=%d:a=%d[v][a]", streams, itemCount,
+						1, 1)
 				.add("-map [v] -map [a]")
 				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file

@@ -21,7 +21,6 @@ package com.simas.vc.background_tasks;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
-import com.simas.vc.VC;
 import com.simas.vc.VCException;
 import com.simas.vc.attributes.AudioStream;
 import com.simas.vc.attributes.FileAttributes;
@@ -30,7 +29,6 @@ import com.simas.vc.attributes.Stream;
 import com.simas.vc.R;
 import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.helpers.Utils;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,12 +46,18 @@ import static com.simas.vc.helpers.Utils.*;
 public class FFprobe {
 
 	private static final String TAG = "ffprobe";
+	private static final List<String> INVALID_CODEC_NAMES = new ArrayList<String>() {
+		{
+			add("mjpeg");
+		}
+	};
 
 	private static native int cFFprobe(String[] args, String outputPath);
 
 	/**
 	 * This operation is synchronous and cannot be run on the UI thread.
 	 */
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	public synchronized static FileAttributes parseAttributes(File inputFile) throws VCException {
 		if (Looper.myLooper() == Looper.getMainLooper()) {
 			throw new IllegalStateException("parseAttributes cannot be run on the UI thread!");
@@ -74,8 +78,7 @@ public class FFprobe {
 		// Create a temporary file to hold the stdout output
 		File tmpFile;
 		try {
-//			tmpFile = File.createTempFile("vc-out", null);
-			tmpFile = new File("/sdcard/Movies/test.txt");
+			tmpFile = File.createTempFile("vc-out", null);
 			tmpFile.delete();
 			tmpFile.createNewFile();
 		} catch (IOException e) {
@@ -158,6 +161,15 @@ public class FFprobe {
 		// Delete the tmp file
 		tmpFile.delete();
 
+		// No support for files with no audio/video streams (for now?)
+		if (fa != null) {
+			if (fa.getAudioStreams().size() == 0) {
+				throw new VCException("Sorry but audio-less files are not supported.");
+			} else if (fa.getVideoStreams().size() == 0) {
+				throw new VCException("Sorry but video-less files are not supported.");
+			}
+		}
+
 		return fa;
 	}
 
@@ -200,6 +212,10 @@ public class FFprobe {
 
 			// Codec name
 			String codecName = getJSONString(jsonObj, Utils.getString(R.string.stream_name));
+			if (codecName == null || INVALID_CODEC_NAMES.contains(codecName.toLowerCase())) {
+				Log.w(TAG, "Skipped invalid codec: " + codecName);
+				continue;
+			}
 
 			switch (streamType) {
 				case AUDIO:

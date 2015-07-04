@@ -20,6 +20,7 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,6 +33,8 @@ import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,7 +58,7 @@ import com.simas.vc.nav_drawer.NavDrawerFragment;
  * Activity that contains all the top-level fragments and manages their transitions.
  */
 public class MainActivity extends AppCompatActivity
-		implements NavDrawerFragment.NavigationDrawerCallbacks {
+		implements NavDrawerFragment.NavigationDrawerCallbacks, FileChooser.OnFileChosenListener {
 
 	private static final String STATE_ITEMS = "items_list";
 	private final String TAG = getClass().getName();
@@ -65,6 +68,10 @@ public class MainActivity extends AppCompatActivity
 	private ViewPager mViewPager;
 	private View mProgressOverlay;
 	private MyPagerAdapter mPagerAdapter;
+	/**
+	 * Flag to indicate the need to switch the pager to the newly added item
+	 */
+	private boolean mAddedItemViaToolbar;
 	/**
 	 * A list that contains all the added items, shared throughout the app. It's used by
 	 * {@link NavDrawerFragment}, {@link com.simas.vc.nav_drawer.NavAdapter},
@@ -147,9 +154,15 @@ public class MainActivity extends AppCompatActivity
 				@Override
 				public void run() {
 					// Make sure we're not in CAB mode (multiple selections)
+					Object checkedItem;
 					if (lv.getChoiceMode() == ListView.CHOICE_MODE_SINGLE) {
+						try {
+							checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
+						} catch (IndexOutOfBoundsException ignored) {
+							return;
+						}
+
 						// Make sure the editor's item is the same as the currently checked one
-						Object checkedItem = lv.getItemAtPosition(lv.getCheckedItemPosition());
 						if (getEditorFragment() != null &&
 								getEditorFragment().getItem() != checkedItem) {
 							mNavDrawerFragment.selectItem(ListView.INVALID_POSITION);
@@ -175,12 +188,13 @@ public class MainActivity extends AppCompatActivity
 			new Handler().postDelayed(new Runnable() {
 				@Override
 				public void run() {
-					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/Serenity.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/iwatch.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/macbook.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/1.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/2.mp4"));
-//					mNavDrawerFragment.onChosen(new File("/sdcard/Movies/3.mp4"));
+
+					onFileChosen(new File("/sdcard/Movies/Serenity.mp4"));
+//					onFileChosen(new File("/sdcard/Movies/iwatch.mp4"));
+//					onFileChosen(new File("/sdcard/Movies/macbook.mp4"));
+//					onFileChosen(new File("/sdcard/Movies/1.mp4"));
+//					onFileChosen(new File("/sdcard/Movies/2.mp4"));
+//					onFileChosen(new File("/sdcard/Movies/3.mp4"));
 				}
 			}, 1000);
 //			new Handler().postDelayed(new Runnable() {
@@ -229,6 +243,12 @@ public class MainActivity extends AppCompatActivity
 				}
 				// Select ListView item
 				mNavDrawerFragment.selectItem(position);
+			}
+
+			// Make sure the player is paused
+			Player player = Player.getInstance();
+			if (player.getState() == Player.State.STARTED) {
+				player.pause();
 			}
 		}
 
@@ -447,7 +467,7 @@ public class MainActivity extends AppCompatActivity
 							.setPositiveButton("OK...", null)
 							.show();
 				} catch (VCException e) {
-					Log.e(TAG, "Error with " + e.getExtra(), e);
+					Log.e(TAG, "Concatenation error:", e);
 					new AlertDialog.Builder(this)
 							.setTitle(Utils.getString(R.string.error))
 							.setMessage(e.getMessage())
@@ -456,7 +476,8 @@ public class MainActivity extends AppCompatActivity
 				}
 				return true;
 			case R.id.action_add_item:
-				showFileChooser();
+				// When adding a new item
+				showFileChooser(true);
 				return true;
 			case R.id.action_settings:
 				return true;
@@ -465,16 +486,71 @@ public class MainActivity extends AppCompatActivity
 		return super.onOptionsItemSelected(item);
 	}
 
-	public void showFileChooser() {
-		// Make sure it's a new instance
+	public void showFileChooser(boolean fromToolbar) {
 		FileChooser fileChooser = (FileChooser) getSupportFragmentManager()
 				.findFragmentByTag(FileChooser.TAG);
-
 		if (fileChooser == null) {
 			fileChooser = FileChooser.getInstance();
-			fileChooser.setOnFileChosenListener(mNavDrawerFragment);
+			fileChooser.setOnFileChosenListener(this);
 			fileChooser.show(getSupportFragmentManager(), FileChooser.TAG);
 		}
+
+		mAddedItemViaToolbar = fromToolbar;
+	}
+
+	@Override
+	public void onFileChosen(File file) {
+		// ToDo item doesn't exist error (shit happens)
+		final NavItem item = new NavItem(file);
+		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
+			@Override
+			public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
+			                      final Object newValue) {
+				if (newValue == NavItem.State.INVALID) {
+					Utils.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							// Display a toast notifying of the error if item parsing failed
+							Toast.makeText(VC.getAppContext(),
+									Utils.getString(R.string.format_parse_failed,
+											item.getFile().getName()), Toast.LENGTH_LONG)
+									.show();
+							// If an invalid state was reached, remove this item from the drawer
+							MainActivity.sItems.remove(item);
+						}
+					});
+				} else if (newValue == NavItem.State.VALID) {
+					// Upon reaching the VALID state, remove this listener
+					item.unregisterUpdateListener(this);
+				}
+			}
+		});
+		MainActivity.sItems.add(item);
+
+		// Wait until item is added to the pager
+		final boolean addedViaToolbar = mAddedItemViaToolbar;
+		mPagerAdapter.registerDataSetObserver(new DataSetObserver() {
+			@Override
+			public void onChanged() {
+				super.onChanged();
+				// Only 1 change is needed, remove observer
+				mPagerAdapter.unregisterDataSetObserver(this);
+				// Let the viewPager receive the information about the changes
+				mViewPager.post(new Runnable() {
+					@Override
+					public void run() {
+						// If item added via the ToolBar, and the drawer is closed,
+						// switch pager to the item
+						if (addedViaToolbar && (mNavDrawerFragment.getDrawerState() ==
+								NavDrawerFragment.DrawerState.CLOSING ||
+								mNavDrawerFragment.getDrawerState() ==
+										NavDrawerFragment.DrawerState.CLOSED)) {
+							mViewPager.setCurrentItem(mPagerAdapter.getCount());
+						}
+					}
+				});
+			}
+		});
 	}
 
 	@Override

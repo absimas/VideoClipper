@@ -52,7 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Navigation drawer fragment that contains all added items. Also manages the CAB.
  */
-public class NavDrawerFragment extends Fragment implements FileChooser.OnFileChosenListener {
+public class NavDrawerFragment extends Fragment {
 
 	private static final String STATE_SELECTED_POSITION = "list_view_selected_position";
 	private static final String STATE_CAB = "cab_state";
@@ -105,19 +105,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 					.getInt(STATE_SELECTED_POSITION, ListView.INVALID_POSITION);
 			mNavCAB = savedInstanceState.getParcelable(STATE_CAB);
 			mFromSavedInstanceState = true;
-		}
-	}
-
-	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
-
-		// Set the previewListener for the FileChooser (if it's shown, i.e. recreated by the activity)
-		FileChooser fileChooser = (FileChooser) getActivity()
-				.getSupportFragmentManager().findFragmentByTag(FileChooser.TAG);
-
-		if (fileChooser != null) {
-			fileChooser.setOnFileChosenListener(this);
 		}
 	}
 
@@ -329,7 +316,7 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 						view.setBackgroundColor(Color.TRANSPARENT);
 					}
 				} else {
-					((MainActivity) getActivity()).showFileChooser();
+					((MainActivity) getActivity()).showFileChooser(false);
 				}
 			}
 		});
@@ -411,39 +398,6 @@ public class NavDrawerFragment extends Fragment implements FileChooser.OnFileCho
 
 	private Toolbar getToolbar() {
 		return ((MainActivity) getActivity()).getToolbar();
-	}
-
-	@Override
-	public void onChosen(File file) {
-		// ToDo item doesn't exist error (shit happens)
-		final NavItem item = new NavItem(file);
-		// Enable concat action when state validates
-		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
-			@Override
-			public void onUpdated(final NavItem.ItemAttribute attribute, final Object oldValue,
-			                      final Object newValue) {
-				Utils.runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						if (newValue == NavItem.State.INVALID) {
-							// Display a toast notifying of the error if item parsing failed
-							Toast.makeText(VC.getAppContext(),
-									Utils.getString(R.string.format_parse_failed,
-											item.getFile().getName()), Toast.LENGTH_LONG)
-									.show();
-							// If an invalid state was reached, remove this item from the drawer
-							MainActivity.sItems.remove(item);
-						}
-					}
-				});
-
-				if (newValue == NavItem.State.VALID) {
-					// Upon reaching the VALID state, remove this listener
-					item.unregisterUpdateListener(this);
-				}
-			}
-		});
-		MainActivity.sItems.add(item);
 	}
 
 	/**

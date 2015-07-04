@@ -63,7 +63,6 @@ public abstract class Stream implements Parcelable {
 	 * Attributes that are for programming purposes only.
 	 */
 	private HashMap<String, Object> mAttributes = new HashMap<>();
-	private boolean mIsSelected;
 
 	protected Stream(String codecName) throws VCException {
 
@@ -148,7 +147,6 @@ public abstract class Stream implements Parcelable {
 	}
 
 	/* Parcelable */
-
 	public void writeToParcel(Parcel out, int flags) {
 		out.writeSerializable(attributes);
 		out.writeSerializable(mAttributes);

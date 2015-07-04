@@ -123,11 +123,6 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		getPlayer();
 	}
 
-	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-	}
-
 	@Nullable
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedState) {
@@ -211,6 +206,14 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		});
 
 		return mContainer;
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		// Force a container's re-layout once the activity is loaded
+		// Some devices like Samsung S2 API 16, need to be told when the container can be measured
+		getContainer().requestLayout();
 	}
 
 	/**
