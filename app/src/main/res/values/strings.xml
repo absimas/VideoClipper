@@ -42,7 +42,6 @@
 		app.</string>
 	<string name="app_dir_no_space">App directory doesn\'t have enough space!</string>
 	<string name="formatted_action_interrupted">%s was interrupted! Please try again.</string>
-	<string name="at_least_2_videos">Must provide at least 2 videos!</string>
 	<string name="ffprobe_fail">Couldn\'t fetch information about this video</string>
 	<string name="start">START</string>
 	<string name="length">LENGTH</string>
@@ -115,4 +114,19 @@
 	<string name="zero_time">00:00:00</string>
 	<string name="video_preview">Video preview</string>
 	<string name="retry_image">Retry…</string>
+
+	<!--VCExceptions-->
+    <string name="concat_at_least_2_videos">Must provide at least 2 videos!</string>
+    <string name="concat_some_not_valid">Concatenation cancelled! Some items are invalid or are
+	    still being processed.</string>
+    <string name="file_duration_invalid">File duration must be valid!</string>
+    <string name="file_name_invalid">File name must be valid!</string>
+    <string name="file_size_invalid">File size must be valid!</string>
+    <string name="stream_no_codec">Streams must have a codec!</string>
+    <string name="video_stream_width_invalid">Video stream width must be valid!</string>
+    <string name="video_stream_height_invalid">Video stream height must be valid!</string>
+    <string name="input_not_found">Input file doesn\'t exist!</string>
+    <string name="tmp_not_created">Temporary file couldn\'t be created! Please try again.</string>
+    <string name="audioless_unsupported">Sorry but audio-less files are not supported.</string>
+    <string name="videoless_unsupported">Sorry but video-less files are not supported.</string>
 </resources>

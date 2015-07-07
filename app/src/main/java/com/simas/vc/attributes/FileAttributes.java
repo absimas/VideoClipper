@@ -21,7 +21,11 @@ package com.simas.vc.attributes;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import com.simas.vc.R;
 import com.simas.vc.VCException;
+import com.simas.vc.helpers.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,14 +97,14 @@ public class FileAttributes implements Parcelable {
 
 	public FileAttributes setFileName(String fileName) throws VCException {
 		if (TextUtils.isEmpty(fileName)) {
-			throw new VCException("File stream's filename must be valid!");
+			throw new VCException(Utils.getString(R.string.file_name_invalid));
 		}
 		mFileName = fileName;
 		return this;
 	}
 
 	public FileAttributes setSize(Long size) throws VCException {
-		if (size == null) throw new VCException("File stream's size must be valid!");
+		if (size == null) throw new VCException(Utils.getString(R.string.file_size_invalid));
 		mSize = size;
 		return this;
 	}
@@ -117,7 +121,9 @@ public class FileAttributes implements Parcelable {
 	}
 
 	public FileAttributes setDuration(Double duration) throws VCException {
-		if (duration == null) throw new VCException("File stream's duration must be valid!");
+		if (duration == null) {
+			throw new VCException(Utils.getString(R.string.file_duration_invalid));
+		}
 		mDuration = duration;
 		return this;
 	}

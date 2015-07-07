@@ -20,7 +20,6 @@ package com.simas.vc;
 
 import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Environment;
@@ -126,6 +125,7 @@ public class MainActivity extends AppCompatActivity
 		MainActivity.sItems.registerDataSetObserver(new ObservableList.Observer() {
 			@Override
 			public void onRemoved(int position) {
+				Log.e(TAG, "removed: " + position);
 				// Remove fragment and its state from adapter
 				mPagerAdapter.onItemRemoved(position + 1);
 
@@ -189,7 +189,6 @@ public class MainActivity extends AppCompatActivity
 			new Handler().postDelayed(new Runnable() {
 				@Override
 				public void run() {
-
 					onFileChosen(new File("/sdcard/Movies/Serenity.mp4"));
 //					onFileChosen(new File("/sdcard/Movies/iwatch.mp4"));
 //					onFileChosen(new File("/sdcard/Movies/macbook.mp4"));
@@ -228,6 +227,7 @@ public class MainActivity extends AppCompatActivity
 		@Override
 		public void onPageSelected(int position) {
 			super.onPageSelected(position);
+			Log.e(TAG, "got pos: " + position);
 			// Update the EditorFragment and invalidate the PlayerFragment
 			if (position < 1) {
 				// Empty item selected
@@ -238,6 +238,7 @@ public class MainActivity extends AppCompatActivity
 			} else if (position-1 < sItems.size()) {
 				// Normal item selected
 				setTitle(sItems.get(position - 1).getFile().getName());
+				Log.e(TAG, "title: " + sItems.get(position - 1).getFile().getName());
 				mEditorFragment = (EditorFragment) mPagerAdapter.getItem(position);
 				if (getEditorFragment() != null) {
 					getEditorFragment().getPlayerFragment().setInitialized(false);
@@ -527,7 +528,6 @@ public class MainActivity extends AppCompatActivity
 
 	@Override
 	public void onFileChosen(File file) {
-		// ToDo item doesn't exist error (shit happens)
 		final NavItem item = new NavItem(file);
 		item.registerUpdateListener(new NavItem.OnUpdatedListener() {
 			@Override

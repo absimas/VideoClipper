@@ -18,6 +18,7 @@
  */
 package com.simas.vc.editor.player;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.media.MediaPlayer;
 import android.os.Build;
@@ -110,6 +111,25 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 				}
 			}
 	);
+	private final NavItem.OnUpdatedListener mStreamChangeListener = new NavItem.OnUpdatedListener() {
+		@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+		@Override
+		public void onUpdated(NavItem.ItemAttribute attr, Object old, Object newValue) {
+			if (isConnected()) {
+				switch (getPlayer().getState()) {
+					case IDLE: case INITIALIZED: case ERROR:
+						// Invalid states
+						break;
+					default:
+						if (attr == NavItem.ItemAttribute.AUDIO_STREAM) {
+							Log.d(TAG, "Set audio track onStreamChange: " + getItem()
+									.getSelectedAudioStreamIndex());
+							getPlayer().selectTrack(getItem().getSelectedAudioStreamIndex());
+						}
+				}
+			}
+		}
+	};
 	/** Handler that runs the queued messages when {@link #mContainer} is ready. I.e. at the end of
 	 * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} and through the post method of
 	 * {@link #mContainer}.
@@ -545,6 +565,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		final MediaPlayer.OnPreparedListener prepListener = new MediaPlayer.OnPreparedListener() {
 			@Override
 			public void onPrepared(MediaPlayer mp) {
+				if (Build.VERSION.SDK_INT >= 16) {
+					Log.d(TAG, "Set audio track onPrepared: " + getItem()
+							.getSelectedAudioStreamIndex());
+					getPlayer().selectTrack(getItem().getSelectedAudioStreamIndex());
+				}
 				getPlayer().removeOnPreparedListener(this);
 				// Update Controls and Player to correspond to the loaded video and the seek state
 				updateSeek();
@@ -602,7 +627,7 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 		// show preview in: STOPPED, PREPARED, PREPARING, IDLE, INITIALIZED
 		switch (newState) {
 			case STARTED:
-				mRetries = 0;
+//				mRetries = 0; // ToDo set retries to 0 later, this can still cause infinite prepares
 				setPreviewVisible(false);
 				break;
 			case ERROR: case RELEASED: case PAUSED:
@@ -646,6 +671,11 @@ public class PlayerFragment extends Fragment implements	View.OnTouchListener,
 			// Set the new Player-Controls combo
 			getControls().setPlayer(getPlayer());
 			getPlayer().setControls(getControls());
+
+			// Add stream change listener
+			if (Build.VERSION.SDK_INT >= 16) {
+				getItem().registerUpdateListener(mStreamChangeListener);
+			}
 		}
 	}
 

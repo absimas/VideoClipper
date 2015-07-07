@@ -154,7 +154,7 @@ public class FileChooser extends DialogFragment
 				navigateTo(file);
 			} else {
 				getDialog().dismiss();
-				if (mChoiceListener != null) {
+				if (mChoiceListener != null && file.exists()) {
 					mChoiceListener.onFileChosen(file);
 				}
 			}

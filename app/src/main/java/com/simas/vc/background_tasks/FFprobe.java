@@ -63,7 +63,7 @@ public class FFprobe {
 			throw new IllegalStateException("parseAttributes cannot be run on the UI thread!");
 		}
 
-		/* Executable call used // ToDo gal pretty naudot? td hh:mm:ss:ms...
+		/* Executable call used
 			./ffprobe -i 'nature/bee.mp4' \
 			-v quiet -print_format json \
 			-show_format -show_entries format=duration,size,format_name,format_long_name,filename,nb_streams \
@@ -72,7 +72,7 @@ public class FFprobe {
 
 		// Check if input exists
 		if (!inputFile.exists()) {
-			throw new VCException("Input file doesn't exist!");
+			throw new VCException(Utils.getString(R.string.input_not_found));
 		}
 
 		// Create a temporary file to hold the stdout output
@@ -83,7 +83,7 @@ public class FFprobe {
 			tmpFile.createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new VCException("Temporary file couldn't be created! Please try again.");
+			throw new VCException(Utils.getString(R.string.tmp_not_created));
 		}
 
 		// Create arguments for ffprobe
@@ -164,9 +164,9 @@ public class FFprobe {
 		// No support for files with no audio/video streams (for now?)
 		if (fa != null) {
 			if (fa.getAudioStreams().size() == 0) {
-				throw new VCException("Sorry but audio-less files are not supported.");
+				throw new VCException(Utils.getString(R.string.audioless_unsupported));
 			} else if (fa.getVideoStreams().size() == 0) {
-				throw new VCException("Sorry but video-less files are not supported.");
+				throw new VCException(Utils.getString(R.string.videoless_unsupported));
 			}
 		}
 

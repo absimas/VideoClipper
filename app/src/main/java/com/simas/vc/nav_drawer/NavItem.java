@@ -97,6 +97,7 @@ public class NavItem implements Parcelable, Cloneable {
 	private static final List<String> VALID_VIDEO_EXTENSIONS = new ArrayList<String>() { {
 		add("mp4");
 		add("mkv");
+		add("m4v");
 		add("avi");
 		add("divx");
 	}};
@@ -127,7 +128,7 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	public enum ItemAttribute {
-		STATE, PREVIEW, OTHER
+		STATE, PREVIEW, OTHER, AUDIO_STREAM, VIDEO_STREAM
 	}
 
 	/**
@@ -145,31 +146,47 @@ public class NavItem implements Parcelable, Cloneable {
 	}
 
 	public void setSelectedAudioStream(AudioStream selectedStream) {
-		// Look for the given audio stream
-		for (AudioStream stream : getAttributes().getAudioStreams()) {
-			if (stream == selectedStream) {
-				// If found, select it and quit
-				mSelectedAudioStream = stream;
-				return;
+		// Make sure it's a new stream
+		if (mSelectedAudioStream != selectedStream) {
+			// Look for the given audio stream
+			for (AudioStream stream : getAttributes().getAudioStreams()) {
+				if (stream == selectedStream) {
+					final AudioStream oldStream = mSelectedAudioStream;
+					mSelectedAudioStream = stream;
+
+					// Announce to listeners
+					for (OnUpdatedListener listener : mUpdateListeners) {
+						listener.onUpdated(ItemAttribute.AUDIO_STREAM, oldStream, stream);
+					}
+					return;
+				}
 			}
+			// If wasn't found throw
+			throw new IllegalStateException("No streams have been selected! Are you sure you're " +
+					"passing a stream that belongs to the attributes of this item?");
 		}
-		// If wasn't found throw
-		throw new IllegalStateException("No streams have been selected! Are you sure you're " +
-				"passing a stream that belongs to the attributes of this item?");
 	}
 
 	public void setSelectedVideoStream(VideoStream selectedStream) {
-		// Look for the given audio stream
-		for (VideoStream stream : getAttributes().getVideoStreams()) {
-			if (stream == selectedStream) {
-				// If found, select it and quit
-				mSelectedVideoStream = stream;
+		// Make sure it's a new stream
+		if (mSelectedVideoStream != selectedStream) {
+			// Look for the given audio stream
+			for (VideoStream stream : getAttributes().getVideoStreams()) {
+				if (stream == selectedStream) {
+					final VideoStream oldStream = mSelectedVideoStream;
+					mSelectedVideoStream = stream;
+
+					// Announce to listeners
+					for (OnUpdatedListener listener : mUpdateListeners) {
+						listener.onUpdated(ItemAttribute.VIDEO_STREAM, oldStream, stream);
+					}
+				}
 				return;
 			}
+			// If wasn't found throw
+			throw new IllegalStateException("No streams have been selected! Are you sure you're " +
+					"passing a stream that belongs to the attributes of this item?");
 		}
-		// If wasn't found throw
-		throw new IllegalStateException("No streams have been selected! Are you sure you're " +
-				"passing a stream that belongs to the attributes of this item?");
 	}
 
 	public AudioStream getSelectedAudioStream() {
@@ -187,8 +204,7 @@ public class NavItem implements Parcelable, Cloneable {
 	public int getSelectedAudioStreamIndex() {
 		if (getSelectedAudioStream() != null) {
 			int index = getAttributes().getStreams().indexOf(getSelectedAudioStream());
-
-			if (index < 0){
+			if (index < 0) {
 				throw new IllegalStateException("The selected audio stream wasn't found!");
 			}
 
@@ -205,8 +221,7 @@ public class NavItem implements Parcelable, Cloneable {
 	public int getSelectedVideoStreamIndex() {
 		if (getSelectedVideoStream() != null) {
 			int index = getAttributes().getStreams().indexOf(getSelectedVideoStream());
-
-			if (index < 0){
+			if (index < 0) {
 				throw new IllegalStateException("The selected video stream wasn't found!");
 			}
 

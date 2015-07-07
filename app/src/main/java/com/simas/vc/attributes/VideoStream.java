@@ -18,7 +18,10 @@
  */
 package com.simas.vc.attributes;
 
+import com.simas.vc.R;
 import com.simas.vc.VCException;
+import com.simas.vc.helpers.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,13 +83,17 @@ public class VideoStream extends Stream {
 	}
 
 	public VideoStream setWidth(Integer width) throws VCException {
-		if (width == null) throw new VCException("Video stream width must be valid!");
+		if (width == null) {
+			throw new VCException(Utils.getString(R.string.video_stream_width_invalid));
+		}
 		setValue(ATTRIBUTE_WIDTH, width);
 		return this;
 	}
 
 	public VideoStream setHeight(Integer height) throws VCException {
-		if (height == null) throw new VCException("Video stream height must be valid!");
+		if (height == null) {
+			throw new VCException(Utils.getString(R.string.video_stream_height_invalid));
+		}
 		setValue(ATTRIBUTE_HEIGHT, height);
 		return this;
 	}

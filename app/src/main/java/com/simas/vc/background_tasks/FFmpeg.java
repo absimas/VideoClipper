@@ -22,8 +22,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
-import android.util.Log;
-
 import com.simas.vc.helpers.ArgumentBuilder;
 import com.simas.vc.helpers.Utils;
 import com.simas.vc.VC;
@@ -33,13 +31,10 @@ import com.simas.vc.attributes.VideoStream;
 import com.simas.vc.nav_drawer.NavItem;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 // ToDo rename concat to merge (including the action) or not?
-// ToDo VCException use res instead of hardcoded string
-// ToDo ignore mjpeg streams
-// ToDo ignore files without video or audio streams
+// ToDo avoid "-strict experimental" codecs by using external libs (libfdk_aac is one of them)
 
 /**
  * Contains the convenience methods that might call {@code FFmpegService} to do furhter work via
@@ -64,7 +59,7 @@ public class FFmpeg {
 			throws IOException, VCException {
 		// Check source count
 		if (items.size() < 2) {
-			throw new VCException(Utils.getString(R.string.at_least_2_videos));
+			throw new VCException(Utils.getString(R.string.concat_at_least_2_videos));
 		}
 
 		// Fetch item validity and calculate total duration
@@ -73,8 +68,7 @@ public class FFmpeg {
 			if (item.getState() == NavItem.State.VALID) {
 				duration += item.getAttributes().getDuration();
 			} else {
-				throw new VCException("Concatenation cancelled! Some items are invalid or are " +
-						"still being processed.");
+				throw new VCException(Utils.getString(R.string.concat_some_not_valid));
 			}
 		}
 
@@ -249,7 +243,6 @@ public class FFmpeg {
 		if (!scaleFilters.isEmpty()) scaleFilters += ",";
 		if (!padFilters.isEmpty()) padFilters += ",";
 
-		// ToDo avoid experimental codecs by using external libs (libfdk_aac is one of them)
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-y")                                  // Overwrite output file if it exists
@@ -260,9 +253,8 @@ public class FFmpeg {
 				.addSpaced(inputs)                          // List of sources
 				/* Filters (scale,pad,concat) */
 				.add("-filter_complex")
-				.add("%s%s%sconcat=n=%d:v=%d:a=%d[v][a]",
-						scaleFilters, padFilters, streams, itemCount,
-						1, 1)
+				.add("%s%s%sconcat=n=%d:v=1:a=1[v][a]",
+						scaleFilters, padFilters, streams, itemCount)
 				.add("-map [v] -map [a]")
 				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file
@@ -295,7 +287,7 @@ public class FFmpeg {
 			'output.mp4'
 		 */
 
-		int itemCount = items.size(), audioStreamCount = 0, videoStreamCount = 0;
+		int itemCount = items.size();
 		String[] inputs = new String[itemCount*2];
 		String streams = "";
 		for (int i=0; i<itemCount; ++i) {
@@ -303,19 +295,16 @@ public class FFmpeg {
 			inputs[i*2] = "-i";
 			inputs[i*2 + 1] = item.getFile().getPath();
 
-			int selectedAudioStreamIndex = item.getSelectedAudioStreamIndex();
-			if (selectedAudioStreamIndex >= 0) {
-				streams += String.format("[%d:%d]", i, selectedAudioStreamIndex);
-				++audioStreamCount;
-			}
 			int selectedVideoStreamIndex = item.getSelectedVideoStreamIndex();
 			if (selectedVideoStreamIndex >= 0) {
 				streams += String.format("[%d:%d]", i, selectedVideoStreamIndex);
-				++videoStreamCount;
+			}
+			int selectedAudioStreamIndex = item.getSelectedAudioStreamIndex();
+			if (selectedAudioStreamIndex >= 0) {
+				streams += String.format("[%d:%d]", i, selectedAudioStreamIndex);
 			}
 		}
 
-		// ToDo avoid experimental codecs by using external libs (libfdk_aac is one of them)
 		// Prepare arguments
 		String[] args = new ArgumentBuilder(TAG)
 				.add("-y")                                  // Overwrite output file if it exists
@@ -325,8 +314,7 @@ public class FFmpeg {
 				.addSpaced(inputs)                          // List of sources
 				/* Concat filter */
 				.add("-filter_complex")
-				.add("%sconcat=n=%d:v=%d:a=%d[v][a]", streams, itemCount,
-						1, 1)
+				.add("%sconcat=n=%d:v=1:a=1[v][a]", streams, itemCount)
 				.add("-map [v] -map [a]")
 				.add("-strict experimental")                // Use experimental encoders
 				.addSpaced("%s", outputFile.getPath())      // Output file

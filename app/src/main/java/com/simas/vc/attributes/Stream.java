@@ -22,7 +22,11 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.SparseArray;
+
+import com.simas.vc.R;
 import com.simas.vc.VCException;
+import com.simas.vc.helpers.Utils;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -89,7 +93,9 @@ public abstract class Stream implements Parcelable {
 	}
 
 	public Stream setCodecName(String codecName) throws VCException {
-		if (TextUtils.isEmpty(codecName)) throw new VCException("Streams must have a codec!");
+		if (TextUtils.isEmpty(codecName)) {
+			throw new VCException(Utils.getString(R.string.stream_no_codec));
+		}
 		setValue(ATTRIBUTE_CODEC_NAME, codecName);
 		return this;
 	}
