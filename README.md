@@ -53,6 +53,7 @@ Currently the app can accomplish the following:
 - Parse a chosen video file
 - Display the parsed streams and their attributes in a tree fashion
 - Concatenate multiple videos (re-size and re-encode if necessary)
+- Select, play and concat different audio streams
 
 ## Expansion
 Future improvements of this app are highly dependent on the functionality of FFmpeg and FFprobe libraries which are the basis of this tool. Currently planned video modifications include:
