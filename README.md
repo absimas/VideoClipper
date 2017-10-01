@@ -1,3 +1,6 @@
+# DEPRECATED
+This project was developed as part of my Java class's assignment. It is no longer updated or supported.
+
 # Video Clipper
 Android video manipulation app
 
